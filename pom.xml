@@ -15,7 +15,7 @@
     <artifactId>wiki-collection-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>wiki-collection-backend</name>
-    <description>Backend del proyecto Wiki-Collection (Java 25 + Spring Boot 4 + MongoDB)</description>
+    <description>Backend del proyecto Wiki-Collection (Java 25 + Spring Boot 4 + MongoDB) — arquitectura hexagonal</description>
 
     <properties>
         <java.version>25</java.version>
@@ -38,12 +38,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.46</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

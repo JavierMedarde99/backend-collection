@@ -1,4 +1,4 @@
-package com.wikicollection.config;
+package com.wikicollection.infrastructure.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
