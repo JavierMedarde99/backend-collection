@@ -1,0 +1,18 @@
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      JWT_SECRET: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Build
+        run: ./mvnw clean package
