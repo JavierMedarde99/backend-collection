@@ -21,7 +21,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document(collection = "BOOKS")
+@Document(collection = "books")
 public class BookEntity {
 
     @Id
