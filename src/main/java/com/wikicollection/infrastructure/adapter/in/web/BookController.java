@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import com.wikicollection.domain.model.BookSearchResult;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.port.in.BookSearchUseCase;
 import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookDtoMapper;
@@ -49,15 +49,12 @@ public class BookController {
     public Page<BookResponse> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "dateAdded,desc") String sort,
-            @RequestParam(required = false) BookStatus status,
-            @RequestParam(required = false) String tag) {
+            @RequestParam(defaultValue = "title,asc") String sort,
+            @RequestParam(required = false) BookState state) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         Page<com.wikicollection.domain.model.Book> result;
-        if (status != null) {
-            result = bookUseCase.findByStatus(status, pageable);
-        } else if (tag != null && !tag.isBlank()) {
-            result = bookUseCase.findByTag(tag, pageable);
+        if (state != null) {
+            result = bookUseCase.findByState(state, pageable);
         } else {
             result = bookUseCase.findAll(pageable);
         }
@@ -93,8 +90,8 @@ public class BookController {
     }
 
     private Sort buildSort(String sort) {
-        String field = "dateAdded";
-        Sort.Direction direction = Sort.Direction.DESC;
+        String field = "title";
+        Sort.Direction direction = Sort.Direction.ASC;
         if (sort != null && !sort.isBlank()) {
             String[] parts = sort.split(",");
             if (parts.length > 0 && !parts[0].isBlank()) {

@@ -3,7 +3,7 @@ package com.wikicollection.infrastructure.adapter.out.persistence;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.port.out.BookRepository;
 
 import org.springframework.data.domain.Page;
@@ -32,23 +32,8 @@ public class BookPersistenceAdapter implements BookRepository {
     }
 
     @Override
-    public Page<Book> findByStatus(BookStatus status, Pageable pageable) {
-        return springDataBookRepository.findByStatus(status, pageable).map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Book> findByTagsContaining(String tag, Pageable pageable) {
-        return springDataBookRepository.findByTagsContaining(tag, pageable).map(mapper::toDomain);
-    }
-
-    @Override
-    public Optional<Book> findByIsbn(String isbn) {
-        return springDataBookRepository.findByIsbn(isbn).map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Book> searchByTitleOrAuthor(String query, Pageable pageable) {
-        return springDataBookRepository.searchByTitleOrAuthor(query, pageable).map(mapper::toDomain);
+    public Page<Book> findByState(BookState state, Pageable pageable) {
+        return springDataBookRepository.findByState(state, pageable).map(mapper::toDomain);
     }
 
     @Override

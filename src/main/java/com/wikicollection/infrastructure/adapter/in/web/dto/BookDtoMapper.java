@@ -12,23 +12,18 @@ public class BookDtoMapper {
             return null;
         }
         return Book.builder()
-                .title(request.title())
-                .authors(request.authors())
-                .isbn(request.isbn())
-                .publisher(request.publisher())
-                .publishedDate(request.publishedDate())
-                .description(request.description())
-                .pageCount(request.pageCount())
-                .categories(request.categories())
-                .coverImage(request.coverImage())
-                .language(request.language())
-                .status(request.status())
-                .userRating(request.userRating())
-                .notes(request.notes())
-                .tags(request.tags())
-                .dateCompleted(request.dateCompleted())
-                .externalSource(request.externalSource())
                 .externalId(request.externalId())
+                .title(request.title())
+                .descripcion(request.descripcion())
+                .author(request.author())
+                .pages(request.pages())
+                .type(request.type())
+                .state(request.state())
+                .comment(request.comment())
+                .start(request.start())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .frontpage(request.frontpage())
                 .build();
     }
 
@@ -38,24 +33,17 @@ public class BookDtoMapper {
         }
         return new BookResponse(
                 book.getId(),
+                book.getExternalId(),
                 book.getTitle(),
-                book.getAuthors(),
-                book.getIsbn(),
-                book.getPublisher(),
-                book.getPublishedDate(),
-                book.getDescription(),
-                book.getPageCount(),
-                book.getCategories(),
-                book.getCoverImage(),
-                book.getLanguage(),
-                book.getStatus(),
-                book.getUserRating(),
-                book.getNotes(),
-                book.getTags(),
-                book.getDateAdded(),
-                book.getDateCompleted(),
-                book.getDateUpdated(),
-                book.getExternalSource(),
-                book.getExternalId());
+                book.getDescripcion(),
+                book.getAuthor(),
+                book.getPages(),
+                book.getType(),
+                book.getState(),
+                book.getComment(),
+                book.getStart(),
+                book.getStartDate(),
+                book.getEndDate(),
+                book.getFrontpage());
     }
 }
