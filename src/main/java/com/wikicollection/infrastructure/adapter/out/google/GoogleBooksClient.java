@@ -18,7 +18,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class GoogleBooksClient implements ExternalBookCatalogClient {
 
     private static final String VOLUMES_PATH = "/v1/volumes";
-    private static final int MAX_RESULTS = 5;
+    private static final int MAX_RESULTS = 10;
 
     private final RestClient restClient;
     private final String apiKey;
