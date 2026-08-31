@@ -1,7 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.google;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.anything;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -80,11 +79,12 @@ class GoogleBooksClientTest {
     }
 
     @Test
-    void search_throwsIllegalState_whenApiFails() {
+    void search_returnsEmpty_whenApiFails() {
         server.expect(once(), anything()).andRespond(withServerError());
 
-        assertThatThrownBy(() -> client.search("cien"))
-                .isInstanceOf(IllegalStateException.class);
+        List<BookSearchResult> results = client.search("cien");
+
+        assertThat(results).isEmpty();
     }
 
     private String googleBooksFixture() {

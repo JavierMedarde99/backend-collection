@@ -192,7 +192,7 @@ class BookControllerTest {
                 "Vintage Español", "2011-05-03", "es", List.of("Literatura"));
         when(googleBooksClient.search("cien")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/books/search").param("q", "cien"))
+        mockMvc.perform(get("/api/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Cien años de soledad"))
                 .andExpect(jsonPath("$[0].isbn").value("9780307474728"));
@@ -200,16 +200,17 @@ class BookControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/books/search").param("q", " "))
+        mockMvc.perform(get("/api/books/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void search_returns500_whenGoogleUnavailable() throws Exception {
-        when(googleBooksClient.search("cien")).thenThrow(new IllegalStateException("Google Books API no disponible"));
+    void search_returnsEmpty_whenGoogleUnavailable() throws Exception {
+        when(googleBooksClient.search("cien")).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/books/search").param("q", "cien"))
-                .andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/api/books/search").param("name", "cien"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test

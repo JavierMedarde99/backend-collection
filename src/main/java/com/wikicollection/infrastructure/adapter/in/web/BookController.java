@@ -88,8 +88,8 @@ public class BookController {
     }
 
     @GetMapping("/search")
-    public List<BookSearchResult> search(@RequestParam("q") String query) {
-        return bookSearchUseCase.search(query);
+    public List<BookSearchResult> search(@RequestParam("name") String name) {
+        return bookSearchUseCase.search(name);
     }
 
     private Sort buildSort(String sort) {

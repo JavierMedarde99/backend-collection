@@ -54,10 +54,11 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
                     .map(this::toResult)
                     .toList();
         } catch (RestClientResponseException e) {
-            log.error("Error al consultar Google Books API: {}", e.getResponseBodyAsString(), e);
-            throw new IllegalStateException("Error al consultar Google Books API", e);
+            log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return List.of();
         } catch (ResourceAccessException e) {
-            throw new IllegalStateException("Google Books API no disponible", e);
+            log.warn("Google Books API no disponible: {}", e.getMessage());
+            return List.of();
         }
     }
 
