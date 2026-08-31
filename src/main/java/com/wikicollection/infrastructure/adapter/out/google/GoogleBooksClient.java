@@ -5,17 +5,20 @@ import java.util.List;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+@Slf4j
 @Component
 public class GoogleBooksClient implements ExternalBookCatalogClient {
 
     private static final String VOLUMES_PATH = "/v1/volumes";
-    private static final int MAX_RESULTS = 20;
+    private static final int MAX_RESULTS = 5;
 
     private final RestClient restClient;
     private final String apiKey;
@@ -33,8 +36,9 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
             GoogleBooksResponse response = restClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.path(VOLUMES_PATH)
-                                .queryParam("q", query)
-                                .queryParam("maxResults", MAX_RESULTS);
+                                .queryParam("q", "intitle:" + query)
+                                .queryParam("maxResults", MAX_RESULTS)
+                                .queryParam("langRestrict", "es");
                         if (apiKey != null && !apiKey.isBlank()) {
                             uriBuilder.queryParam("key", apiKey);
                         }
@@ -50,6 +54,7 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
                     .map(this::toResult)
                     .toList();
         } catch (RestClientResponseException e) {
+            log.error("Error al consultar Google Books API: {}", e.getResponseBodyAsString(), e);
             throw new IllegalStateException("Error al consultar Google Books API", e);
         } catch (ResourceAccessException e) {
             throw new IllegalStateException("Google Books API no disponible", e);
