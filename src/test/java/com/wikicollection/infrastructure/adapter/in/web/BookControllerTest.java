@@ -16,9 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
-import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookSearchResult;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 import com.wikicollection.infrastructure.adapter.out.google.GoogleBooksClient;
 import com.wikicollection.infrastructure.adapter.out.persistence.BookEntity;
 import com.wikicollection.infrastructure.adapter.out.persistence.SpringDataBookRepository;
@@ -51,8 +50,8 @@ class BookControllerTest {
         return BookEntity.builder()
                 .id("b1")
                 .title("Cien años de soledad")
-                .authors(List.of("Gabriel García Márquez"))
-                .status(BookStatus.WISHLIST)
+                .author("Gabriel García Márquez")
+                .state(BookState.TO_READ)
                 .build();
     }
 
@@ -67,23 +66,13 @@ class BookControllerTest {
     }
 
     @Test
-    void listBooks_filtersByStatus() throws Exception {
-        when(springDataBookRepository.findByStatus(eq(BookStatus.READING), any(Pageable.class))).thenReturn(Page.empty());
+    void listBooks_filtersByState() throws Exception {
+        when(springDataBookRepository.findByState(eq(BookState.READING), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/books").param("status", "reading"))
+        mockMvc.perform(get("/api/books").param("state", "READING"))
                 .andExpect(status().isOk());
 
-        verify(springDataBookRepository).findByStatus(eq(BookStatus.READING), any(Pageable.class));
-    }
-
-    @Test
-    void listBooks_filtersByTag() throws Exception {
-        when(springDataBookRepository.findByTagsContaining(eq("ficcion"), any(Pageable.class))).thenReturn(Page.empty());
-
-        mockMvc.perform(get("/api/books").param("tag", "ficcion"))
-                .andExpect(status().isOk());
-
-        verify(springDataBookRepository).findByTagsContaining(eq("ficcion"), any(Pageable.class));
+        verify(springDataBookRepository).findByState(eq(BookState.READING), any(Pageable.class));
     }
 
     @Test
@@ -95,7 +84,7 @@ class BookControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("b1"))
                 .andExpect(jsonPath("$.title").value("Cien años de soledad"))
-                .andExpect(jsonPath("$.status").value("WISHLIST"));
+                .andExpect(jsonPath("$.state").value("TO_READ"));
     }
 
     @Test
@@ -117,7 +106,7 @@ class BookControllerTest {
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Cien años de soledad","authors":["Gabriel García Márquez"],"status":"WISHLIST"}
+                                {"title":"Cien años de soledad","author":"Gabriel García Márquez","state":"TO_READ","type":"NOVEL"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", Matchers.containsString("/api/books/b-new")))
@@ -130,25 +119,19 @@ class BookControllerTest {
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"","authors":[],"status":"WISHLIST"}
+                                {"title":"","author":"","state":"TO_READ","type":"NOVEL"}
                                 """))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void createBook_returns409_whenDuplicateIsbn() throws Exception {
-        BookEntity existing = BookEntity.builder()
-                .id("other")
-                .isbn("9780307474728")
-                .build();
-        when(springDataBookRepository.findByIsbn("9780307474728")).thenReturn(Optional.of(existing));
-
+    void createBook_returns400_whenStartOutOfRange() throws Exception {
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Cien años de soledad","authors":["Gabriel García Márquez"],"status":"WISHLIST","isbn":"9780307474728"}
+                                {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","start":9}
                                 """))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -159,11 +142,13 @@ class BookControllerTest {
         mockMvc.perform(put("/api/books/b1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Nuevo título","authors":["Autor Actualizado"],"status":"COMPLETED"}
+                                {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","pages":300}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Nuevo título"))
-                .andExpect(jsonPath("$.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.author").value("Autor Actualizado"))
+                .andExpect(jsonPath("$.state").value("COMPLETED"))
+                .andExpect(jsonPath("$.pages").value(300));
     }
 
     @Test

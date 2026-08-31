@@ -1,7 +1,7 @@
 package com.wikicollection.domain.port.in;
 
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,11 +10,7 @@ public interface BookUseCase {
 
     Page<Book> findAll(Pageable pageable);
 
-    Page<Book> findByStatus(BookStatus status, Pageable pageable);
-
-    Page<Book> findByTag(String tag, Pageable pageable);
-
-    Page<Book> searchByTitleOrAuthor(String query, Pageable pageable);
+    Page<Book> findByState(BookState state, Pageable pageable);
 
     Book findById(String id);
 

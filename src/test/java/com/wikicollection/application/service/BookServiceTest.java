@@ -6,14 +6,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.application.exception.BookNotFoundException;
-import com.wikicollection.application.exception.DuplicateIsbnException;
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.port.out.BookRepository;
 
 import org.junit.jupiter.api.Test;
@@ -38,8 +35,8 @@ class BookServiceTest {
     private Book sampleBook() {
         Book book = new Book();
         book.setTitle("Cien años de soledad");
-        book.setAuthors(List.of("Gabriel García Márquez"));
-        book.setStatus(BookStatus.WISHLIST);
+        book.setAuthor("Gabriel García Márquez");
+        book.setState(BookState.TO_READ);
         return book;
     }
 
@@ -52,6 +49,17 @@ class BookServiceTest {
 
         assertThat(result).isEmpty();
         verify(bookRepository).findAll(pageable);
+    }
+
+    @Test
+    void findByState_delegatesToRepository() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(bookRepository.findByState(BookState.READING, pageable)).thenReturn(Page.empty());
+
+        Page<Book> result = bookService.findByState(BookState.READING, pageable);
+
+        assertThat(result).isEmpty();
+        verify(bookRepository).findByState(BookState.READING, pageable);
     }
 
     @Test
@@ -75,50 +83,14 @@ class BookServiceTest {
     }
 
     @Test
-    void save_setsDateAdded_whenNull() {
+    void save_delegatesToRepository() {
         Book book = sampleBook();
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        bookService.save(book);
+        Book result = bookService.save(book);
 
-        assertThat(book.getDateAdded()).isNotNull();
-    }
-
-    @Test
-    void save_marksDateCompleted_whenCompleted() {
-        Book book = sampleBook();
-        book.setStatus(BookStatus.COMPLETED);
-        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        bookService.save(book);
-
-        assertThat(book.getDateCompleted()).isNotNull();
-    }
-
-    @Test
-    void save_clearsDateCompleted_whenNotCompleted() {
-        Book book = sampleBook();
-        book.setStatus(BookStatus.READING);
-        book.setDateCompleted(LocalDateTime.now());
-        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        bookService.save(book);
-
-        assertThat(book.getDateCompleted()).isNull();
-    }
-
-    @Test
-    void save_throwsConflict_whenIsbnAlreadyUsed() {
-        Book book = sampleBook();
-        book.setIsbn("9780307474728");
-        Book existing = sampleBook();
-        existing.setId("other");
-        when(bookRepository.findByIsbn("9780307474728")).thenReturn(Optional.of(existing));
-
-        assertThatThrownBy(() -> bookService.save(book))
-                .isInstanceOf(DuplicateIsbnException.class)
-                .hasMessageContaining("9780307474728");
-        verify(bookRepository).findByIsbn("9780307474728");
+        assertThat(result).isSameAs(book);
+        verify(bookRepository).save(book);
     }
 
     @Test
@@ -131,12 +103,14 @@ class BookServiceTest {
     }
 
     @Test
-    void update_appliesFieldsAndKeepsId_andDateAdded() {
+    void update_appliesFieldsAndKeepsId() {
         Book existing = sampleBook();
         existing.setId("b1");
-        existing.setDateAdded(LocalDateTime.now().minusDays(5));
         Book updates = sampleBook();
         updates.setTitle("Nuevo título");
+        updates.setAuthor("Otro autor");
+        updates.setPages(300);
+        updates.setState(BookState.COMPLETED);
         when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -144,11 +118,14 @@ class BookServiceTest {
 
         assertThat(result.getId()).isEqualTo("b1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
-        assertThat(result.getDateAdded()).isNotNull();
+        assertThat(result.getAuthor()).isEqualTo("Otro autor");
+        assertThat(result.getPages()).isEqualTo(300);
+        assertThat(result.getState()).isEqualTo(BookState.COMPLETED);
 
         ArgumentCaptor<Book> captor = ArgumentCaptor.forClass(Book.class);
         verify(bookRepository).save(captor.capture());
         assertThat(captor.getValue().getTitle()).isEqualTo("Nuevo título");
+        assertThat(captor.getValue().getId()).isEqualTo("b1");
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.time.LocalDateTime;
 
 import com.wikicollection.application.exception.BookNotFoundException;
-import com.wikicollection.application.exception.DuplicateIsbnException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
 
 import org.springframework.http.HttpStatus;
@@ -20,11 +19,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BookNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(BookNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(DuplicateIsbnException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateIsbn(DuplicateIsbnException ex, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -1,15 +1,11 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.BookType;
 
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -25,50 +21,33 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document(collection = "books")
+@Document(collection = "BOOKS")
 public class BookEntity {
 
     @Id
     private String id;
 
+    private String externalId;
+
     private String title;
 
-    private List<String> authors;
+    private String descripcion;
 
-    @Indexed(unique = true, sparse = true)
-    private String isbn;
+    private String author;
 
-    private String publisher;
+    private Integer pages;
 
-    private LocalDate publishedDate;
+    private BookType type;
 
-    private String description;
+    private BookState state;
 
-    private Integer pageCount;
+    private String comment;
 
-    private List<String> categories;
+    private Integer start;
 
-    private String coverImage;
+    private LocalDate startDate;
 
-    private String language;
+    private LocalDate endDate;
 
-    private BookStatus status;
-
-    private Integer userRating;
-
-    private String notes;
-
-    private List<String> tags;
-
-    @CreatedDate
-    private LocalDateTime dateAdded;
-
-    private LocalDateTime dateCompleted;
-
-    @LastModifiedDate
-    private LocalDateTime dateUpdated;
-
-    private String externalSource;
-
-    private String externalId;
+    private String frontpage;
 }

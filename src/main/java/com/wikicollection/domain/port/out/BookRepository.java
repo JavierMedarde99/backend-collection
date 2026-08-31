@@ -3,7 +3,7 @@ package com.wikicollection.domain.port.out;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookStatus;
+import com.wikicollection.domain.model.BookState;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,13 +14,7 @@ public interface BookRepository {
 
     Optional<Book> findById(String id);
 
-    Page<Book> findByStatus(BookStatus status, Pageable pageable);
-
-    Page<Book> findByTagsContaining(String tag, Pageable pageable);
-
-    Optional<Book> findByIsbn(String isbn);
-
-    Page<Book> searchByTitleOrAuthor(String query, Pageable pageable);
+    Page<Book> findByState(BookState state, Pageable pageable);
 
     Book save(Book book);
 
