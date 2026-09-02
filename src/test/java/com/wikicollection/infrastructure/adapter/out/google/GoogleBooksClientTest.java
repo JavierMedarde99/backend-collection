@@ -1,7 +1,10 @@
 package com.wikicollection.infrastructure.adapter.out.google;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.anything;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 class GoogleBooksClientTest {
 
@@ -27,7 +31,7 @@ class GoogleBooksClientTest {
         RestClient.Builder builder = RestClient.builder()
                 .baseUrl("https://www.googleapis.com/books");
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new GoogleBooksClient(builder.build(), "");
+        client = new GoogleBooksClient(builder.build(), "", 0);
     }
 
     @Test
@@ -57,7 +61,7 @@ class GoogleBooksClientTest {
         RestClient.Builder keyBuilder = RestClient.builder()
                 .baseUrl("https://www.googleapis.com/books");
         MockRestServiceServer keyServer = MockRestServiceServer.bindTo(keyBuilder).build();
-        GoogleBooksClient clientWithKey = new GoogleBooksClient(keyBuilder.build(), "my-secret-key");
+        GoogleBooksClient clientWithKey = new GoogleBooksClient(keyBuilder.build(), "my-secret-key", 0);
         keyServer.expect(once(),
                         requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:test&maxResults=10&langRestrict=es&key=my-secret-key"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
@@ -79,12 +83,23 @@ class GoogleBooksClientTest {
     }
 
     @Test
-    void search_returnsEmpty_whenApiFails() {
+    void search_throwsWhenAllRetriesFail() {
+        server.expect(times(4), anything()).andRespond(withServerError());
+
+        assertThatThrownBy(() -> client.search("cien"))
+                .isInstanceOf(RestClientResponseException.class);
+        server.verify();
+    }
+
+    @Test
+    void search_succeedsAfterRetry_whenTransientFailure() {
         server.expect(once(), anything()).andRespond(withServerError());
+        server.expect(once(), anything()).andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.search("cien");
 
-        assertThat(results).isEmpty();
+        assertThat(results).hasSize(1);
+        server.verify();
     }
 
     private String googleBooksFixture() {
