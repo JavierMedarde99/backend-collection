@@ -7,6 +7,7 @@ import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -19,46 +20,81 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
 
     private static final String VOLUMES_PATH = "/v1/volumes";
     private static final int MAX_RESULTS = 10;
+    private static final int TOTAL_ATTEMPTS = 4;
+    private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
 
     private final RestClient restClient;
     private final String apiKey;
+    private final long retryIntervalMillis;
 
+    @Autowired
     public GoogleBooksClient(
             RestClient googleBooksRestClient,
             @Value("${google.books.api-key:}") String apiKey) {
+        this(googleBooksRestClient, apiKey, DEFAULT_RETRY_INTERVAL_MILLIS);
+    }
+
+    GoogleBooksClient(
+            RestClient googleBooksRestClient,
+            String apiKey,
+            long retryIntervalMillis) {
         this.restClient = googleBooksRestClient;
         this.apiKey = apiKey;
+        this.retryIntervalMillis = retryIntervalMillis;
     }
 
     @Override
     public List<BookSearchResult> search(String query) {
-        try {
-            GoogleBooksResponse response = restClient.get()
-                    .uri(uriBuilder -> {
-                        uriBuilder.path(VOLUMES_PATH)
-                                .queryParam("q", "intitle:" + query)
-                                .queryParam("maxResults", MAX_RESULTS)
-                                .queryParam("langRestrict", "es");
-                        if (apiKey != null && !apiKey.isBlank()) {
-                            uriBuilder.queryParam("key", apiKey);
-                        }
-                        return uriBuilder.build();
-                    })
-                    .retrieve()
-                    .body(GoogleBooksResponse.class);
-
-            if (response == null || response.items() == null) {
-                return List.of();
+        RestClientResponseException lastHttp = null;
+        ResourceAccessException lastConnection = null;
+        for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
+            try {
+                return doSearch(query);
+            } catch (RestClientResponseException e) {
+                lastHttp = e;
+                log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            } catch (ResourceAccessException e) {
+                lastConnection = e;
+                log.warn("Google Books API no disponible: {}", e.getMessage());
             }
-            return response.items().stream()
-                    .map(this::toResult)
-                    .toList();
-        } catch (RestClientResponseException e) {
-            log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            if (attempt < TOTAL_ATTEMPTS - 1) {
+                sleepBeforeRetry();
+            }
+        }
+        if (lastHttp != null) {
+            throw lastHttp;
+        }
+        throw lastConnection;
+    }
+
+    private List<BookSearchResult> doSearch(String query) {
+        GoogleBooksResponse response = restClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.path(VOLUMES_PATH)
+                            .queryParam("q", "intitle:" + query)
+                            .queryParam("maxResults", MAX_RESULTS)
+                            .queryParam("langRestrict", "es");
+                    if (apiKey != null && !apiKey.isBlank()) {
+                        uriBuilder.queryParam("key", apiKey);
+                    }
+                    return uriBuilder.build();
+                })
+                .retrieve()
+                .body(GoogleBooksResponse.class);
+
+        if (response == null || response.items() == null) {
             return List.of();
-        } catch (ResourceAccessException e) {
-            log.warn("Google Books API no disponible: {}", e.getMessage());
-            return List.of();
+        }
+        return response.items().stream()
+                .map(this::toResult)
+                .toList();
+    }
+
+    private void sleepBeforeRetry() {
+        try {
+            Thread.sleep(retryIntervalMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
