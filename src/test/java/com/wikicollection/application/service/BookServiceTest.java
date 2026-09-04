@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
+import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.port.out.BookRepository;
 
@@ -43,23 +44,13 @@ class BookServiceTest {
     @Test
     void findAll_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        when(bookRepository.findAll(pageable)).thenReturn(Page.empty());
+        BookSearchCriteria criteria = new BookSearchCriteria(null, null, null, null);
+        when(bookRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
-        Page<Book> result = bookService.findAll(pageable);
-
-        assertThat(result).isEmpty();
-        verify(bookRepository).findAll(pageable);
-    }
-
-    @Test
-    void findByState_delegatesToRepository() {
-        Pageable pageable = PageRequest.of(0, 20);
-        when(bookRepository.findByState(BookState.READING, pageable)).thenReturn(Page.empty());
-
-        Page<Book> result = bookService.findByState(BookState.READING, pageable);
+        Page<Book> result = bookService.search(criteria, pageable);
 
         assertThat(result).isEmpty();
-        verify(bookRepository).findByState(BookState.READING, pageable);
+        verify(bookRepository).search(criteria, pageable);
     }
 
     @Test

@@ -2,7 +2,7 @@ package com.wikicollection.application.service;
 
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.domain.port.out.BookRepository;
 
@@ -20,13 +20,8 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    public Page<Book> findAll(Pageable pageable) {
-        return bookRepository.findAll(pageable);
-    }
-
-    @Override
-    public Page<Book> findByState(BookState state, Pageable pageable) {
-        return bookRepository.findByState(state, pageable);
+    public Page<Book> search(BookSearchCriteria criteria, Pageable pageable) {
+        return bookRepository.search(criteria, pageable);
     }
 
     @Override

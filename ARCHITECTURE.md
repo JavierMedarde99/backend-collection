@@ -44,12 +44,12 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 
 **Inbound ports** (`domain/port/in/`) — what the application offers to adapters:
 
-- `BookUseCase` — CRUD + `findByState` (returns `Page<Book>`).
+- `BookUseCase` — CRUD + `search(BookSearchCriteria, Pageable)` (returns `Page<Book>`).
 - `BookSearchUseCase` — `search(String)` returning `List<BookSearchResult>`.
 
 **Outbound ports** (`domain/port/out/`) — what the application needs from adapters:
 
-- `BookRepository` — persistence contract (`findAll`, `findById`, `findByState`, `save`, `deleteById`).
+- `BookRepository` — persistence contract (`search`, `findById`, `save`, `deleteById`).
 - `ExternalBookCatalogClient` — external catalog search contract.
 
 ### Application (`application/`)
@@ -67,7 +67,7 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 
 **Inbound web adapter** (`adapter/in/web/`):
 
-- `BookController` — `@RestController` at `/api/books`. Exposes list (paginated, filterable by `state`), get-by-id, create, update, delete, and `/api/books/search?name=` for external search. Uses `@Validated` + Bean Validation on DTOs.
+- `BookController` — `@RestController` at `/api/books`. Exposes list (paginated, sortable, filterable by `name`, `author`, `type`, `state`), get-by-id, create, update, delete, and `/api/books/search?name=` for external search. Uses `@Validated` + Bean Validation on DTOs.
 - `GlobalExceptionHandler` — `@RestControllerAdvice` mapping exceptions to `ErrorResponse`:
   - `BookNotFoundException` → 404
   - `IllegalArgumentException` → 400
@@ -78,9 +78,9 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 **Outbound persistence adapter** (`adapter/out/persistence/`):
 
 - `BookEntity` — Mongo `@Document(collection = "BOOKS")` mapping (same fields as domain `Book`).
-- `SpringDataBookRepository` — Spring Data `MongoRepository<BookEntity, String>`; declares `findByState`.
+- `SpringDataBookRepository` — Spring Data `MongoRepository<BookEntity, String>`.
 - `BookEntityMapper` — maps `Book` ⇄ `BookEntity`.
-- `BookPersistenceAdapter implements BookRepository` — adapts the port to Spring Data; the only code that talks to the repository.
+- `BookPersistenceAdapter implements BookRepository` — adapts the port to the persistence layer. Uses `MongoTemplate` to build a dynamic `Criteria` query for the list (`search`): `name`/`author` match as case-insensitive substring (regex), `type`/`state` match exactly; all criteria combine with AND and are optional. `findById`/`save`/`deleteById` delegate to Spring Data.
 
 **Outbound catalog adapter** (`adapter/out/google/`):
 
