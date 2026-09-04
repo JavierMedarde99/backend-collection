@@ -3,8 +3,10 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 
+import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.BookType;
 import com.wikicollection.domain.port.in.BookSearchUseCase;
 import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookDtoMapper;
@@ -50,15 +52,13 @@ public class BookController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "title,asc") String sort,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) BookType type,
             @RequestParam(required = false) BookState state) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        Page<com.wikicollection.domain.model.Book> result;
-        if (state != null) {
-            result = bookUseCase.findByState(state, pageable);
-        } else {
-            result = bookUseCase.findAll(pageable);
-        }
-        return result.map(mapper::toResponse);
+        BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state);
+        return bookUseCase.search(criteria, pageable).map(mapper::toResponse);
     }
 
     @GetMapping("/{id}")

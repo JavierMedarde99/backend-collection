@@ -1,7 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -16,14 +15,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.domain.model.Book;
+import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.BookType;
+import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.infrastructure.adapter.out.google.GoogleBooksClient;
-import com.wikicollection.infrastructure.adapter.out.persistence.BookEntity;
-import com.wikicollection.infrastructure.adapter.out.persistence.SpringDataBookRepository;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,23 +43,24 @@ class BookControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private SpringDataBookRepository springDataBookRepository;
+    private BookRepository bookRepository;
 
     @MockitoBean
     private GoogleBooksClient googleBooksClient;
 
-    private BookEntity sampleEntity() {
-        return BookEntity.builder()
+    private Book sampleBook() {
+        return Book.builder()
                 .id("b1")
                 .title("Cien años de soledad")
                 .author("Gabriel García Márquez")
                 .state(BookState.TO_READ)
+                .type(BookType.NOVEL)
                 .build();
     }
 
     @Test
     void listBooks_returnsEmptyPage_whenNoBooks() throws Exception {
-        when(springDataBookRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/books"))
                 .andExpect(status().isOk())
@@ -67,18 +70,37 @@ class BookControllerTest {
 
     @Test
     void listBooks_filtersByState() throws Exception {
-        when(springDataBookRepository.findByState(eq(BookState.READING), any(Pageable.class))).thenReturn(Page.empty());
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/books").param("state", "READING"))
                 .andExpect(status().isOk());
 
-        verify(springDataBookRepository).findByState(eq(BookState.READING), any(Pageable.class));
+        ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
+        verify(bookRepository).search(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().state()).isEqualTo(BookState.READING);
+    }
+
+    @Test
+    void listBooks_filtersByNameAuthorAndType() throws Exception {
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/books")
+                        .param("name", "cien")
+                        .param("author", "garcía")
+                        .param("type", "NOVEL"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
+        verify(bookRepository).search(captor.capture(), any(Pageable.class));
+        BookSearchCriteria criteria = captor.getValue();
+        org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("cien");
+        org.assertj.core.api.Assertions.assertThat(criteria.author()).isEqualTo("garcía");
+        org.assertj.core.api.Assertions.assertThat(criteria.type()).isEqualTo(BookType.NOVEL);
     }
 
     @Test
     void getBook_returnsBook_whenExists() throws Exception {
-        BookEntity entity = sampleEntity();
-        when(springDataBookRepository.findById("b1")).thenReturn(Optional.of(entity));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
         mockMvc.perform(get("/api/books/b1"))
                 .andExpect(status().isOk())
@@ -89,7 +111,7 @@ class BookControllerTest {
 
     @Test
     void getBook_returns404_whenMissing() throws Exception {
-        when(springDataBookRepository.findById("nope")).thenReturn(Optional.empty());
+        when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/books/nope"))
                 .andExpect(status().isNotFound());
@@ -97,8 +119,8 @@ class BookControllerTest {
 
     @Test
     void createBook_returns201_withLocation() throws Exception {
-        when(springDataBookRepository.save(any(BookEntity.class))).thenAnswer(invocation -> {
-            BookEntity saved = invocation.getArgument(0);
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
+            Book saved = invocation.getArgument(0);
             saved.setId("b-new");
             return saved;
         });
@@ -136,8 +158,8 @@ class BookControllerTest {
 
     @Test
     void updateBook_returnsUpdatedBook() throws Exception {
-        when(springDataBookRepository.findById("b1")).thenReturn(Optional.of(sampleEntity()));
-        when(springDataBookRepository.save(any(BookEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(put("/api/books/b1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -153,17 +175,17 @@ class BookControllerTest {
 
     @Test
     void deleteBook_returns204_whenExists() throws Exception {
-        when(springDataBookRepository.findById("b1")).thenReturn(Optional.of(sampleEntity()));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
         mockMvc.perform(delete("/api/books/b1"))
                 .andExpect(status().isNoContent());
 
-        verify(springDataBookRepository).deleteById("b1");
+        verify(bookRepository).deleteById("b1");
     }
 
     @Test
     void deleteBook_returns404_whenMissing() throws Exception {
-        when(springDataBookRepository.findById("nope")).thenReturn(Optional.empty());
+        when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/api/books/nope"))
                 .andExpect(status().isNotFound());

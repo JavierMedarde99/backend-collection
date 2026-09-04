@@ -1,16 +1,14 @@
 package com.wikicollection.domain.port.in;
 
 import com.wikicollection.domain.model.Book;
-import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.BookSearchCriteria;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface BookUseCase {
 
-    Page<Book> findAll(Pageable pageable);
-
-    Page<Book> findByState(BookState state, Pageable pageable);
+    Page<Book> search(BookSearchCriteria criteria, Pageable pageable);
 
     Book findById(String id);
 
