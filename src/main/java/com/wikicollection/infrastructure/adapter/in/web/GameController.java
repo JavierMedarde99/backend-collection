@@ -3,6 +3,8 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 
+import com.wikicollection.domain.model.GamePlatform;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.in.GameSearchUseCase;
@@ -50,12 +52,12 @@ public class GameController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "title,asc") String sort,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) GamePlatform platform,
             @RequestParam(required = false) GameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        Page<GameResponse> responsePage = status == null
-                ? gameUseCase.findAll(pageable).map(mapper::toResponse)
-                : gameUseCase.findByStatus(status, pageable).map(mapper::toResponse);
-        return responsePage;
+        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status);
+        return gameUseCase.search(criteria, pageable).map(mapper::toResponse);
     }
 
     @GetMapping("/{id}")

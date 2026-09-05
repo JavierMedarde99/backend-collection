@@ -1,16 +1,14 @@
 package com.wikicollection.domain.port.in;
 
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.model.GameSearchCriteria;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface GameUseCase {
 
-    Page<Game> findAll(Pageable pageable);
-
-    Page<Game> findByStatus(GameStatus status, Pageable pageable);
+    Page<Game> search(GameSearchCriteria criteria, Pageable pageable);
 
     Game findById(String id);
 

@@ -1,34 +1,63 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.out.GameRepository;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GamePersistenceAdapter implements GameRepository {
 
     private final SpringDataGameRepository springDataGameRepository;
+    private final MongoTemplate mongoTemplate;
     private final GameEntityMapper mapper;
 
-    public GamePersistenceAdapter(SpringDataGameRepository springDataGameRepository, GameEntityMapper mapper) {
+    public GamePersistenceAdapter(SpringDataGameRepository springDataGameRepository,
+                                  MongoTemplate mongoTemplate,
+                                  GameEntityMapper mapper) {
         this.springDataGameRepository = springDataGameRepository;
+        this.mongoTemplate = mongoTemplate;
         this.mapper = mapper;
     }
 
     @Override
-    public Page<Game> findAll(Pageable pageable) {
-        return springDataGameRepository.findAll(pageable).map(mapper::toDomain);
+    public Page<Game> search(GameSearchCriteria criteria, Pageable pageable) {
+        Query query = buildQuery(criteria);
+        long total = mongoTemplate.count(query, GameEntity.class);
+        query.with(pageable);
+        List<Game> content = mongoTemplate.find(query, GameEntity.class).stream()
+                .map(mapper::toDomain)
+                .toList();
+        return new PageImpl<>(content, pageable, total);
     }
 
-    @Override
-    public Page<Game> findByStatus(GameStatus status, Pageable pageable) {
-        return springDataGameRepository.findByStatus(status, pageable).map(mapper::toDomain);
+    private Query buildQuery(GameSearchCriteria criteria) {
+        Query query = new Query();
+        if (criteria.hasName()) {
+            query.addCriteria(Criteria.where("title").regex(ciPattern(criteria.name())));
+        }
+        if (criteria.platform() != null) {
+            query.addCriteria(Criteria.where("platform").is(criteria.platform()));
+        }
+        if (criteria.status() != null) {
+            query.addCriteria(Criteria.where("status").is(criteria.status()));
+        }
+        return query;
+    }
+
+    private Pattern ciPattern(String value) {
+        return Pattern.compile(Pattern.quote(value), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     }
 
     @Override

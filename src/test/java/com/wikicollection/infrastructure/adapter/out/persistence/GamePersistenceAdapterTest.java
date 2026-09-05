@@ -1,6 +1,8 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,23 +11,29 @@ import java.util.Optional;
 
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 @ExtendWith(MockitoExtension.class)
 class GamePersistenceAdapterTest {
 
     @Mock
     private SpringDataGameRepository springDataGameRepository;
+
+    @Mock
+    private MongoTemplate mongoTemplate;
 
     @Mock
     private GameEntityMapper mapper;
@@ -43,30 +51,48 @@ class GamePersistenceAdapterTest {
     }
 
     @Test
-    void findAll_mapsEntitiesToDomain() {
+    void search_withoutFilters_returnsAllResults() {
         Pageable pageable = PageRequest.of(0, 20);
         GameEntity entity = GameEntity.builder().id("g1").title("The Witcher 3").build();
         Game expected = sampleGame();
-        when(springDataGameRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(entity)));
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of(entity));
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<Game> result = adapter.findAll(pageable);
+        Page<Game> result = adapter.search(new GameSearchCriteria(null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
 
     @Test
-    void findByStatus_mapsEntitiesToDomain() {
+    void search_withNameFilter_buildsCaseInsensitiveRegexOnTitle() {
         Pageable pageable = PageRequest.of(0, 20);
-        GameEntity entity = GameEntity.builder().id("g1").title("The Witcher 3").build();
-        Game expected = sampleGame();
-        when(springDataGameRepository.findByStatus(GameStatus.PLAYING, pageable))
-                .thenReturn(new PageImpl<>(List.of(entity)));
-        when(mapper.toDomain(entity)).thenReturn(expected);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        Page<Game> result = adapter.findByStatus(GameStatus.PLAYING, pageable);
+        adapter.search(new GameSearchCriteria("witc", null, null), pageable);
 
-        assertThat(result.getContent()).containsExactly(expected);
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("title");
+        assertThat(qs).contains("$regularExpression");
+        assertThat(qs).contains("witc");
+    }
+
+    @Test
+    void search_withPlatformFilter_addsExactCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, GamePlatform.PC, GameStatus.PLAYING), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("platform");
+        assertThat(qs).contains("status");
     }
 
     @Test

@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.out.GameRepository;
@@ -62,7 +63,7 @@ class GameControllerTest {
 
     @Test
     void listGames_returnsEmptyPage_whenNoGames() throws Exception {
-        when(gameRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/games"))
                 .andExpect(status().isOk())
@@ -71,15 +72,21 @@ class GameControllerTest {
     }
 
     @Test
-    void listGames_filtersByStatus() throws Exception {
-        when(gameRepository.findByStatus(any(GameStatus.class), any(Pageable.class))).thenReturn(Page.empty());
+    void listGames_filtersByNamePlatformAndStatus() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/games").param("status", "PLAYING"))
+        mockMvc.perform(get("/api/games")
+                        .param("name", "witc")
+                        .param("platform", "PC")
+                        .param("status", "PLAYING"))
                 .andExpect(status().isOk());
 
-        ArgumentCaptor<GameStatus> captor = ArgumentCaptor.forClass(GameStatus.class);
-        verify(gameRepository).findByStatus(captor.capture(), any(Pageable.class));
-        org.assertj.core.api.Assertions.assertThat(captor.getValue()).isEqualTo(GameStatus.PLAYING);
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(captor.capture(), any(Pageable.class));
+        GameSearchCriteria criteria = captor.getValue();
+        org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("witc");
+        org.assertj.core.api.Assertions.assertThat(criteria.platform()).isEqualTo(GamePlatform.PC);
+        org.assertj.core.api.Assertions.assertThat(criteria.status()).isEqualTo(GameStatus.PLAYING);
     }
 
     @Test
