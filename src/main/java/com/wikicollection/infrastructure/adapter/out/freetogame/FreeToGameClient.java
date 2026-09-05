@@ -92,21 +92,10 @@ public class FreeToGameClient implements ExternalGameCatalogClient {
     }
 
     private GamePlatform mapPlatform(String platform) {
-        if (platform == null) {
+        if (platform == null || !platform.toUpperCase().contains("PC")) {
             return null;
         }
-        boolean hasPc = platform.toUpperCase().contains("PC");
-        boolean hasWeb = platform.toUpperCase().contains("WEB");
-        if (hasPc && hasWeb) {
-            return GamePlatform.BOTH;
-        }
-        if (hasWeb) {
-            return GamePlatform.WEB_BROWSER;
-        }
-        if (hasPc) {
-            return GamePlatform.PC;
-        }
-        return null;
+        return GamePlatform.PC;
     }
 
     private LocalDate parseDate(String releaseDate) {
