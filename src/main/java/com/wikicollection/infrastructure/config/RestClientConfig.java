@@ -13,4 +13,18 @@ public class RestClientConfig {
                 .baseUrl("https://www.googleapis.com/books")
                 .build();
     }
+
+    @Bean
+    public RestClient rawgRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://api.rawg.io/api")
+                .build();
+    }
+
+    @Bean
+    public RestClient freeToGameRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://www.freetogame.com/api")
+                .build();
+    }
 }
