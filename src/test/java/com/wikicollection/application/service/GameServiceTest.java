@@ -11,6 +11,7 @@ import java.util.Optional;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.out.GameRepository;
 
@@ -42,25 +43,15 @@ class GameServiceTest {
     }
 
     @Test
-    void findAll_delegatesToRepository() {
+    void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        when(gameRepository.findAll(pageable)).thenReturn(Page.empty());
+        GameSearchCriteria criteria = new GameSearchCriteria("witc", GamePlatform.PC, GameStatus.PLAYING);
+        when(gameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
-        Page<Game> result = gameService.findAll(pageable);
+        Page<Game> result = gameService.search(criteria, pageable);
 
         assertThat(result).isEmpty();
-        verify(gameRepository).findAll(pageable);
-    }
-
-    @Test
-    void findByStatus_delegatesToRepository() {
-        Pageable pageable = PageRequest.of(0, 20);
-        when(gameRepository.findByStatus(GameStatus.COMPLETED, pageable)).thenReturn(Page.empty());
-
-        Page<Game> result = gameService.findByStatus(GameStatus.COMPLETED, pageable);
-
-        assertThat(result).isEmpty();
-        verify(gameRepository).findByStatus(GameStatus.COMPLETED, pageable);
+        verify(gameRepository).search(criteria, pageable);
     }
 
     @Test

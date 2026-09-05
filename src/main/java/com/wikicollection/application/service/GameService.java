@@ -2,7 +2,7 @@ package com.wikicollection.application.service;
 
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
 
@@ -20,13 +20,8 @@ public class GameService implements GameUseCase {
     }
 
     @Override
-    public Page<Game> findAll(Pageable pageable) {
-        return gameRepository.findAll(pageable);
-    }
-
-    @Override
-    public Page<Game> findByStatus(GameStatus status, Pageable pageable) {
-        return gameRepository.findByStatus(status, pageable);
+    public Page<Game> search(GameSearchCriteria criteria, Pageable pageable) {
+        return gameRepository.search(criteria, pageable);
     }
 
     @Override
