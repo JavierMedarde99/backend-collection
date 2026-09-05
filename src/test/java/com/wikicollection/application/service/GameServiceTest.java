@@ -111,7 +111,7 @@ class GameServiceTest {
 
         Game updates = sampleGame();
         updates.setTitle("Nuevo título");
-        updates.setDescription("Nueva descripción");
+        updates.setComment("Nuevo comentario");
         updates.setStatus(GameStatus.COMPLETED);
         updates.setUserRating(5);
 
@@ -122,7 +122,7 @@ class GameServiceTest {
 
         assertThat(result.getId()).isEqualTo("g1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
-        assertThat(result.getDescription()).isEqualTo("Nueva descripción");
+        assertThat(result.getComment()).isEqualTo("Nuevo comentario");
         assertThat(result.getStatus()).isEqualTo(GameStatus.COMPLETED);
         assertThat(result.getUserRating()).isEqualTo(5);
 

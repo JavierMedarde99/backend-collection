@@ -1,6 +1,5 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.wikicollection.domain.model.GamePlatform;
@@ -32,17 +31,7 @@ public class GameEntity {
 
     private String title;
 
-    private String description;
-
-    private String genre;
-
     private GamePlatform platform;
-
-    private String publisher;
-
-    private String developer;
-
-    private LocalDate releaseDate;
 
     private String thumbnailUrl;
 
@@ -50,7 +39,7 @@ public class GameEntity {
 
     private Integer userRating;
 
-    private String notes;
+    private String comment;
 
     private LocalDateTime dateAdded;
 
