@@ -131,6 +131,101 @@ class FreeToGameClientTest {
         assertThat(results).isEmpty();
     }
 
+    @Test
+    void search_returnsEmpty_whenConnectionFails() throws Exception {
+        server.shutdown();
+
+        List<GameSearchResult> results = client.search("warzone");
+
+        assertThat(results).isEmpty();
+    }
+
+    @Test
+    void getAllGames_returnsEmpty_whenConnectionFails() throws Exception {
+        server.shutdown();
+
+        List<GameSearchResult> results = client.getAllGames();
+
+        assertThat(results).isEmpty();
+    }
+
+    @Test
+    void search_returnsEmpty_whenNoContent() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(204));
+
+        List<GameSearchResult> results = client.search("warzone");
+
+        assertThat(results).isEmpty();
+    }
+
+    @Test
+    void search_handlesMissingAndUnknownFields() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        [
+                          {
+                            "title": "Juego Anónimo",
+                            "thumbnail": "http://thumb",
+                            "short_description": "Descripción",
+                            "genre": "Action",
+                            "platform": "Console",
+                            "release_date": ""
+                          }
+                        ]
+                        """));
+
+        List<GameSearchResult> results = client.search("anonimo");
+
+        assertThat(results).hasSize(1);
+        GameSearchResult result = results.get(0);
+        assertThat(result.id()).isNull();
+        assertThat(result.platform()).isNull();
+        assertThat(result.releaseDate()).isNull();
+    }
+
+    @Test
+    void search_handlesMissingPlatformField() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        [
+                          {
+                            "title": "Juego Sin Plataforma",
+                            "short_description": "Descripción",
+                            "genre": "Action"
+                          }
+                        ]
+                        """));
+
+        List<GameSearchResult> results = client.search("plataforma");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).platform()).isNull();
+    }
+
+    @Test
+    void search_handlesMalformedReleaseDate() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        [
+                          {
+                            "title": "Juego",
+                            "platform": "PC (Windows)",
+                            "release_date": "no-es-una-fecha"
+                          }
+                        ]
+                        """));
+
+        List<GameSearchResult> results = client.search("juego");
+
+        assertThat(results.get(0).releaseDate()).isNull();
+    }
+
     private String freeToGameFixture() {
         return """
                 [
