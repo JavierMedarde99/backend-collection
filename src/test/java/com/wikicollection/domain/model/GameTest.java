@@ -15,16 +15,11 @@ class GameTest {
                 .id("g1")
                 .externalId("rawg-001")
                 .title("The Witcher 3")
-                .description("Aventura de rol")
-                .genre("RPG")
                 .platform(GamePlatform.PC)
-                .publisher("CD Projekt")
-                .developer("CD Projekt Red")
-                .releaseDate(LocalDate.of(2015, 5, 19))
                 .thumbnailUrl("http://img")
                 .status(GameStatus.PLAYING)
                 .userRating(5)
-                .notes("Gran historia")
+                .comment("Gran historia")
                 .dateAdded(LocalDateTime.of(2024, 1, 1, 10, 0))
                 .dateCompleted(LocalDateTime.of(2024, 2, 1, 20, 0))
                 .externalSource("RAWG")
@@ -33,16 +28,11 @@ class GameTest {
         assertThat(game.getId()).isEqualTo("g1");
         assertThat(game.getExternalId()).isEqualTo("rawg-001");
         assertThat(game.getTitle()).isEqualTo("The Witcher 3");
-        assertThat(game.getDescription()).isEqualTo("Aventura de rol");
-        assertThat(game.getGenre()).isEqualTo("RPG");
         assertThat(game.getPlatform()).isEqualTo(GamePlatform.PC);
-        assertThat(game.getPublisher()).isEqualTo("CD Projekt");
-        assertThat(game.getDeveloper()).isEqualTo("CD Projekt Red");
-        assertThat(game.getReleaseDate()).isEqualTo(LocalDate.of(2015, 5, 19));
         assertThat(game.getThumbnailUrl()).isEqualTo("http://img");
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
         assertThat(game.getUserRating()).isEqualTo(5);
-        assertThat(game.getNotes()).isEqualTo("Gran historia");
+        assertThat(game.getComment()).isEqualTo("Gran historia");
         assertThat(game.getDateAdded()).isEqualTo(LocalDateTime.of(2024, 1, 1, 10, 0));
         assertThat(game.getDateCompleted()).isEqualTo(LocalDateTime.of(2024, 2, 1, 20, 0));
         assertThat(game.getExternalSource()).isEqualTo("RAWG");

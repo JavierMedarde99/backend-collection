@@ -56,16 +56,11 @@ public class GameService implements GameUseCase {
     private void copyUpdatableFields(Game target, Game source) {
         target.setExternalId(source.getExternalId());
         target.setTitle(source.getTitle());
-        target.setDescription(source.getDescription());
-        target.setGenre(source.getGenre());
         target.setPlatform(source.getPlatform());
-        target.setPublisher(source.getPublisher());
-        target.setDeveloper(source.getDeveloper());
-        target.setReleaseDate(source.getReleaseDate());
         target.setThumbnailUrl(source.getThumbnailUrl());
         target.setStatus(source.getStatus());
         target.setUserRating(source.getUserRating());
-        target.setNotes(source.getNotes());
+        target.setComment(source.getComment());
         target.setDateAdded(source.getDateAdded());
         target.setDateCompleted(source.getDateCompleted());
         target.setExternalSource(source.getExternalSource());
