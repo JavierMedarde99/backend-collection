@@ -118,24 +118,29 @@ public class RAWGClient implements ExternalGameCatalogClient {
         if (platforms == null || platforms.isEmpty()) {
             return null;
         }
-        boolean hasPc = platforms.stream()
-                .filter(entry -> entry.platform() != null)
-                .anyMatch(entry -> entry.platform().name() != null && entry.platform().name().equalsIgnoreCase("PC"));
-        boolean hasWeb = platforms.stream()
-                .filter(entry -> entry.platform() != null)
-                .anyMatch(entry -> entry.platform().name() != null
-                        && (entry.platform().name().equalsIgnoreCase("Web")
-                        || entry.platform().name().equalsIgnoreCase("Web browser")));
-        if (hasPc && hasWeb) {
-            return GamePlatform.BOTH;
+        return platforms.stream()
+                .filter(entry -> entry.platform() != null && entry.platform().name() != null)
+                .map(entry -> parsePlatform(entry.platform().name()))
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private GamePlatform parsePlatform(String name) {
+        switch (name) {
+            case "PC":
+                return GamePlatform.PC;
+            case "PlayStation 2":
+                return GamePlatform.PS2;
+            case "PlayStation 3":
+                return GamePlatform.PS3;
+            case "Wii U":
+                return GamePlatform.WII_U;
+            case "Nintendo Switch":
+                return GamePlatform.SWITCH;
+            default:
+                return null;
         }
-        if (hasWeb) {
-            return GamePlatform.WEB_BROWSER;
-        }
-        if (hasPc) {
-            return GamePlatform.PC;
-        }
-        return null;
     }
 
     private String firstGenre(List<RawgGenre> genres) {

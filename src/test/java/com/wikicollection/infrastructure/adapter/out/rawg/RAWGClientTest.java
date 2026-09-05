@@ -129,7 +129,7 @@ class RAWGClientTest {
     }
 
     @Test
-    void search_mapsWebBrowserPlatform() throws Exception {
+    void search_mapsWebBrowserPlatformToNull() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -137,11 +137,11 @@ class RAWGClientTest {
 
         List<GameSearchResult> results = client.search("web");
 
-        assertThat(results.get(0).platform()).isEqualTo(GamePlatform.WEB_BROWSER);
+        assertThat(results.get(0).platform()).isNull();
     }
 
     @Test
-    void search_mapsBothPlatformsToBoth() throws Exception {
+    void search_mapsPcWhenPcAndWebPresent() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -149,7 +149,46 @@ class RAWGClientTest {
 
         List<GameSearchResult> results = client.search("cross");
 
-        assertThat(results.get(0).platform()).isEqualTo(GamePlatform.BOTH);
+        assertThat(results.get(0).platform()).isEqualTo(GamePlatform.PC);
+    }
+
+    @Test
+    void search_mapsConsolePlatforms() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(rawgFixtureWithPlatform("PlayStation 2")));
+        assertThat(client.search("ps2").get(0).platform()).isEqualTo(GamePlatform.PS2);
+
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(rawgFixtureWithPlatform("PlayStation 3")));
+        assertThat(client.search("ps3").get(0).platform()).isEqualTo(GamePlatform.PS3);
+
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(rawgFixtureWithPlatform("Wii U")));
+        assertThat(client.search("wiiu").get(0).platform()).isEqualTo(GamePlatform.WII_U);
+
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(rawgFixtureWithPlatform("Nintendo Switch")));
+        assertThat(client.search("switch").get(0).platform()).isEqualTo(GamePlatform.SWITCH);
+    }
+
+    @Test
+    void search_mapsUnknownConsoleToNull() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(rawgFixtureWithPlatform("PlayStation 5")));
+
+        List<GameSearchResult> results = client.search("ps5");
+
+        assertThat(results.get(0).platform()).isNull();
     }
 
     private String rawgFixture() {

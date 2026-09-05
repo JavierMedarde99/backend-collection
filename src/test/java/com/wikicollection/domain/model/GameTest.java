@@ -57,7 +57,7 @@ class GameTest {
     @Test
     void gamePlatform_containsExpectedValues() {
         assertThat(GamePlatform.values()).containsExactly(
-                GamePlatform.PC, GamePlatform.WEB_BROWSER, GamePlatform.BOTH);
+                GamePlatform.PC, GamePlatform.PS2, GamePlatform.PS3, GamePlatform.WII_U, GamePlatform.SWITCH);
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.wikicollection.domain.model;
 
 public enum GamePlatform {
     PC,
-    WEB_BROWSER,
-    BOTH
+    PS2,
+    PS3,
+    WII_U,
+    SWITCH
 }
