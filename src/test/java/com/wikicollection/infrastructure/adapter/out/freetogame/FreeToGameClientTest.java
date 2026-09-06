@@ -109,42 +109,10 @@ class FreeToGameClientTest {
     }
 
     @Test
-    void getAllGames_mapsResponse() throws Exception {
-        server.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .setBody(freeToGameFixture()));
-
-        List<GameSearchResult> results = client.getAllGames();
-
-        assertThat(results).hasSize(1);
-        RecordedRequest request = server.takeRequest();
-        assertThat(request.getPath()).isEqualTo("/games");
-    }
-
-    @Test
-    void getAllGames_returnsEmpty_whenServerError() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(503));
-
-        List<GameSearchResult> results = client.getAllGames();
-
-        assertThat(results).isEmpty();
-    }
-
-    @Test
     void search_returnsEmpty_whenConnectionFails() throws Exception {
         server.shutdown();
 
         List<GameSearchResult> results = client.search("warzone");
-
-        assertThat(results).isEmpty();
-    }
-
-    @Test
-    void getAllGames_returnsEmpty_whenConnectionFails() throws Exception {
-        server.shutdown();
-
-        List<GameSearchResult> results = client.getAllGames();
 
         assertThat(results).isEmpty();
     }

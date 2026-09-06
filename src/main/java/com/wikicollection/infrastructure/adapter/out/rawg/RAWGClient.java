@@ -66,36 +66,6 @@ public class RAWGClient implements ExternalGameCatalogClient {
         }
     }
 
-    @Override
-    public List<GameSearchResult> getAllGames() {
-        try {
-            RawgResponse response = rawgRestClient.get()
-                    .uri(uriBuilder -> {
-                        uriBuilder.path(GAMES_PATH)
-                                .queryParam("page_size", PAGE_SIZE);
-                        if (apiKey != null && !apiKey.isBlank()) {
-                            uriBuilder.queryParam("key", apiKey);
-                        }
-                        return uriBuilder.build();
-                    })
-                    .retrieve()
-                    .body(RawgResponse.class);
-
-            if (response == null || response.results() == null) {
-                return List.of();
-            }
-            return response.results().stream()
-                    .map(this::toResult)
-                    .toList();
-        } catch (RestClientResponseException e) {
-            log.warn("RAWG devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return List.of();
-        } catch (ResourceAccessException e) {
-            log.warn("RAWG no disponible: {}", e.getMessage());
-            return List.of();
-        }
-    }
-
     private GameSearchResult toResult(RawgGame game) {
         String genre = firstGenre(game.genres());
         String publisher = firstPublisher(game.publishers());
