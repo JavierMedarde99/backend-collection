@@ -1,5 +1,6 @@
 package com.wikicollection.application.service;
 
+import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookSearchCriteria;
@@ -32,14 +33,27 @@ public class BookService implements BookUseCase {
 
     @Override
     public Book save(Book book) {
+        checkExternalIdUnique(book.getExternalId(), null);
         return bookRepository.save(book);
     }
 
     @Override
     public Book update(String id, Book updates) {
         Book existing = findById(id);
+        checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
         return bookRepository.save(existing);
+    }
+
+    private void checkExternalIdUnique(String externalId, String currentId) {
+        if (externalId == null || externalId.isBlank()) {
+            return;
+        }
+        bookRepository.findByExternalId(externalId)
+                .filter(existing -> currentId == null || !existing.getId().equals(currentId))
+                .ifPresent(existing -> {
+                    throw new BookConflictException("Ya existe un libro con externalId: " + externalId);
+                });
     }
 
     @Override

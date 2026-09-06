@@ -151,6 +151,20 @@ class BookControllerTest {
     }
 
     @Test
+    void createBook_returns409_whenExternalIdAlreadyExists() throws Exception {
+        Book existing = sampleBook();
+        existing.setExternalId("gb123");
+        when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.of(existing));
+
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Cien años de soledad","author":"Gabriel","externalId":"gb123","state":"TO_READ","type":"NOVEL"}
+                                """))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void createBook_returns400_whenStartOutOfRange() throws Exception {
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)

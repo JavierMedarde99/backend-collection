@@ -69,6 +69,11 @@ public class BookPersistenceAdapter implements BookRepository {
     }
 
     @Override
+    public Optional<Book> findByExternalId(String externalId) {
+        return springDataBookRepository.findByExternalId(externalId).map(mapper::toDomain);
+    }
+
+    @Override
     public Book save(Book book) {
         BookEntity saved = springDataBookRepository.save(mapper.toEntity(book));
         return mapper.toDomain(saved);

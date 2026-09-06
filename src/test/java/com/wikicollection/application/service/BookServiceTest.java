@@ -3,11 +3,13 @@ package com.wikicollection.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookSearchCriteria;
@@ -82,6 +84,74 @@ class BookServiceTest {
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
+    }
+
+    @Test
+    void save_throwsConflict_whenExternalIdAlreadyExists() {
+        Book book = sampleBook();
+        book.setExternalId("gb123");
+        when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.of(sampleBook()));
+
+        assertThatThrownBy(() -> bookService.save(book))
+                .isInstanceOf(BookConflictException.class)
+                .hasMessageContaining("gb123");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void save_saves_whenExternalIdUnique() {
+        Book book = sampleBook();
+        book.setExternalId("gb123");
+        when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.empty());
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.save(book);
+
+        assertThat(result).isSameAs(book);
+        verify(bookRepository).save(book);
+    }
+
+    @Test
+    void save_skipsUniquenessCheck_whenExternalIdNull() {
+        Book book = sampleBook();
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.save(book);
+
+        assertThat(result).isSameAs(book);
+        verify(bookRepository, never()).findByExternalId(any());
+    }
+
+    @Test
+    void update_throwsConflict_whenExternalIdBelongsToAnotherBook() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        Book updates = sampleBook();
+        updates.setExternalId("gb999");
+        Book other = sampleBook();
+        other.setId("b2");
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+        when(bookRepository.findByExternalId("gb999")).thenReturn(Optional.of(other));
+
+        assertThatThrownBy(() -> bookService.update("b1", updates))
+                .isInstanceOf(BookConflictException.class)
+                .hasMessageContaining("gb999");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void update_allowsOwnExternalId_whenOnlyCurrentBookHasIt() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        Book updates = sampleBook();
+        updates.setExternalId("gb999");
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+        when(bookRepository.findByExternalId("gb999")).thenReturn(Optional.of(existing));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.update("b1", updates);
+
+        assertThat(result.getExternalId()).isEqualTo("gb999");
     }
 
     @Test

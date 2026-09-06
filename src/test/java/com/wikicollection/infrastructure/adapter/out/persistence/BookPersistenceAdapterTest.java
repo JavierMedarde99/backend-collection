@@ -64,6 +64,28 @@ class BookPersistenceAdapterTest {
     }
 
     @Test
+    void findByExternalId_mapsEntity_whenExists() {
+        BookEntity entity = BookEntity.builder().id("b1").externalId("gb123").title("Cien años de soledad").build();
+        Book expected = sampleBook();
+        when(springDataBookRepository.findByExternalId("gb123")).thenReturn(Optional.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(expected);
+
+        Optional<Book> result = adapter.findByExternalId("gb123");
+
+        assertThat(result).contains(expected);
+    }
+
+    @Test
+    void findByExternalId_returnsEmpty_whenMissing() {
+        when(springDataBookRepository.findByExternalId("gb999")).thenReturn(Optional.empty());
+
+        Optional<Book> result = adapter.findByExternalId("gb999");
+
+        assertThat(result).isEmpty();
+        verify(springDataBookRepository).findByExternalId("gb999");
+    }
+
+    @Test
     void save_mapsDomainToEntity_andBack() {
         Book book = sampleBook();
         BookEntity entity = BookEntity.builder().id("b1").title("Cien años de soledad").build();

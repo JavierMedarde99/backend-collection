@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import java.time.LocalDateTime;
 
+import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
@@ -27,6 +28,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(GameNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleGameNotFound(GameNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BookConflictException.class)
+    public ResponseEntity<ErrorResponse> handleBookConflict(BookConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
