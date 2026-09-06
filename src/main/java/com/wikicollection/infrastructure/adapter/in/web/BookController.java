@@ -32,9 +32,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/books")
 @Validated
+@Tag(name = "Libros", description = "Gestión del catálogo de libros")
 public class BookController {
 
     private final BookUseCase bookUseCase;
@@ -48,25 +55,41 @@ public class BookController {
     }
 
     @GetMapping
+    @Operation(summary = "Lista libros", description = "Devuelve una página de libros con filtros opcionales por nombre, autor, tipo y estado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de libros encontrada"),
+            @ApiResponse(responseCode = "400", description = "Parámetros de paginación o filtros inválidos")
+    })
     public Page<BookResponse> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "title,asc") String sort,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String author,
-            @RequestParam(required = false) BookType type,
-            @RequestParam(required = false) BookState state) {
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
+            @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name,
+            @Parameter(description = "Filtro por autor") @RequestParam(required = false) String author,
+            @Parameter(description = "Filtro por tipo de libro") @RequestParam(required = false) BookType type,
+            @Parameter(description = "Filtro por estado de lectura") @RequestParam(required = false) BookState state) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state);
         return bookUseCase.search(criteria, pageable).map(mapper::toResponse);
     }
 
     @GetMapping("/{id}")
-    public BookResponse getById(@PathVariable String id) {
+    @Operation(summary = "Obtiene un libro por su id")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Libro encontrado"),
+            @ApiResponse(responseCode = "404", description = "Libro no encontrado")
+    })
+    public BookResponse getById(
+            @Parameter(description = "Identificador del libro") @PathVariable String id) {
         return mapper.toResponse(bookUseCase.findById(id));
     }
 
     @PostMapping
+    @Operation(summary = "Crea un libro")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Libro creado"),
+            @ApiResponse(responseCode = "400", description = "Datos del libro inválidos")
+    })
     public ResponseEntity<BookResponse> create(@Valid @RequestBody BookRequest request, UriComponentsBuilder ucb) {
         var saved = bookUseCase.save(mapper.toDomain(request));
         URI location = ucb.path("/api/books/{id}").buildAndExpand(saved.getId()).toUri();
@@ -74,18 +97,40 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    public BookResponse update(@PathVariable String id, @Valid @RequestBody BookRequest request) {
+    @Operation(summary = "Actualiza un libro existente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Libro actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos del libro inválidos"),
+            @ApiResponse(responseCode = "404", description = "Libro no encontrado")
+    })
+    public BookResponse update(
+            @Parameter(description = "Identificador del libro") @PathVariable String id,
+            @Valid @RequestBody BookRequest request) {
         return mapper.toResponse(bookUseCase.update(id, mapper.toDomain(request)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    @Operation(summary = "Elimina un libro")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Libro eliminado"),
+            @ApiResponse(responseCode = "404", description = "Libro no encontrado")
+    })
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "Identificador del libro") @PathVariable String id) {
         bookUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public List<BookSearchResult> search(@RequestParam("name") String name) {
+    @Operation(summary = "Busca libros en el catálogo externo", description = "Busca en Google Books por título.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Resultados de búsqueda"),
+            @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio"),
+            @ApiResponse(responseCode = "502", description = "El catálogo externo devolvió un error"),
+            @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
+    })
+    public List<BookSearchResult> search(
+            @Parameter(description = "Título a buscar") @RequestParam("name") String name) {
         return bookSearchUseCase.search(name);
     }
 
