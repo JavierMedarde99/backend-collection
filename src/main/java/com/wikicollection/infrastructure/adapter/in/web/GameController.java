@@ -32,9 +32,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/games")
 @Validated
+@Tag(name = "Juegos", description = "Gestión del catálogo de juegos")
 public class GameController {
 
     private final GameUseCase gameUseCase;
@@ -48,24 +55,40 @@ public class GameController {
     }
 
     @GetMapping
+    @Operation(summary = "Lista juegos", description = "Devuelve una página de juegos con filtros opcionales por nombre, plataforma y estado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de juegos encontrada"),
+            @ApiResponse(responseCode = "400", description = "Parámetros de paginación o filtros inválidos")
+    })
     public Page<GameResponse> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "title,asc") String sort,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) GamePlatform platform,
-            @RequestParam(required = false) GameStatus status) {
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
+            @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name,
+            @Parameter(description = "Filtro por plataforma") @RequestParam(required = false) GamePlatform platform,
+            @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status);
         return gameUseCase.search(criteria, pageable).map(mapper::toResponse);
     }
 
     @GetMapping("/{id}")
-    public GameResponse getById(@PathVariable String id) {
+    @Operation(summary = "Obtiene un juego por su id")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Juego encontrado"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado")
+    })
+    public GameResponse getById(
+            @Parameter(description = "Identificador del juego") @PathVariable String id) {
         return mapper.toResponse(gameUseCase.findById(id));
     }
 
     @PostMapping
+    @Operation(summary = "Crea un juego")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Juego creado"),
+            @ApiResponse(responseCode = "400", description = "Datos del juego inválidos")
+    })
     public ResponseEntity<GameResponse> create(@Valid @RequestBody GameRequest request, UriComponentsBuilder ucb) {
         var saved = gameUseCase.save(mapper.toDomain(request));
         URI location = ucb.path("/api/games/{id}").buildAndExpand(saved.getId()).toUri();
@@ -73,22 +96,44 @@ public class GameController {
     }
 
     @PutMapping("/{id}")
-    public GameResponse update(@PathVariable String id, @Valid @RequestBody GameRequest request) {
+    @Operation(summary = "Actualiza un juego existente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Juego actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos del juego inválidos"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado")
+    })
+    public GameResponse update(
+            @Parameter(description = "Identificador del juego") @PathVariable String id,
+            @Valid @RequestBody GameRequest request) {
         return mapper.toResponse(gameUseCase.update(id, mapper.toDomain(request)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    @Operation(summary = "Elimina un juego")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Juego eliminado"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado")
+    })
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "Identificador del juego") @PathVariable String id) {
         gameUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public List<GameSearchResult> search(@RequestParam("name") String name) {
+    @Operation(summary = "Busca juegos en el catálogo externo", description = "Busca en RAWG y FreeToGame por título.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Resultados de búsqueda"),
+            @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio"),
+            @ApiResponse(responseCode = "502", description = "El catálogo externo devolvió un error"),
+            @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
+    })
+    public List<GameSearchResult> search(
+            @Parameter(description = "Título a buscar") @RequestParam("name") String name) {
         return gameSearchUseCase.search(name);
     }
 
-    private Sort buildSort(String sort) {
+private Sort buildSort(String sort) {
         String field = "title";
         Sort.Direction direction = Sort.Direction.ASC;
         if (sort != null && !sort.isBlank()) {
