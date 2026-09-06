@@ -104,31 +104,6 @@ class RAWGClientTest {
     }
 
     @Test
-    void getAllGames_mapsRawgResponse() throws Exception {
-        server.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .setBody(rawgFixture()));
-
-        List<GameSearchResult> results = client.getAllGames();
-
-        assertThat(results).hasSize(1);
-        RecordedRequest request = server.takeRequest();
-        assertThat(request.getPath()).startsWith("/games?");
-        assertThat(request.getPath()).doesNotContain("search=");
-        assertThat(request.getPath()).contains("key=my-secret-key");
-    }
-
-    @Test
-    void getAllGames_returnsEmpty_whenServerError() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(503));
-
-        List<GameSearchResult> results = client.getAllGames();
-
-        assertThat(results).isEmpty();
-    }
-
-    @Test
     void search_mapsWebBrowserPlatformToNull() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)

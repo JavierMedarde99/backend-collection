@@ -50,24 +50,6 @@ public class FreeToGameClient implements ExternalGameCatalogClient {
         }
     }
 
-    @Override
-    public List<GameSearchResult> getAllGames() {
-        try {
-            FreeToGameResponse[] response = freeToGameClient.get()
-                    .uri(uriBuilder -> uriBuilder.path(GAMES_PATH).build())
-                    .retrieve()
-                    .body(FreeToGameResponse[].class);
-
-            return toResults(response);
-        } catch (RestClientResponseException e) {
-            log.warn("FreeToGame devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return List.of();
-        } catch (ResourceAccessException e) {
-            log.warn("FreeToGame no disponible: {}", e.getMessage());
-            return List.of();
-        }
-    }
-
     private List<GameSearchResult> toResults(FreeToGameResponse[] response) {
         if (response == null) {
             return List.of();
