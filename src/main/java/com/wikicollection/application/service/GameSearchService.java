@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class GameSearchService implements GameSearchUseCase {
 
+    private static final int MAX_RESULTS = 5;
+
     private final ExternalGameCatalogClient rawgClient;
     private final ExternalGameCatalogClient freeToGameClient;
 
@@ -29,8 +31,8 @@ public class GameSearchService implements GameSearchUseCase {
         }
         List<GameSearchResult> results = rawgClient.search(query);
         if (results.isEmpty()) {
-            return freeToGameClient.search(query);
+            results = freeToGameClient.search(query);
         }
-        return results;
+        return results.size() > MAX_RESULTS ? results.subList(0, MAX_RESULTS) : results;
     }
 }

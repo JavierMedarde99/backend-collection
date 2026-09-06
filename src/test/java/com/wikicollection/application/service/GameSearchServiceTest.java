@@ -80,6 +80,19 @@ class GameSearchServiceTest {
     }
 
     @Test
+    void search_limitsResultsToFive() {
+        List<GameSearchResult> rawg = java.util.stream.IntStream.range(0, 8)
+                .mapToObj(i -> sampleResult("Juego " + i))
+                .toList();
+        when(rawgClient.search("witcher")).thenReturn(rawg);
+
+        List<GameSearchResult> results = gameSearchService.search("witcher");
+
+        assertThat(results).hasSize(5);
+        assertThat(results).isEqualTo(rawg.subList(0, 5));
+    }
+
+    @Test
     void search_rejectsBlankQuery() {
         assertThatThrownBy(() -> gameSearchService.search("   "))
                 .isInstanceOf(IllegalArgumentException.class);
