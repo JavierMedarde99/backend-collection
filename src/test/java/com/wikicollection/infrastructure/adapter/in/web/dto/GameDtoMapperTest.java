@@ -20,7 +20,7 @@ class GameDtoMapperTest {
                 "external-1", "The Witcher 3", GamePlatform.PC,
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
-                "RAWG", "570");
+                "RAWG", "570", true);
 
         Game game = mapper.toDomain(request);
 

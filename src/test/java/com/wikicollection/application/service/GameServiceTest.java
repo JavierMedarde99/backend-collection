@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
@@ -14,6 +15,7 @@ import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.out.GameRepository;
+import com.wikicollection.domain.port.out.SteamCatalogueClient;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class GameServiceTest {
 
     @Mock
     private GameRepository gameRepository;
+
+    @Mock
+    private SteamCatalogueClient steamCatalogueClient;
 
     @InjectMocks
     private GameService gameService;
@@ -79,17 +84,65 @@ class GameServiceTest {
         Game game = sampleGame();
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game);
+        Game result = gameService.save(game, false);
 
         assertThat(result).isSameAs(game);
         verify(gameRepository).save(game);
     }
 
     @Test
+    void save_doesNotCallSteam_whenObtainPlatinumFalse() {
+        Game game = sampleGame();
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        gameService.save(game, false);
+
+        verify(gameRepository).save(game);
+        verifyNoInteractions(steamCatalogueClient);
+        assertThat(game.getSteamAppId()).isNull();
+    }
+
+    @Test
+    void save_resolvesSteamAppId_whenObtainPlatinumTrueAndNoAppId() {
+        Game game = sampleGame();
+        when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.save(game, true);
+
+        assertThat(result.getSteamAppId()).isEqualTo("570");
+        verify(steamCatalogueClient).searchGameByName("The Witcher 3");
+    }
+
+    @Test
+    void save_doesNotOverrideAppId_whenObtainPlatinumTrueAndBodyHasAppId() {
+        Game game = sampleGame();
+        game.setSteamAppId("999");
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.save(game, true);
+
+        assertThat(result.getSteamAppId()).isEqualTo("999");
+        verifyNoInteractions(steamCatalogueClient);
+    }
+
+    @Test
+    void save_keepsAppIdNull_whenSteamCannotFindGame() {
+        Game game = sampleGame();
+        when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(null);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.save(game, true);
+
+        assertThat(result.getSteamAppId()).isNull();
+        verify(steamCatalogueClient).searchGameByName("The Witcher 3");
+    }
+
+    @Test
     void update_throwsNotFound_whenMissing() {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> gameService.update("nope", sampleGame()))
+        assertThatThrownBy(() -> gameService.update("nope", sampleGame(), false))
                 .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("nope");
     }
@@ -110,7 +163,7 @@ class GameServiceTest {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.update("g1", updates);
+        Game result = gameService.update("g1", updates, false);
 
         assertThat(result.getId()).isEqualTo("g1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
@@ -123,6 +176,54 @@ class GameServiceTest {
         verify(gameRepository).save(captor.capture());
         assertThat(captor.getValue().getId()).isEqualTo("g1");
         assertThat(captor.getValue().getTitle()).isEqualTo("Nuevo título");
+    }
+
+    @Test
+    void update_resolvesSteamAppId_whenObtainPlatinumTrueAndNoAppId() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+        when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game updates = sampleGame();
+        updates.setTitle("The Witcher 3");
+
+        Game result = gameService.update("g1", updates, true);
+
+        assertThat(result.getSteamAppId()).isEqualTo("570");
+        verify(steamCatalogueClient).searchGameByName("The Witcher 3");
+    }
+
+    @Test
+    void update_doesNotCallSteam_whenObtainPlatinumFalse() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game updates = sampleGame();
+
+        gameService.update("g1", updates, false);
+
+        verifyNoInteractions(steamCatalogueClient);
+    }
+
+    @Test
+    void update_doesNotOverrideExistingAppId_whenBodyBringsAppId() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        existing.setSteamAppId("570");
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game updates = sampleGame();
+        updates.setSteamAppId("999");
+
+        Game result = gameService.update("g1", updates, true);
+
+        assertThat(result.getSteamAppId()).isEqualTo("999");
+        verifyNoInteractions(steamCatalogueClient);
     }
 
     @Test
