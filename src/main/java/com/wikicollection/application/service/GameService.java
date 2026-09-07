@@ -59,5 +59,6 @@ public class GameService implements GameUseCase {
         target.setDateAdded(source.getDateAdded());
         target.setDateCompleted(source.getDateCompleted());
         target.setExternalSource(source.getExternalSource());
+        target.setSteamAppId(source.getSteamAppId());
     }
 }

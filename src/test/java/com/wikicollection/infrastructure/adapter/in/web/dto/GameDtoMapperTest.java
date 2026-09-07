@@ -20,7 +20,7 @@ class GameDtoMapperTest {
                 "external-1", "The Witcher 3", GamePlatform.PC,
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
-                "RAWG");
+                "RAWG", "570");
 
         Game game = mapper.toDomain(request);
 
@@ -34,6 +34,7 @@ class GameDtoMapperTest {
         assertThat(game.getDateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
         assertThat(game.getDateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(game.getExternalSource()).isEqualTo("RAWG");
+        assertThat(game.getSteamAppId()).isEqualTo("570");
     }
 
     @Test
@@ -50,6 +51,7 @@ class GameDtoMapperTest {
                 .dateAdded(LocalDate.of(2024, 1, 1))
                 .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
+                .steamAppId("570")
                 .build();
 
         GameResponse response = mapper.toResponse(game);
@@ -65,6 +67,7 @@ class GameDtoMapperTest {
         assertThat(response.dateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
         assertThat(response.dateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(response.externalSource()).isEqualTo("RAWG");
+        assertThat(response.steamAppId()).isEqualTo("570");
     }
 
     @Test

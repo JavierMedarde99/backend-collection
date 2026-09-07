@@ -142,6 +142,7 @@ class GamePersistenceAdapterTest {
                 .dateAdded(LocalDate.of(2024, 1, 1))
                 .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
+                .steamAppId("570")
                 .build();
 
         Game domain = new GameEntityMapper().toDomain(new GameEntityMapper().toEntity(game));

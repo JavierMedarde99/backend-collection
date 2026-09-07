@@ -21,5 +21,6 @@ public record GameRequest(
         String comment,
         LocalDate dateAdded,
         LocalDate dateCompleted,
-        String externalSource) {
+        String externalSource,
+        String steamAppId) {
 }

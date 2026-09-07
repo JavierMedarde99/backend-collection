@@ -16,5 +16,6 @@ public record GameResponse(
         String comment,
         LocalDate dateAdded,
         LocalDate dateCompleted,
-        String externalSource) {
+        String externalSource,
+        String steamAppId) {
 }

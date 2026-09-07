@@ -28,4 +28,5 @@ public class Game {
     private LocalDate dateAdded;
     private LocalDate dateCompleted;
     private String externalSource;
+    private String steamAppId;
 }

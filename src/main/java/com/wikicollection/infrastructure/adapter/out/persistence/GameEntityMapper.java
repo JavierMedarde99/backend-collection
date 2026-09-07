@@ -23,6 +23,7 @@ public class GameEntityMapper {
                 .dateAdded(game.getDateAdded())
                 .dateCompleted(game.getDateCompleted())
                 .externalSource(game.getExternalSource())
+                .steamAppId(game.getSteamAppId())
                 .build();
     }
 
@@ -42,6 +43,7 @@ public class GameEntityMapper {
                 .dateAdded(entity.getDateAdded())
                 .dateCompleted(entity.getDateCompleted())
                 .externalSource(entity.getExternalSource())
+                .steamAppId(entity.getSteamAppId())
                 .build();
     }
 }
