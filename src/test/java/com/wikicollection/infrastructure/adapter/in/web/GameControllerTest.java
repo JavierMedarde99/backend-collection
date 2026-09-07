@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
@@ -277,14 +278,18 @@ class GameControllerTest {
 
     @Test
     void getAchievements_returnsAchievements_whenLinkedToSteam() throws Exception {
-        when(gameAchievementsUseCase.getAchievements("g1", "7656")).thenReturn(List.of(
-                new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", "http://icon")));
+        when(gameAchievementsUseCase.getAchievements("g1", "7656")).thenReturn(new AchievementsSummary(
+                List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", "http://icon")),
+                1, 1, 100.0));
 
         mockMvc.perform(get("/api/games/g1/achievements").param("steamId", "7656"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("El nacimiento"))
-                .andExpect(jsonPath("$[0].achieved").value(true))
-                .andExpect(jsonPath("$[0].iconUrl").value("http://icon"));
+                .andExpect(jsonPath("$.achievements[0].name").value("El nacimiento"))
+                .andExpect(jsonPath("$.achievements[0].achieved").value(true))
+                .andExpect(jsonPath("$.achievements[0].iconUrl").value("http://icon"))
+                .andExpect(jsonPath("$.totalAchievements").value(1))
+                .andExpect(jsonPath("$.totalAchieved").value(1))
+                .andExpect(jsonPath("$.percentage").value(100.0));
     }
 
     @Test

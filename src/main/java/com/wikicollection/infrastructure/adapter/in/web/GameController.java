@@ -11,6 +11,7 @@ import com.wikicollection.domain.port.in.GameAchievementsUseCase;
 import com.wikicollection.domain.port.in.GameSearchUseCase;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.AchievementsResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameRequest;
@@ -138,12 +139,14 @@ public class GameController {
             @ApiResponse(responseCode = "400", description = "Falta steamId o el juego no está vinculado a Steam"),
             @ApiResponse(responseCode = "404", description = "Juego no encontrado")
     })
-    public List<GameAchievementResponse> getAchievements(
+    public AchievementsResponse getAchievements(
             @Parameter(description = "Identificador del juego") @PathVariable String id,
             @Parameter(description = "SteamID del jugador") @RequestParam("steamId") String steamId) {
-        return gameAchievementsUseCase.getAchievements(id, steamId).stream()
+        var summary = gameAchievementsUseCase.getAchievements(id, steamId);
+        List<GameAchievementResponse> mapped = summary.achievements().stream()
                 .map(achievementMapper::toResponse)
                 .toList();
+        return new AchievementsResponse(mapped, summary.totalAchievements(), summary.totalAchieved(), summary.percentage());
     }
 
     @GetMapping("/search")
