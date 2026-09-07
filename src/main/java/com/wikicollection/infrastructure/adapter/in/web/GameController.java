@@ -99,7 +99,8 @@ public class GameController {
             @ApiResponse(responseCode = "400", description = "Datos del juego inválidos")
     })
     public ResponseEntity<GameResponse> create(@Valid @RequestBody GameRequest request, UriComponentsBuilder ucb) {
-        var saved = gameUseCase.save(mapper.toDomain(request));
+        boolean obtainPlatinum = Boolean.TRUE.equals(request.obtainPlatinum());
+        var saved = gameUseCase.save(mapper.toDomain(request), obtainPlatinum);
         URI location = ucb.path("/api/games/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -114,7 +115,8 @@ public class GameController {
     public GameResponse update(
             @Parameter(description = "Identificador del juego") @PathVariable String id,
             @Valid @RequestBody GameRequest request) {
-        return mapper.toResponse(gameUseCase.update(id, mapper.toDomain(request)));
+        boolean obtainPlatinum = Boolean.TRUE.equals(request.obtainPlatinum());
+        return mapper.toResponse(gameUseCase.update(id, mapper.toDomain(request), obtainPlatinum));
     }
 
     @DeleteMapping("/{id}")

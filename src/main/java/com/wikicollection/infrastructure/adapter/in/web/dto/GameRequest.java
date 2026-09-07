@@ -22,5 +22,6 @@ public record GameRequest(
         LocalDate dateAdded,
         LocalDate dateCompleted,
         String externalSource,
-        String steamAppId) {
+        String steamAppId,
+        Boolean obtainPlatinum) {
 }

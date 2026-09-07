@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,6 +25,7 @@ import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.model.SteamAchievement;
 import com.wikicollection.domain.port.in.GameAchievementsUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
+import com.wikicollection.domain.port.out.SteamCatalogueClient;
 import com.wikicollection.infrastructure.adapter.out.freetogame.FreeToGameClient;
 import com.wikicollection.infrastructure.adapter.out.rawg.RAWGClient;
 
@@ -57,6 +59,9 @@ class GameControllerTest {
 
     @MockitoBean
     private GameAchievementsUseCase gameAchievementsUseCase;
+
+    @MockitoBean
+    private SteamCatalogueClient steamCatalogueClient;
 
     private Game sampleGame() {
         return Game.builder()
@@ -154,6 +159,53 @@ class GameControllerTest {
     }
 
     @Test
+    void createGame_resolvesSteamAppId_whenObtainPlatinumTrue() throws Exception {
+        when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/games")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"PLAYING","obtainPlatinum":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.steamAppId").value("570"));
+
+        ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
+        verify(gameRepository).save(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getSteamAppId()).isEqualTo("570");
+    }
+
+    @Test
+    void createGame_usesBodyAppIdWithoutCallingSteam() throws Exception {
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/games")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"PLAYING","steamAppId":"999"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.steamAppId").value("999"));
+
+        verifyNoInteractions(steamCatalogueClient);
+    }
+
+    @Test
+    void createGame_doesNotCallSteam_whenObtainPlatinumFalse() throws Exception {
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/games")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"PLAYING"}
+                                """))
+                .andExpect(status().isCreated());
+
+        verifyNoInteractions(steamCatalogueClient);
+    }
+
+    @Test
     void updateGame_returnsUpdatedGame() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -167,6 +219,23 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.title").value("Nuevo título"))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.userRating").value(5));
+    }
+
+    @Test
+    void updateGame_resolvesSteamAppId_whenObtainPlatinumTrue() throws Exception {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+        when(steamCatalogueClient.searchGameByName("Nuevo título")).thenReturn(570L);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/api/games/g1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Nuevo título","platform":"PC","status":"PLAYING","obtainPlatinum":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.steamAppId").value("570"));
     }
 
     @Test
