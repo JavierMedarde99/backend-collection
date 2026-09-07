@@ -27,4 +27,18 @@ public class RestClientConfig {
                 .baseUrl("https://www.freetogame.com/api")
                 .build();
     }
+
+    @Bean
+    public RestClient steamRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://api.steampowered.com")
+                .build();
+    }
+
+    @Bean
+    public RestClient steamStoreRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://store.steampowered.com/api")
+                .build();
+    }
 }
