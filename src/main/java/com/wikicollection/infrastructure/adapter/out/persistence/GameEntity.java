@@ -46,4 +46,6 @@ public class GameEntity {
     private LocalDate dateCompleted;
 
     private String externalSource;
+
+    private String steamAppId;
 }

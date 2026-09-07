@@ -22,6 +22,7 @@ public class GameDtoMapper {
                 .dateAdded(request.dateAdded())
                 .dateCompleted(request.dateCompleted())
                 .externalSource(request.externalSource())
+                .steamAppId(request.steamAppId())
                 .build();
     }
 
@@ -40,6 +41,7 @@ public class GameDtoMapper {
                 game.getComment(),
                 game.getDateAdded(),
                 game.getDateCompleted(),
-                game.getExternalSource());
+                game.getExternalSource(),
+                game.getSteamAppId());
     }
 }

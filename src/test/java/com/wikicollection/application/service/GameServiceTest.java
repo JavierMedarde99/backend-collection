@@ -105,6 +105,7 @@ class GameServiceTest {
         updates.setComment("Nuevo comentario");
         updates.setStatus(GameStatus.COMPLETED);
         updates.setUserRating(5);
+        updates.setSteamAppId("570");
 
         when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -116,6 +117,7 @@ class GameServiceTest {
         assertThat(result.getComment()).isEqualTo("Nuevo comentario");
         assertThat(result.getStatus()).isEqualTo(GameStatus.COMPLETED);
         assertThat(result.getUserRating()).isEqualTo(5);
+        assertThat(result.getSteamAppId()).isEqualTo("570");
 
         ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
         verify(gameRepository).save(captor.capture());

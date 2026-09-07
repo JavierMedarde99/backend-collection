@@ -22,6 +22,7 @@ class GameTest {
                 .dateAdded(LocalDate.of(2024, 1, 1))
                 .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
+                .steamAppId("570")
                 .build();
 
         assertThat(game.getId()).isEqualTo("g1");
@@ -35,6 +36,7 @@ class GameTest {
         assertThat(game.getDateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
         assertThat(game.getDateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(game.getExternalSource()).isEqualTo("RAWG");
+        assertThat(game.getSteamAppId()).isEqualTo("570");
     }
 
     @Test
