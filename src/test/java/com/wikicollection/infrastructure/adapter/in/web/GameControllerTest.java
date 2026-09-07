@@ -15,11 +15,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.model.SteamAchievement;
+import com.wikicollection.domain.port.in.GameAchievementsUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.infrastructure.adapter.out.freetogame.FreeToGameClient;
 import com.wikicollection.infrastructure.adapter.out.rawg.RAWGClient;
@@ -51,6 +54,9 @@ class GameControllerTest {
 
     @MockitoBean
     private FreeToGameClient freeToGameClient;
+
+    @MockitoBean
+    private GameAchievementsUseCase gameAchievementsUseCase;
 
     private Game sampleGame() {
         return Game.builder()
@@ -197,6 +203,42 @@ class GameControllerTest {
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
         mockMvc.perform(get("/api/games/search").param("name", " "))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAchievements_returnsAchievements_whenLinkedToSteam() throws Exception {
+        when(gameAchievementsUseCase.getAchievements("g1", "7656")).thenReturn(List.of(
+                new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", "http://icon")));
+
+        mockMvc.perform(get("/api/games/g1/achievements").param("steamId", "7656"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("El nacimiento"))
+                .andExpect(jsonPath("$[0].achieved").value(true))
+                .andExpect(jsonPath("$[0].iconUrl").value("http://icon"));
+    }
+
+    @Test
+    void getAchievements_returns404_whenGameNotFound() throws Exception {
+        when(gameAchievementsUseCase.getAchievements("nope", "7656"))
+                .thenThrow(new GameNotFoundException("Juego no encontrado con id: nope"));
+
+        mockMvc.perform(get("/api/games/nope/achievements").param("steamId", "7656"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAchievements_returns400_whenGameNotLinkedToSteam() throws Exception {
+        when(gameAchievementsUseCase.getAchievements("g1", "7656"))
+                .thenThrow(new IllegalArgumentException("El juego no está vinculado a Steam"));
+
+        mockMvc.perform(get("/api/games/g1/achievements").param("steamId", "7656"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAchievements_returns400_whenSteamIdMissing() throws Exception {
+        mockMvc.perform(get("/api/games/g1/achievements"))
                 .andExpect(status().isBadRequest());
     }
 

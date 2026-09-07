@@ -7,8 +7,11 @@ import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.port.in.GameAchievementsUseCase;
 import com.wikicollection.domain.port.in.GameSearchUseCase;
 import com.wikicollection.domain.port.in.GameUseCase;
+import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameResponse;
@@ -46,12 +49,18 @@ public class GameController {
 
     private final GameUseCase gameUseCase;
     private final GameSearchUseCase gameSearchUseCase;
+    private final GameAchievementsUseCase gameAchievementsUseCase;
     private final GameDtoMapper mapper;
+    private final GameAchievementMapper achievementMapper;
 
-    public GameController(GameUseCase gameUseCase, GameSearchUseCase gameSearchUseCase, GameDtoMapper mapper) {
+    public GameController(GameUseCase gameUseCase, GameSearchUseCase gameSearchUseCase,
+            GameAchievementsUseCase gameAchievementsUseCase, GameDtoMapper mapper,
+            GameAchievementMapper achievementMapper) {
         this.gameUseCase = gameUseCase;
         this.gameSearchUseCase = gameSearchUseCase;
+        this.gameAchievementsUseCase = gameAchievementsUseCase;
         this.mapper = mapper;
+        this.achievementMapper = achievementMapper;
     }
 
     @GetMapping
@@ -118,6 +127,21 @@ public class GameController {
             @Parameter(description = "Identificador del juego") @PathVariable String id) {
         gameUseCase.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/achievements")
+    @Operation(summary = "Obtiene los logros de un juego de Steam", description = "Combina el esquema de logros del juego con el progreso del jugador indicado por steamaId.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Logros obtenidos"),
+            @ApiResponse(responseCode = "400", description = "Falta steamId o el juego no está vinculado a Steam"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado")
+    })
+    public List<GameAchievementResponse> getAchievements(
+            @Parameter(description = "Identificador del juego") @PathVariable String id,
+            @Parameter(description = "SteamID del jugador") @RequestParam("steamId") String steamId) {
+        return gameAchievementsUseCase.getAchievements(id, steamId).stream()
+                .map(achievementMapper::toResponse)
+                .toList();
     }
 
     @GetMapping("/search")
