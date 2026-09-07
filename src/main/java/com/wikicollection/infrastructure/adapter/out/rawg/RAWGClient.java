@@ -23,7 +23,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class RAWGClient implements ExternalGameCatalogClient {
 
     private static final String GAMES_PATH = "/games";
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 5;
 
     private final RestClient rawgRestClient;
     private final String apiKey;
