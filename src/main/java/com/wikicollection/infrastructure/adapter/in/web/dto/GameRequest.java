@@ -1,6 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
@@ -19,7 +19,7 @@ public record GameRequest(
         @Min(value = 1, message = "La puntuación mínima es 1")
         @Max(value = 5, message = "La puntuación máxima es 5") Integer userRating,
         String comment,
-        LocalDateTime dateAdded,
-        LocalDateTime dateCompleted,
+        LocalDate dateAdded,
+        LocalDate dateCompleted,
         String externalSource) {
 }

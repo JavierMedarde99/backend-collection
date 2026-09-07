@@ -1,6 +1,6 @@
 package com.wikicollection.domain.model;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +25,7 @@ public class Game {
     private GameStatus status;
     private Integer userRating;
     private String comment;
-    private LocalDateTime dateAdded;
-    private LocalDateTime dateCompleted;
+    private LocalDate dateAdded;
+    private LocalDate dateCompleted;
     private String externalSource;
 }

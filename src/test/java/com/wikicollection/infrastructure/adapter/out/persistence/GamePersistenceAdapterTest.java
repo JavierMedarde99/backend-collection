@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -138,8 +139,8 @@ class GamePersistenceAdapterTest {
                 .status(GameStatus.COMPLETED)
                 .userRating(5)
                 .comment("Obra maestra")
-                .dateAdded(java.time.LocalDateTime.of(2024, 1, 1, 10, 0))
-                .dateCompleted(java.time.LocalDateTime.of(2024, 2, 1, 18, 0))
+                .dateAdded(LocalDate.of(2024, 1, 1))
+                .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
                 .build();
 

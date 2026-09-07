@@ -20,8 +20,8 @@ class GameTest {
                 .status(GameStatus.PLAYING)
                 .userRating(5)
                 .comment("Gran historia")
-                .dateAdded(LocalDateTime.of(2024, 1, 1, 10, 0))
-                .dateCompleted(LocalDateTime.of(2024, 2, 1, 20, 0))
+                .dateAdded(LocalDate.of(2024, 1, 1))
+                .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
                 .build();
 

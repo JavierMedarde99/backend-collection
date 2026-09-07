@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.wikicollection.domain.model.Game;
@@ -19,7 +20,7 @@ class GameDtoMapperTest {
         GameRequest request = new GameRequest(
                 "external-1", "The Witcher 3", GamePlatform.PC,
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
-                LocalDateTime.of(2024, 1, 1, 10, 0), LocalDateTime.of(2024, 2, 1, 10, 0),
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
                 "RAWG");
 
         Game game = mapper.toDomain(request);
@@ -47,8 +48,8 @@ class GameDtoMapperTest {
                 .status(GameStatus.COMPLETED)
                 .userRating(5)
                 .comment("Mi comentario")
-                .dateAdded(LocalDateTime.of(2024, 1, 1, 10, 0))
-                .dateCompleted(LocalDateTime.of(2024, 2, 1, 10, 0))
+                .dateAdded(LocalDate.of(2024, 1, 1))
+                .dateCompleted(LocalDate.of(2024, 2, 1))
                 .externalSource("RAWG")
                 .build();
 

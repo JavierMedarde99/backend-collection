@@ -1,6 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
@@ -14,7 +14,7 @@ public record GameResponse(
         GameStatus status,
         Integer userRating,
         String comment,
-        LocalDateTime dateAdded,
-        LocalDateTime dateCompleted,
+        LocalDate dateAdded,
+        LocalDate dateCompleted,
         String externalSource) {
 }

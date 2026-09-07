@@ -1,6 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
@@ -41,9 +41,9 @@ public class GameEntity {
 
     private String comment;
 
-    private LocalDateTime dateAdded;
+    private LocalDate dateAdded;
 
-    private LocalDateTime dateCompleted;
+    private LocalDate dateCompleted;
 
     private String externalSource;
 }
