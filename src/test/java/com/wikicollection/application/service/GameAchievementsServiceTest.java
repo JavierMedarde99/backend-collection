@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.SteamAchievement;
 import com.wikicollection.domain.port.out.GameRepository;
@@ -48,15 +49,18 @@ class GameAchievementsServiceTest {
         when(steamCatalogueClient.getPlayerAchievements(70L, "7656"))
                 .thenReturn(List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", null)));
 
-        List<SteamAchievement> result = gameAchievementsService.getAchievements("g1", "7656");
+        AchievementsSummary result = gameAchievementsService.getAchievements("g1", "7656");
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).achieved()).isTrue();
-        assertThat(result.get(0).name()).isEqualTo("El nacimiento");
-        assertThat(result.get(0).description()).isEqualTo("Comienza la aventura.");
-        assertThat(result.get(0).iconUrl()).isEqualTo("http://icon");
-        assertThat(result.get(1).achieved()).isFalse();
-        assertThat(result.get(1).name()).isEqualTo("El final");
+        assertThat(result.achievements()).hasSize(2);
+        assertThat(result.totalAchievements()).isEqualTo(2);
+        assertThat(result.totalAchieved()).isEqualTo(1);
+        assertThat(result.percentage()).isEqualTo(50.0);
+        assertThat(result.achievements().get(0).achieved()).isTrue();
+        assertThat(result.achievements().get(0).name()).isEqualTo("El nacimiento");
+        assertThat(result.achievements().get(0).description()).isEqualTo("Comienza la aventura.");
+        assertThat(result.achievements().get(0).iconUrl()).isEqualTo("http://icon");
+        assertThat(result.achievements().get(1).achieved()).isFalse();
+        assertThat(result.achievements().get(1).name()).isEqualTo("El final");
     }
 
     @Test
@@ -66,19 +70,27 @@ class GameAchievementsServiceTest {
         when(steamCatalogueClient.getPlayerAchievements(70L, "7656"))
                 .thenReturn(List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", null)));
 
-        List<SteamAchievement> result = gameAchievementsService.getAchievements("g1", "7656");
+        AchievementsSummary result = gameAchievementsService.getAchievements("g1", "7656");
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).achieved()).isTrue();
+        assertThat(result.achievements()).hasSize(1);
+        assertThat(result.totalAchievements()).isEqualTo(1);
+        assertThat(result.totalAchieved()).isEqualTo(1);
+        assertThat(result.percentage()).isEqualTo(100.0);
+        assertThat(result.achievements().get(0).achieved()).isTrue();
     }
 
     @Test
-    void getAchievements_returnsEmptyList_whenNothingFound() {
+    void getAchievements_returnsEmptySummary_whenNothingFound() {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGameLinkedToSteam()));
         when(steamCatalogueClient.getGameSchema(70L)).thenReturn(List.of());
         when(steamCatalogueClient.getPlayerAchievements(70L, "7656")).thenReturn(List.of());
 
-        assertThat(gameAchievementsService.getAchievements("g1", "7656")).isEmpty();
+        AchievementsSummary result = gameAchievementsService.getAchievements("g1", "7656");
+
+        assertThat(result.achievements()).isEmpty();
+        assertThat(result.totalAchievements()).isZero();
+        assertThat(result.totalAchieved()).isZero();
+        assertThat(result.percentage()).isZero();
     }
 
     @Test

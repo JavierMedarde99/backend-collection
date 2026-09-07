@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.SteamAchievement;
 import com.wikicollection.domain.port.in.GameAchievementsUseCase;
@@ -26,7 +27,7 @@ public class GameAchievementsService implements GameAchievementsUseCase {
     }
 
     @Override
-    public List<SteamAchievement> getAchievements(String gameId, String steamId) {
+    public AchievementsSummary getAchievements(String gameId, String steamId) {
         if (steamId == null || steamId.isBlank()) {
             throw new IllegalArgumentException("El parámetro steamId es obligatorio");
         }
@@ -41,25 +42,30 @@ public class GameAchievementsService implements GameAchievementsUseCase {
 
         Long appId = Long.valueOf(steamAppId);
         List<SteamAchievement> schema = steamCatalogueClient.getGameSchema(appId);
+        List<SteamAchievement> combined;
         if (schema.isEmpty()) {
-            return steamCatalogueClient.getPlayerAchievements(appId, steamId);
+            combined = steamCatalogueClient.getPlayerAchievements(appId, steamId);
+        } else {
+            Map<String, Boolean> achievedByApiname = new HashMap<>();
+            for (SteamAchievement playerAchievement : steamCatalogueClient.getPlayerAchievements(appId, steamId)) {
+                achievedByApiname.put(playerAchievement.apiname(), playerAchievement.achieved());
+            }
+
+            combined = new ArrayList<>();
+            for (SteamAchievement schemaAchievement : schema) {
+                boolean achieved = achievedByApiname.getOrDefault(schemaAchievement.apiname(), false);
+                combined.add(new SteamAchievement(
+                        schemaAchievement.apiname(),
+                        achieved,
+                        schemaAchievement.name(),
+                        schemaAchievement.description(),
+                        schemaAchievement.iconUrl()));
+            }
         }
 
-        Map<String, Boolean> achievedByApiname = new HashMap<>();
-        for (SteamAchievement playerAchievement : steamCatalogueClient.getPlayerAchievements(appId, steamId)) {
-            achievedByApiname.put(playerAchievement.apiname(), playerAchievement.achieved());
-        }
-
-        List<SteamAchievement> combined = new ArrayList<>();
-        for (SteamAchievement schemaAchievement : schema) {
-            boolean achieved = achievedByApiname.getOrDefault(schemaAchievement.apiname(), false);
-            combined.add(new SteamAchievement(
-                    schemaAchievement.apiname(),
-                    achieved,
-                    schemaAchievement.name(),
-                    schemaAchievement.description(),
-                    schemaAchievement.iconUrl()));
-        }
-        return combined;
+        int totalAchievements = combined.size();
+        int totalAchieved = (int) combined.stream().filter(SteamAchievement::achieved).count();
+        double percentage = totalAchievements == 0 ? 0.0 : Math.round(totalAchieved * 1000.0 / totalAchievements) / 10.0;
+        return new AchievementsSummary(combined, totalAchievements, totalAchieved, percentage);
     }
 }
