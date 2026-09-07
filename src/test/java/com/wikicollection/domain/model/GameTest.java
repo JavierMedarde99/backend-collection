@@ -3,7 +3,6 @@ package com.wikicollection.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +32,8 @@ class GameTest {
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
         assertThat(game.getUserRating()).isEqualTo(5);
         assertThat(game.getComment()).isEqualTo("Gran historia");
-        assertThat(game.getDateAdded()).isEqualTo(LocalDateTime.of(2024, 1, 1, 10, 0));
-        assertThat(game.getDateCompleted()).isEqualTo(LocalDateTime.of(2024, 2, 1, 20, 0));
+        assertThat(game.getDateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
+        assertThat(game.getDateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(game.getExternalSource()).isEqualTo("RAWG");
     }
 

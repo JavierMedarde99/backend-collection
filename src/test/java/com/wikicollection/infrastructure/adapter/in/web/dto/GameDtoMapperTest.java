@@ -3,7 +3,6 @@ package com.wikicollection.infrastructure.adapter.in.web.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
@@ -32,8 +31,8 @@ class GameDtoMapperTest {
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
         assertThat(game.getUserRating()).isEqualTo(5);
         assertThat(game.getComment()).isEqualTo("Mi comentario");
-        assertThat(game.getDateAdded()).isEqualTo(LocalDateTime.of(2024, 1, 1, 10, 0));
-        assertThat(game.getDateCompleted()).isEqualTo(LocalDateTime.of(2024, 2, 1, 10, 0));
+        assertThat(game.getDateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
+        assertThat(game.getDateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(game.getExternalSource()).isEqualTo("RAWG");
     }
 
@@ -63,8 +62,8 @@ class GameDtoMapperTest {
         assertThat(response.status()).isEqualTo(GameStatus.COMPLETED);
         assertThat(response.userRating()).isEqualTo(5);
         assertThat(response.comment()).isEqualTo("Mi comentario");
-        assertThat(response.dateAdded()).isEqualTo(LocalDateTime.of(2024, 1, 1, 10, 0));
-        assertThat(response.dateCompleted()).isEqualTo(LocalDateTime.of(2024, 2, 1, 10, 0));
+        assertThat(response.dateAdded()).isEqualTo(LocalDate.of(2024, 1, 1));
+        assertThat(response.dateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(response.externalSource()).isEqualTo("RAWG");
     }
 
