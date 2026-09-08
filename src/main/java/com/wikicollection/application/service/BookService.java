@@ -15,9 +15,11 @@ import org.springframework.stereotype.Service;
 public class BookService implements BookUseCase {
 
     private final BookRepository bookRepository;
+    private final DateRangeValidator dateRangeValidator;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator) {
         this.bookRepository = bookRepository;
+        this.dateRangeValidator = dateRangeValidator;
     }
 
     @Override
@@ -34,6 +36,7 @@ public class BookService implements BookUseCase {
     @Override
     public Book save(Book book) {
         checkExternalIdUnique(book.getExternalId(), null);
+        dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return bookRepository.save(book);
     }
 
@@ -42,6 +45,7 @@ public class BookService implements BookUseCase {
         Book existing = findById(id);
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
+        dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
         return bookRepository.save(existing);
     }
 

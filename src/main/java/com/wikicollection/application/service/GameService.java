@@ -16,10 +16,12 @@ public class GameService implements GameUseCase {
 
     private final GameRepository gameRepository;
     private final SteamCatalogueClient steamCatalogueClient;
+    private final DateRangeValidator dateRangeValidator;
 
-    public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient) {
+    public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator) {
         this.gameRepository = gameRepository;
         this.steamCatalogueClient = steamCatalogueClient;
+        this.dateRangeValidator = dateRangeValidator;
     }
 
     @Override
@@ -35,6 +37,7 @@ public class GameService implements GameUseCase {
 
     @Override
     public Game save(Game game, boolean obtainPlatinum) {
+        dateRangeValidator.validate(game.getDateAdded(), game.getDateCompleted());
         resolveSteamAppId(game, obtainPlatinum);
         return gameRepository.save(game);
     }
@@ -43,6 +46,7 @@ public class GameService implements GameUseCase {
     public Game update(String id, Game updates, boolean obtainPlatinum) {
         Game existing = findById(id);
         copyUpdatableFields(existing, updates);
+        dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         resolveSteamAppId(existing, obtainPlatinum);
         return gameRepository.save(existing);
     }

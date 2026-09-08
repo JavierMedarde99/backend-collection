@@ -175,6 +175,41 @@ class BookControllerTest {
     }
 
     @Test
+    void createBook_returns400_whenStartDateIsFuture() throws Exception {
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2099-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
+    void createBook_returns400_whenStartAfterEnd() throws Exception {
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2024-06-01","endDate":"2024-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
+    void updateBook_returns400_whenEndDateIsFuture() throws Exception {
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
+
+        mockMvc.perform(put("/api/books/b1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","endDate":"2099-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
     void updateBook_returnsUpdatedBook() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));

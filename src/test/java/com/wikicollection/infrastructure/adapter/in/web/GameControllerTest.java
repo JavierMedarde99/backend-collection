@@ -160,6 +160,41 @@ class GameControllerTest {
     }
 
     @Test
+    void createGame_returns400_whenDateAddedIsFuture() throws Exception {
+        mockMvc.perform(post("/api/games")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"PLAYING","dateAdded":"2099-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
+    void createGame_returns400_whenDateAddedAfterDateCompleted() throws Exception {
+        mockMvc.perform(post("/api/games")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"PLAYING","dateAdded":"2024-06-01","dateCompleted":"2024-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
+    void updateGame_returns400_whenDateCompletedIsFuture() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
+
+        mockMvc.perform(put("/api/games/g1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Nuevo título","platform":"PC","status":"PLAYING","dateCompleted":"2099-01-01"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Fechas mal formadas")));
+    }
+
+    @Test
     void createGame_resolvesSteamAppId_whenObtainPlatinumTrue() throws Exception {
         when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
