@@ -53,8 +53,8 @@ public class BoardGameXmlMapper {
                 null,
                 null,
                 null,
-                null,
                 item.image,
+                item.thumbnail,
                 null,
                 EXTERNAL_SOURCE);
     }
