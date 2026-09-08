@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import com.wikicollection.application.exception.BookConflictException;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +33,9 @@ class BookServiceTest {
 
     @Mock
     private BookRepository bookRepository;
+
+    @Spy
+    private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
     @InjectMocks
     private BookService bookService;
@@ -120,6 +125,85 @@ class BookServiceTest {
 
         assertThat(result).isSameAs(book);
         verify(bookRepository, never()).findByExternalId(any());
+    }
+
+    @Test
+    void save_throws_whenStartDateIsFuture() {
+        Book book = sampleBook();
+        book.setStartDate(LocalDate.now().plusDays(1));
+
+        assertThatThrownBy(() -> bookService.save(book))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void save_throws_whenEndDateIsFuture() {
+        Book book = sampleBook();
+        book.setEndDate(LocalDate.now().plusDays(1));
+
+        assertThatThrownBy(() -> bookService.save(book))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void save_throws_whenStartAfterEnd() {
+        Book book = sampleBook();
+        LocalDate today = LocalDate.now();
+        book.setStartDate(today);
+        book.setEndDate(today.minusDays(1));
+
+        assertThatThrownBy(() -> bookService.save(book))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void save_acceptsValidDates() {
+        Book book = sampleBook();
+        LocalDate today = LocalDate.now();
+        book.setStartDate(today.minusDays(2));
+        book.setEndDate(today);
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.save(book);
+
+        assertThat(result).isSameAs(book);
+        verify(bookRepository).save(book);
+    }
+
+    @Test
+    void update_throws_whenStartDateIsFuture() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        Book updates = sampleBook();
+        updates.setStartDate(LocalDate.now().plusDays(1));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> bookService.update("b1", updates))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void update_throws_whenStartAfterEnd() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        Book updates = sampleBook();
+        LocalDate today = LocalDate.now();
+        updates.setStartDate(today);
+        updates.setEndDate(today.minusDays(1));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> bookService.update("b1", updates))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(bookRepository, never()).save(any(Book.class));
     }
 
     @Test

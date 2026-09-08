@@ -3,10 +3,12 @@ package com.wikicollection.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import com.wikicollection.application.exception.GameNotFoundException;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +38,9 @@ class GameServiceTest {
 
     @Mock
     private SteamCatalogueClient steamCatalogueClient;
+
+    @Spy
+    private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
     @InjectMocks
     private GameService gameService;
@@ -139,6 +145,55 @@ class GameServiceTest {
     }
 
     @Test
+    void save_throws_whenDateAddedIsFuture() {
+        Game game = sampleGame();
+        game.setDateAdded(LocalDate.now().plusDays(1));
+
+        assertThatThrownBy(() -> gameService.save(game, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void save_throws_whenDateCompletedIsFuture() {
+        Game game = sampleGame();
+        game.setDateCompleted(LocalDate.now().plusDays(1));
+
+        assertThatThrownBy(() -> gameService.save(game, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void save_throws_whenDateAddedAfterDateCompleted() {
+        Game game = sampleGame();
+        LocalDate today = LocalDate.now();
+        game.setDateAdded(today);
+        game.setDateCompleted(today.minusDays(1));
+
+        assertThatThrownBy(() -> gameService.save(game, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void save_acceptsValidDates() {
+        Game game = sampleGame();
+        LocalDate today = LocalDate.now();
+        game.setDateAdded(today.minusDays(2));
+        game.setDateCompleted(today);
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.save(game, false);
+
+        assertThat(result).isSameAs(game);
+        verify(gameRepository).save(game);
+    }
+
+    @Test
     void update_throwsNotFound_whenMissing() {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
@@ -193,6 +248,36 @@ class GameServiceTest {
 
         assertThat(result.getSteamAppId()).isEqualTo("570");
         verify(steamCatalogueClient).searchGameByName("The Witcher 3");
+    }
+
+    @Test
+    void update_throws_whenDateAddedIsFuture() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        Game updates = sampleGame();
+        updates.setDateAdded(LocalDate.now().plusDays(1));
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> gameService.update("g1", updates, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void update_throws_whenDateAddedAfterDateCompleted() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        Game updates = sampleGame();
+        LocalDate today = LocalDate.now();
+        updates.setDateAdded(today);
+        updates.setDateCompleted(today.minusDays(1));
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> gameService.update("g1", updates, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Fechas mal formadas");
+        verify(gameRepository, never()).save(any(Game.class));
     }
 
     @Test
