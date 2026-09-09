@@ -1,10 +1,12 @@
 package com.wikicollection.infrastructure.adapter.out.bgg.xml;
 
 import java.util.List;
+import java.util.Map;
 
 import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.port.out.ExternalBoardGameCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper;
+import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper.BggXmlItem;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,6 +28,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class BggXmlClient implements ExternalBoardGameCatalogClient {
 
     private static final String SEARCH_PATH = "/search";
+    private static final String THING_PATH = "/thing";
 
     private final RestTemplate bggXmlRestTemplate;
     private final String baseUrl;
@@ -48,14 +51,25 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
     @Override
     public List<BoardGameSearchResult> search(String query) {
         try {
-            String uri = UriComponentsBuilder.fromUriString(baseUrl)
+            String searchUri = UriComponentsBuilder.fromUriString(baseUrl)
                     .path(SEARCH_PATH)
                     .queryParam("query", query)
                     .queryParam("type", "boardgame")
                     .build()
                     .toUriString();
-            ResponseEntity<String> response = callWithRetry(query, uri);
-            return mapper.map(response.getBody());
+            ResponseEntity<String> searchResponse = callWithRetry(query, searchUri);
+            List<BoardGameSearchResult> results = mapper.map(searchResponse.getBody());
+
+            if (results.isEmpty()) {
+                return results;
+            }
+
+            List<String> ids = results.stream().map(BoardGameSearchResult::bggId).toList();
+            Map<String, BggXmlItem> details = fetchDetails(ids);
+
+            return results.stream()
+                    .map(r -> mapper.enrich(r, details.get(r.bggId())))
+                    .toList();
         } catch (RestClientResponseException e) {
             log.warn("BGG XML devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
             return List.of();
@@ -65,7 +79,26 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
         }
     }
 
-    private ResponseEntity<String> callWithRetry(String query, String uri) {
+    private Map<String, BggXmlItem> fetchDetails(List<String> ids) {
+        try {
+            String thingUri = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path(THING_PATH)
+                    .queryParam("id", String.join(",", ids))
+                    .queryParam("stats", "1")
+                    .build()
+                    .toUriString();
+            ResponseEntity<String> response = callWithRetry("details", thingUri);
+            return mapper.mapThing(response.getBody());
+        } catch (RestClientResponseException e) {
+            log.warn("BGG thing devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return Map.of();
+        } catch (ResourceAccessException e) {
+            log.warn("BGG thing no disponible: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    private ResponseEntity<String> callWithRetry(String label, String uri) {
         String cookie = null;
         for (int attempt = 1; attempt <= retryAttempts + 1; attempt++) {
             HttpEntity<Void> entity = new HttpEntity<>(headers(cookie));
@@ -78,11 +111,11 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
                 cookie = setCookie;
             }
             if (attempt <= retryAttempts) {
-                log.info("BGG XML devolvió 202 en búsqueda '{}', reintentando ({}/{})", query, attempt, retryAttempts);
+                log.info("BGG XML devolvió 202 en '{}', reintentando ({}/{})", label, attempt, retryAttempts);
                 sleep(retryDelayMs);
             }
         }
-        log.warn("BGG XML siguió devolviendo 202 tras {} reintentos para '{}'", retryAttempts, query);
+        log.warn("BGG XML siguió devolviendo 202 tras {} reintentos en '{}'", retryAttempts, label);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 

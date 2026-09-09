@@ -3,9 +3,12 @@ package com.wikicollection.infrastructure.adapter.out.bgg.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import com.wikicollection.domain.model.BoardGameSearchResult;
+import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper.BggXmlItem;
 
 import org.junit.jupiter.api.Test;
 
@@ -79,5 +82,99 @@ class BoardGameXmlMapperTest {
     void map_throws_whenMalformedXml() {
         assertThatThrownBy(() -> mapper.map("<items><item></items>"))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void mapThing_convertsThingXmlToDetailMap() {
+        Map<String, BggXmlItem> things = mapper.mapThing(bggThingFixture());
+
+        assertThat(things).hasSize(1);
+        BggXmlItem thing = things.get("31260");
+        assertThat(thing.description).isEqualTo("Un juego de colonización");
+        assertThat(thing.minPlayers.value).isEqualTo(3);
+        assertThat(thing.maxPlayers.value).isEqualTo(4);
+        assertThat(thing.minPlaytime.value).isEqualTo(60);
+        assertThat(thing.maxPlaytime.value).isEqualTo(120);
+        assertThat(thing.stats.rating.average).isEqualByComparingTo(new BigDecimal("8.3"));
+        assertThat(thing.stats.rating.bayesAverage).isEqualByComparingTo(new BigDecimal("7.9"));
+        assertThat(thing.links).hasSize(6);
+    }
+
+    @Test
+    void mapThing_returnsEmpty_whenNull() {
+        assertThat(mapper.mapThing(null)).isEmpty();
+    }
+
+    @Test
+    void mapThing_returnsEmpty_whenBlank() {
+        assertThat(mapper.mapThing("   ")).isEmpty();
+    }
+
+    @Test
+    void enrich_populatesAllFieldsFromThingDetails() {
+        BoardGameSearchResult basic = new BoardGameSearchResult(
+                "31260", "Catan", null, 2007, null, null, null, null,
+                null, null, null, null,
+                "http://img", "http://thumb", null, "BGG");
+        BggXmlItem thing = mapper.mapThing(bggThingFixture()).get("31260");
+
+        BoardGameSearchResult enriched = mapper.enrich(basic, thing);
+
+        assertThat(enriched.bggId()).isEqualTo("31260");
+        assertThat(enriched.title()).isEqualTo("Catan");
+        assertThat(enriched.description()).isEqualTo("Un juego de colonización");
+        assertThat(enriched.yearPublished()).isEqualTo(2007);
+        assertThat(enriched.minPlayers()).isEqualTo(3);
+        assertThat(enriched.maxPlayers()).isEqualTo(4);
+        assertThat(enriched.minPlaytime()).isEqualTo(60);
+        assertThat(enriched.maxPlaytime()).isEqualTo(120);
+        assertThat(enriched.publisher()).isEqualTo("Kosmos");
+        assertThat(enriched.designers()).containsExactly("Klaus Teuber");
+        assertThat(enriched.categories()).containsExactly("Negociación", "Estrategia");
+        assertThat(enriched.mechanics()).containsExactly("Dados", "Colocación de losetas");
+        assertThat(enriched.bggRating()).isEqualByComparingTo(new BigDecimal("8.3"));
+        assertThat(enriched.imageUrl()).isEqualTo("http://img");
+        assertThat(enriched.thumbnailUrl()).isEqualTo("http://thumb");
+        assertThat(enriched.externalSource()).isEqualTo("BGG");
+    }
+
+    @Test
+    void enrich_returnsSameResult_whenThingIsNull() {
+        BoardGameSearchResult basic = new BoardGameSearchResult(
+                "31260", "Catan", null, 2007, null, null, null, null,
+                null, null, null, null,
+                "http://img", "http://thumb", null, "BGG");
+
+        BoardGameSearchResult enriched = mapper.enrich(basic, null);
+
+        assertThat(enriched).isSameAs(basic);
+    }
+
+    private String bggThingFixture() {
+        return """
+                <?xml version="1.0" encoding="utf-8"?>
+                <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
+                  <item type="boardgame" id="31260">
+                    <name type="primary" sortindex="1" value="Catan"/>
+                    <description>Un juego de colonización</description>
+                    <yearpublished value="2007"/>
+                    <minplayers value="3"/>
+                    <maxplayers value="4"/>
+                    <minplaytime value="60"/>
+                    <maxplaytime value="120"/>
+                    <image>http://img</image>
+                    <thumbnail>http://thumb</thumbnail>
+                    <link type="boardgamepublisher" id="253" value="Kosmos"/>
+                    <link type="boardgamedesigner" id="20" value="Klaus Teuber"/>
+                    <link type="boardgamecategory" id="1028" value="Negociación"/>
+                    <link type="boardgamecategory" id="1017" value="Estrategia"/>
+                    <link type="boardgamemechanic" id="2011" value="Dados"/>
+                    <link type="boardgamemechanic" id="2008" value="Colocación de losetas"/>
+                    <stats minplayers="3" maxplayers="4">
+                      <rating average="8.3" bayesaverage="7.9"/>
+                    </stats>
+                  </item>
+                </items>
+                """;
     }
 }
