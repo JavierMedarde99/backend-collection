@@ -34,7 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "spring.data.mongodb.auto-index-creation=false")
+@SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})
 @AutoConfigureMockMvc
 class BoardGameControllerTest {
 
@@ -81,6 +81,23 @@ class BoardGameControllerTest {
         BoardGameSearchCriteria criteria = captor.getValue();
         org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("catan");
         org.assertj.core.api.Assertions.assertThat(criteria.status()).isEqualTo(BoardGameStatus.WISHLIST);
+    }
+
+    @Test
+    void listGames_rejectsLegacyStatus() throws Exception {
+        mockMvc.perform(get("/api/boardgames")
+                        .param("status", "PREVIOUSLY_OWNED"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createBoardGame_rejectsLegacyStatus() throws Exception {
+        mockMvc.perform(post("/api/boardgames")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"FOR_TRADE"}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
