@@ -81,6 +81,29 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void listCards_filtersByAllCriteria() throws Exception {
+        when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/magic")
+                        .param("name", "bolt")
+                        .param("rarity", "rare")
+                        .param("color", "R")
+                        .param("type", "Instant")
+                        .param("convertedManaCost", "1.0"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<MagicCardSearchCriteria> captor = ArgumentCaptor.forClass(MagicCardSearchCriteria.class);
+        verify(magicCardRepository).search(captor.capture(), any(Pageable.class));
+        MagicCardSearchCriteria criteria = captor.getValue();
+        org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("bolt");
+        org.assertj.core.api.Assertions.assertThat(criteria.rarity()).isEqualTo("rare");
+        org.assertj.core.api.Assertions.assertThat(criteria.color()).isEqualTo("R");
+        org.assertj.core.api.Assertions.assertThat(criteria.type()).isEqualTo("Instant");
+        org.assertj.core.api.Assertions.assertThat(criteria.convertedManaCost()).isEqualTo(1.0);
+    }
+
+    @Test
     void getCard_returnsCard_whenExists() throws Exception {
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(sampleCard()));
 
