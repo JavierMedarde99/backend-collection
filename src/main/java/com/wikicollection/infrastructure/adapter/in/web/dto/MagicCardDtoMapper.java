@@ -7,44 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class MagicCardDtoMapper {
 
-    public MagicCard toDomain(MagicCardRequest request) {
-        if (request == null) {
-            return null;
-        }
-        return MagicCard.builder()
-                .name(request.name())
-                .language(request.language())
-                .releaseDate(request.releaseDate())
-                .manaCost(request.manaCost())
-                .convertedManaCost(request.convertedManaCost())
-                .type(request.type())
-                .text(request.text())
-                .power(request.power())
-                .toughness(request.toughness())
-                .loyalty(request.loyalty())
-                .colors(request.colors())
-                .colorIdentity(request.colorIdentity())
-                .keywords(request.keywords())
-                .rarity(request.rarity())
-                .setCode(request.setCode())
-                .setName(request.setName())
-                .artist(request.artist())
-                .frame(request.frame())
-                .borderColor(request.borderColor())
-                .layout(request.layout())
-                .legalities(request.legalities())
-                .priceUsd(request.priceUsd())
-                .priceEur(request.priceEur())
-                .imageUrl(request.imageUrl())
-                .imageLargeUrl(request.imageLargeUrl())
-                .artCropUrl(request.artCropUrl())
-                .condition(request.condition())
-                .isFoil(request.isFoil())
-                .quantity(request.quantity())
-                .notes(request.notes())
-                .build();
-    }
-
     public MagicCardResponse toResponse(MagicCard magicCard) {
         if (magicCard == null) {
             return null;

@@ -2,7 +2,6 @@ package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,14 +9,11 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.domain.model.MagicCard;
-import com.wikicollection.domain.model.MagicCardCondition;
-import com.wikicollection.domain.model.MagicCardLanguage;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -79,61 +75,6 @@ class MagicCardServiceTest {
         assertThatThrownBy(() -> magicCardService.findById("nope"))
                 .isInstanceOf(MagicCardNotFoundException.class)
                 .hasMessageContaining("nope");
-    }
-
-    @Test
-    void save_delegatesToRepository() {
-        MagicCard card = sampleCard();
-        when(magicCardRepository.save(any(MagicCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        MagicCard result = magicCardService.save(card);
-
-        assertThat(result).isSameAs(card);
-        verify(magicCardRepository).save(card);
-    }
-
-    @Test
-    void update_throwsNotFound_whenMissing() {
-        when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> magicCardService.update("nope", sampleCard()))
-                .isInstanceOf(MagicCardNotFoundException.class)
-                .hasMessageContaining("nope");
-    }
-
-    @Test
-    void update_appliesFieldsAndKeepsId() {
-        MagicCard existing = sampleCard("mc1", "Lightning Bolt");
-        MagicCard updates = sampleCard();
-        updates.setName("Chain Lightning");
-        updates.setQuantity(4);
-        updates.setIsFoil(true);
-        updates.setCondition(MagicCardCondition.MINT);
-        updates.setLanguage(MagicCardLanguage.SPANISH);
-        updates.setNotes("Nota nueva");
-        updates.setType("Instant");
-        updates.setRarity("rare");
-        updates.setPriceUsd("1.20");
-
-        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(existing));
-        when(magicCardRepository.save(any(MagicCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        MagicCard result = magicCardService.update("mc1", updates);
-
-        assertThat(result.getId()).isEqualTo("mc1");
-        assertThat(result.getName()).isEqualTo("Chain Lightning");
-        assertThat(result.getQuantity()).isEqualTo(4);
-        assertThat(result.getIsFoil()).isTrue();
-        assertThat(result.getCondition()).isEqualTo(MagicCardCondition.MINT);
-        assertThat(result.getLanguage()).isEqualTo(MagicCardLanguage.SPANISH);
-        assertThat(result.getNotes()).isEqualTo("Nota nueva");
-        assertThat(result.getType()).isEqualTo("Instant");
-        assertThat(result.getRarity()).isEqualTo("rare");
-
-        ArgumentCaptor<MagicCard> captor = ArgumentCaptor.forClass(MagicCard.class);
-        verify(magicCardRepository).save(captor.capture());
-        assertThat(captor.getValue().getId()).isEqualTo("mc1");
-        assertThat(captor.getValue().getName()).isEqualTo("Chain Lightning");
     }
 
     @Test

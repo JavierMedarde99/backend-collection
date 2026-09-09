@@ -1,12 +1,9 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
-import java.net.URI;
-
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.MagicCardSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardDtoMapper;
-import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardSearchResponse;
 
@@ -19,15 +16,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -82,31 +73,6 @@ public class MagicCardController {
     public MagicCardResponse getById(
             @Parameter(description = "Identificador de la carta") @PathVariable String id) {
         return mapper.toResponse(magicCardUseCase.findById(id));
-    }
-
-    @PostMapping
-    @Operation(summary = "Crea una carta Magic en la colección")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Carta creada"),
-            @ApiResponse(responseCode = "400", description = "Datos de la carta inválidos")
-    })
-    public ResponseEntity<MagicCardResponse> create(@Valid @RequestBody MagicCardRequest request, UriComponentsBuilder ucb) {
-        var saved = magicCardUseCase.save(mapper.toDomain(request));
-        URI location = ucb.path("/api/magic/{id}").buildAndExpand(saved.getId()).toUri();
-        return ResponseEntity.created(location).body(mapper.toResponse(saved));
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Actualiza una carta Magic existente")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Carta actualizada"),
-            @ApiResponse(responseCode = "400", description = "Datos de la carta inválidos"),
-            @ApiResponse(responseCode = "404", description = "Carta no encontrada")
-    })
-    public MagicCardResponse update(
-            @Parameter(description = "Identificador de la carta") @PathVariable String id,
-            @Valid @RequestBody MagicCardRequest request) {
-        return mapper.toResponse(magicCardUseCase.update(id, mapper.toDomain(request)));
     }
 
     @DeleteMapping("/{id}")

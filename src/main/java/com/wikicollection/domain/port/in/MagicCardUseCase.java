@@ -12,9 +12,5 @@ public interface MagicCardUseCase {
 
     MagicCard findById(String id);
 
-    MagicCard save(MagicCard magicCard);
-
-    MagicCard update(String id, MagicCard updates);
-
     void delete(String id);
 }
