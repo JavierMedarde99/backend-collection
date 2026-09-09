@@ -271,6 +271,7 @@ class BggXmlClientTest {
                 <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
                   <item type="boardgame" id="31260">
                     <name type="primary" sortindex="1" value="Catan"/>
+                    <name type="alternate" sortindex="1" value="Los Colonos de Catan"/>
                     <description>Un juego de colonización</description>
                     <yearpublished value="2007"/>
                     <minplayers value="3"/>
@@ -285,9 +286,16 @@ class BggXmlClientTest {
                     <link type="boardgamecategory" id="1017" value="Estrategia"/>
                     <link type="boardgamemechanic" id="2011" value="Dados"/>
                     <link type="boardgamemechanic" id="2008" value="Colocación de losetas"/>
-                    <stats minplayers="3" maxplayers="4">
-                      <rating average="8.3" bayesaverage="7.9"/>
-                    </stats>
+                    <statistics page="1">
+                      <ratings>
+                        <usersrated value="50000"/>
+                        <average value="8.3"/>
+                        <bayesaverage value="7.9"/>
+                        <ranks>
+                          <rank type="subtype" id="1" name="boardgame" friendlyname="Board Game Rank" value="42" bayesaverage="7.9"/>
+                        </ranks>
+                      </ratings>
+                    </statistics>
                   </item>
                 </items>
                 """;

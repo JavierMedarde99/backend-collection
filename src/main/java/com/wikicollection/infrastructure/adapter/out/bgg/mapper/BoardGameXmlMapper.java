@@ -78,7 +78,8 @@ public class BoardGameXmlMapper {
                 extractLinkValues(thing.links, "boardgamemechanic"),
                 result.imageUrl() != null ? result.imageUrl() : thing.image,
                 result.thumbnailUrl() != null ? result.thumbnailUrl() : thing.thumbnail,
-                thing.stats != null && thing.stats.rating != null ? thing.stats.rating.average : null,
+                thing.statistics != null && thing.statistics.ratings != null
+                        && thing.statistics.ratings.average != null ? thing.statistics.ratings.average.value : null,
                 result.externalSource());
     }
 
@@ -163,8 +164,8 @@ public class BoardGameXmlMapper {
         @JacksonXmlProperty(localName = "maxplaytime")
         public BggXmlIntValue maxPlaytime;
 
-        @JacksonXmlProperty(localName = "stats")
-        public BggThingStats stats;
+        @JacksonXmlProperty(localName = "statistics")
+        public BggThingStats statistics;
 
         @JacksonXmlElementWrapper(useWrapping = false)
         @JacksonXmlProperty(localName = "link")
@@ -191,17 +192,23 @@ public class BoardGameXmlMapper {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BggThingStats {
-        @JacksonXmlProperty(localName = "rating")
-        public BggThingRating rating;
+        @JacksonXmlProperty(localName = "ratings")
+        public BggThingRatings ratings;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class BggThingRating {
-        @JacksonXmlProperty(isAttribute = true)
-        public BigDecimal average;
+    public static class BggThingRatings {
+        @JacksonXmlProperty(localName = "average")
+        public BggXmlRatingValue average;
 
-        @JacksonXmlProperty(isAttribute = true, localName = "bayesaverage")
-        public BigDecimal bayesAverage;
+        @JacksonXmlProperty(localName = "bayesaverage")
+        public BggXmlRatingValue bayesAverage;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class BggXmlRatingValue {
+        @JacksonXmlProperty(isAttribute = true)
+        public BigDecimal value;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

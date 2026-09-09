@@ -95,8 +95,8 @@ class BoardGameXmlMapperTest {
         assertThat(thing.maxPlayers.value).isEqualTo(4);
         assertThat(thing.minPlaytime.value).isEqualTo(60);
         assertThat(thing.maxPlaytime.value).isEqualTo(120);
-        assertThat(thing.stats.rating.average).isEqualByComparingTo(new BigDecimal("8.3"));
-        assertThat(thing.stats.rating.bayesAverage).isEqualByComparingTo(new BigDecimal("7.9"));
+        assertThat(thing.statistics.ratings.average.value).isEqualByComparingTo(new BigDecimal("8.3"));
+        assertThat(thing.statistics.ratings.bayesAverage.value).isEqualByComparingTo(new BigDecimal("7.9"));
         assertThat(thing.links).hasSize(6);
     }
 
@@ -170,6 +170,7 @@ class BoardGameXmlMapperTest {
                 <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
                   <item type="boardgame" id="31260">
                     <name type="primary" sortindex="1" value="Catan"/>
+                    <name type="alternate" sortindex="1" value="Los Colonos de Catan"/>
                     <description>Un juego de colonización</description>
                     <yearpublished value="2007"/>
                     <minplayers value="3"/>
@@ -184,9 +185,16 @@ class BoardGameXmlMapperTest {
                     <link type="boardgamecategory" id="1017" value="Estrategia"/>
                     <link type="boardgamemechanic" id="2011" value="Dados"/>
                     <link type="boardgamemechanic" id="2008" value="Colocación de losetas"/>
-                    <stats minplayers="3" maxplayers="4">
-                      <rating average="8.3" bayesaverage="7.9"/>
-                    </stats>
+                    <statistics page="1">
+                      <ratings>
+                        <usersrated value="50000"/>
+                        <average value="8.3"/>
+                        <bayesaverage value="7.9"/>
+                        <ranks>
+                          <rank type="subtype" id="1" name="boardgame" friendlyname="Board Game Rank" value="42" bayesaverage="7.9"/>
+                        </ranks>
+                      </ratings>
+                    </statistics>
                   </item>
                 </items>
                 """;
