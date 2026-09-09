@@ -2,7 +2,6 @@ package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,9 +18,6 @@ import org.mockito.MockitoAnnotations;
 class BoardGameSearchServiceTest {
 
     @Mock
-    private ExternalBoardGameCatalogClient bggJsonClient;
-
-    @Mock
     private ExternalBoardGameCatalogClient bggXmlClient;
 
     private BoardGameSearchService boardGameSearchService;
@@ -29,7 +25,7 @@ class BoardGameSearchServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        boardGameSearchService = new BoardGameSearchService(bggJsonClient, bggXmlClient);
+        boardGameSearchService = new BoardGameSearchService(bggXmlClient);
     }
 
     private BoardGameSearchResult sampleResult(String title) {
@@ -40,33 +36,18 @@ class BoardGameSearchServiceTest {
     }
 
     @Test
-    void search_returnsJsonResults_whenPresent() {
-        BoardGameSearchResult json = sampleResult("Catan");
-        when(bggJsonClient.search("catan")).thenReturn(List.of(json));
+    void search_returnsResults_whenPresent() {
+        BoardGameSearchResult result = sampleResult("Catan");
+        when(bggXmlClient.search("catan")).thenReturn(List.of(result));
 
         List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
 
-        assertThat(results).containsExactly(json);
-        verify(bggJsonClient).search("catan");
-        verify(bggXmlClient, never()).search("catan");
-    }
-
-    @Test
-    void search_fallsBackToXml_whenJsonEmpty() {
-        BoardGameSearchResult xml = sampleResult("Catan en XML");
-        when(bggJsonClient.search("catan")).thenReturn(List.of());
-        when(bggXmlClient.search("catan")).thenReturn(List.of(xml));
-
-        List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
-
-        assertThat(results).containsExactly(xml);
-        verify(bggJsonClient).search("catan");
+        assertThat(results).containsExactly(result);
         verify(bggXmlClient).search("catan");
     }
 
     @Test
-    void search_returnsEmpty_whenBothEmpty() {
-        when(bggJsonClient.search("catan")).thenReturn(List.of());
+    void search_returnsEmpty_whenNoResults() {
         when(bggXmlClient.search("catan")).thenReturn(List.of());
 
         List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
@@ -76,15 +57,15 @@ class BoardGameSearchServiceTest {
 
     @Test
     void search_limitsResultsToTen() {
-        List<BoardGameSearchResult> json = java.util.stream.IntStream.range(0, 15)
+        List<BoardGameSearchResult> many = java.util.stream.IntStream.range(0, 15)
                 .mapToObj(i -> sampleResult("Juego " + i))
                 .toList();
-        when(bggJsonClient.search("catan")).thenReturn(json);
+        when(bggXmlClient.search("catan")).thenReturn(many);
 
         List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
 
         assertThat(results).hasSize(10);
-        assertThat(results).isEqualTo(json.subList(0, 10));
+        assertThat(results).isEqualTo(many.subList(0, 10));
     }
 
     @Test

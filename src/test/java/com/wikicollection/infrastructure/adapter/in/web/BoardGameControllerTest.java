@@ -20,7 +20,6 @@ import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.model.BoardGameStatus;
 import com.wikicollection.domain.port.out.BoardGameRepository;
-import com.wikicollection.infrastructure.adapter.out.bgg.json.BggJsonClient;
 import com.wikicollection.infrastructure.adapter.out.bgg.xml.BggXmlClient;
 
 import org.hamcrest.Matchers;
@@ -44,9 +43,6 @@ class BoardGameControllerTest {
 
     @MockitoBean
     private BoardGameRepository boardGameRepository;
-
-    @MockitoBean
-    private BggJsonClient bggJsonClient;
 
     @MockitoBean
     private BggXmlClient bggXmlClient;
@@ -207,7 +203,7 @@ class BoardGameControllerTest {
                 "31260", "Catan", "Colonización", 2007, 3, 4, 60, 120,
                 "Kosmos", List.of("Klaus Teuber"), List.of("Negociación"), List.of("Trading"),
                 "http://img", "http://thumb", new java.math.BigDecimal("8.3"), "BGG");
-        when(bggJsonClient.search("catan")).thenReturn(List.of(result));
+        when(bggXmlClient.search("catan")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/boardgames/search").param("name", "catan"))
                 .andExpect(status().isOk())
