@@ -47,6 +47,18 @@ public class MagicCardPersistenceAdapter implements MagicCardRepository {
         if (criteria.hasName()) {
             query.addCriteria(Criteria.where("name").regex(ciPattern(criteria.name())));
         }
+        if (criteria.hasRarity()) {
+            query.addCriteria(Criteria.where("rarity").regex(ciPattern(criteria.rarity())));
+        }
+        if (criteria.hasColor()) {
+            query.addCriteria(Criteria.where("colors").regex(ciPattern(criteria.color())));
+        }
+        if (criteria.hasType()) {
+            query.addCriteria(Criteria.where("type").regex(ciPattern(criteria.type())));
+        }
+        if (criteria.hasConvertedManaCost()) {
+            query.addCriteria(Criteria.where("convertedManaCost").is(criteria.convertedManaCost()));
+        }
         return query;
     }
 

@@ -54,7 +54,7 @@ public class MagicCardController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista cartas Magic", description = "Devuelve una página de cartas de la colección local con filtro opcional por nombre.")
+    @Operation(summary = "Lista cartas Magic", description = "Devuelve una página de cartas de la colección local con filtros opcionales por nombre, rareza, color, tipo y coste de maná convertido.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de cartas encontrada"),
             @ApiResponse(responseCode = "400", description = "Parámetros de paginación o filtros inválidos")
@@ -63,9 +63,13 @@ public class MagicCardController {
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "name,asc") String sort,
-            @Parameter(description = "Filtro por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name) {
+            @Parameter(description = "Filtro por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name,
+            @Parameter(description = "Filtro por rareza") @RequestParam(required = false) String rarity,
+            @Parameter(description = "Filtro por color") @RequestParam(required = false) String color,
+            @Parameter(description = "Filtro por tipo") @RequestParam(required = false) String type,
+            @Parameter(description = "Filtro por coste de maná convertido") @RequestParam(required = false) Double convertedManaCost) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name);
+        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type, convertedManaCost);
         return magicCardUseCase.search(criteria, pageable).map(mapper::toResponse);
     }
 
