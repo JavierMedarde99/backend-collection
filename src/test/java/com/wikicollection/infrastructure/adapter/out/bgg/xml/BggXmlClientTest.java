@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.web.client.RestTemplate;
 
 class BggXmlClientTest {
@@ -179,6 +180,32 @@ class BggXmlClientTest {
         List<BoardGameSearchResult> results = client.search("catan");
 
         assertThat(results).isEmpty();
+    }
+
+    @Test
+    void search_sendsBearerTokenInBothSearchAndThingCalls() throws Exception {
+        RestTemplate authenticatedTemplate = new RestTemplate();
+        ClientHttpRequestInterceptor interceptor = (request, body, execution) -> {
+            request.getHeaders().setBearerAuth("test-token");
+            return execution.execute(request, body);
+        };
+        authenticatedTemplate.getInterceptors().add(interceptor);
+        BggXmlClient authenticatedClient = new BggXmlClient(authenticatedTemplate, server.url("/xmlapi2").toString(), 1, 0, new BoardGameXmlMapper());
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggSearchFixture()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggThingFixture()));
+
+        authenticatedClient.search("catan");
+
+        RecordedRequest searchRequest = server.takeRequest();
+        assertThat(searchRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer test-token");
+        RecordedRequest thingRequest = server.takeRequest();
+        assertThat(thingRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer test-token");
     }
 
     private String bggSearchFixture() {
