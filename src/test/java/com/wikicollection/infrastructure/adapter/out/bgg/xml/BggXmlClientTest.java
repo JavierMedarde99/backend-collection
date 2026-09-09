@@ -208,6 +208,29 @@ class BggXmlClientTest {
         assertThat(thingRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer test-token");
     }
 
+    @Test
+    void search_limitsThingIdsToTwenty_whenManySearchResults() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggSearchFixtureManyResults()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggThingFixture()));
+
+        List<BoardGameSearchResult> results = client.search("catan");
+
+        server.takeRequest();
+        RecordedRequest thingRequest = server.takeRequest();
+        assertThat(thingRequest.getPath()).startsWith("/xmlapi2/thing?id=");
+        String idParam = thingRequest.getRequestUrl().queryParameter("id");
+        assertThat(idParam).isNotNull();
+        assertThat(idParam.split(",").length).isLessThanOrEqualTo(20);
+        assertThat(results).hasSize(25);
+        assertThat(results.get(0).description()).isEqualTo("Un juego de colonización");
+    }
+
     private String bggSearchFixture() {
         return """
                 <?xml version="1.0" encoding="utf-8"?>
@@ -222,12 +245,33 @@ class BggXmlClientTest {
                 """;
     }
 
+    private String bggSearchFixtureManyResults() {
+        StringBuilder sb = new StringBuilder("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse" total="25">
+                """);
+        for (int i = 1; i <= 25; i++) {
+            int id = i == 1 ? 31260 : i;
+            sb.append("""
+                      <item type="boardgame" id="%d">
+                        <name type="primary" sortindex="1" value="Catan %d"/>
+                        <yearpublished value="2000"/>
+                        <image>http://img%d</image>
+                        <thumbnail>http://thumb%d</thumbnail>
+                      </item>
+                    """.formatted(id, i, i, i));
+        }
+        sb.append("</items>");
+        return sb.toString();
+    }
+
     private String bggThingFixture() {
         return """
                 <?xml version="1.0" encoding="utf-8"?>
                 <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
                   <item type="boardgame" id="31260">
                     <name type="primary" sortindex="1" value="Catan"/>
+                    <name type="alternate" sortindex="1" value="Los Colonos de Catan"/>
                     <description>Un juego de colonización</description>
                     <yearpublished value="2007"/>
                     <minplayers value="3"/>
@@ -242,9 +286,16 @@ class BggXmlClientTest {
                     <link type="boardgamecategory" id="1017" value="Estrategia"/>
                     <link type="boardgamemechanic" id="2011" value="Dados"/>
                     <link type="boardgamemechanic" id="2008" value="Colocación de losetas"/>
-                    <stats minplayers="3" maxplayers="4">
-                      <rating average="8.3" bayesaverage="7.9"/>
-                    </stats>
+                    <statistics page="1">
+                      <ratings>
+                        <usersrated value="50000"/>
+                        <average value="8.3"/>
+                        <bayesaverage value="7.9"/>
+                        <ranks>
+                          <rank type="subtype" id="1" name="boardgame" friendlyname="Board Game Rank" value="42" bayesaverage="7.9"/>
+                        </ranks>
+                      </ratings>
+                    </statistics>
                   </item>
                 </items>
                 """;
