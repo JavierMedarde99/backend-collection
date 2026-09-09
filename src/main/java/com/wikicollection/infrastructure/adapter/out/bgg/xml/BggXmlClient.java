@@ -29,6 +29,7 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
 
     private static final String SEARCH_PATH = "/search";
     private static final String THING_PATH = "/thing";
+    private static final int MAX_THING_IDS = 20;
 
     private final RestTemplate bggXmlRestTemplate;
     private final String baseUrl;
@@ -64,7 +65,14 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
                 return results;
             }
 
-            List<String> ids = results.stream().map(BoardGameSearchResult::bggId).toList();
+            List<String> ids = results.stream()
+                    .map(BoardGameSearchResult::bggId)
+                    .limit(MAX_THING_IDS)
+                    .toList();
+            if (results.size() > MAX_THING_IDS) {
+                log.warn("Búsqueda '{}' devolvió {} resultados; BGG permite máx. {} ids en /thing, se enriquecerán los primeros {}",
+                        query, results.size(), MAX_THING_IDS, MAX_THING_IDS);
+            }
             Map<String, BggXmlItem> details = fetchDetails(ids);
 
             return results.stream()

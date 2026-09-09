@@ -139,6 +139,20 @@ class BoardGameXmlMapperTest {
     }
 
     @Test
+    void enrich_fillsImageAndThumbnailFromThing_whenBasicResultHasNone() {
+        BoardGameSearchResult basic = new BoardGameSearchResult(
+                "31260", "Catan", null, 2007, null, null, null, null,
+                null, null, null, null,
+                null, null, null, "BGG");
+        BggXmlItem thing = mapper.mapThing(bggThingFixture()).get("31260");
+
+        BoardGameSearchResult enriched = mapper.enrich(basic, thing);
+
+        assertThat(enriched.imageUrl()).isEqualTo("http://img");
+        assertThat(enriched.thumbnailUrl()).isEqualTo("http://thumb");
+    }
+
+    @Test
     void enrich_returnsSameResult_whenThingIsNull() {
         BoardGameSearchResult basic = new BoardGameSearchResult(
                 "31260", "Catan", null, 2007, null, null, null, null,

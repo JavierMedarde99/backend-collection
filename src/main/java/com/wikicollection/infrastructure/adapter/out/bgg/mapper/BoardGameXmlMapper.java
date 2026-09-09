@@ -76,8 +76,8 @@ public class BoardGameXmlMapper {
                 extractLinkValues(thing.links, "boardgamedesigner"),
                 extractLinkValues(thing.links, "boardgamecategory"),
                 extractLinkValues(thing.links, "boardgamemechanic"),
-                result.imageUrl(),
-                result.thumbnailUrl(),
+                result.imageUrl() != null ? result.imageUrl() : thing.image,
+                result.thumbnailUrl() != null ? result.thumbnailUrl() : thing.thumbnail,
                 thing.stats != null && thing.stats.rating != null ? thing.stats.rating.average : null,
                 result.externalSource());
     }

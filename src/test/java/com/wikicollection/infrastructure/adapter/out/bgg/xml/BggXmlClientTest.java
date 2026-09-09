@@ -208,6 +208,29 @@ class BggXmlClientTest {
         assertThat(thingRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer test-token");
     }
 
+    @Test
+    void search_limitsThingIdsToTwenty_whenManySearchResults() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggSearchFixtureManyResults()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggThingFixture()));
+
+        List<BoardGameSearchResult> results = client.search("catan");
+
+        server.takeRequest();
+        RecordedRequest thingRequest = server.takeRequest();
+        assertThat(thingRequest.getPath()).startsWith("/xmlapi2/thing?id=");
+        String idParam = thingRequest.getRequestUrl().queryParameter("id");
+        assertThat(idParam).isNotNull();
+        assertThat(idParam.split(",").length).isLessThanOrEqualTo(20);
+        assertThat(results).hasSize(25);
+        assertThat(results.get(0).description()).isEqualTo("Un juego de colonización");
+    }
+
     private String bggSearchFixture() {
         return """
                 <?xml version="1.0" encoding="utf-8"?>
@@ -220,6 +243,26 @@ class BggXmlClientTest {
                   </item>
                 </items>
                 """;
+    }
+
+    private String bggSearchFixtureManyResults() {
+        StringBuilder sb = new StringBuilder("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse" total="25">
+                """);
+        for (int i = 1; i <= 25; i++) {
+            int id = i == 1 ? 31260 : i;
+            sb.append("""
+                      <item type="boardgame" id="%d">
+                        <name type="primary" sortindex="1" value="Catan %d"/>
+                        <yearpublished value="2000"/>
+                        <image>http://img%d</image>
+                        <thumbnail>http://thumb%d</thumbnail>
+                      </item>
+                    """.formatted(id, i, i, i));
+        }
+        sb.append("</items>");
+        return sb.toString();
     }
 
     private String bggThingFixture() {
