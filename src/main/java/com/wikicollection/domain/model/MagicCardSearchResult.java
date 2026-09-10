@@ -11,5 +11,7 @@ public record MagicCardSearchResult(
         String setCode,
         String setName,
         String imageUrl,
-        String priceUsd) {
+        String priceUsd,
+        List<String> colors,
+        List<String> colorIdentity) {
 }

@@ -66,7 +66,9 @@ public class MagicCardMapper {
                 card.set(),
                 card.setName(),
                 card.imageUris() != null ? card.imageUris().normal() : null,
-                card.prices() != null ? card.prices().usd() : null);
+                card.prices() != null ? card.prices().usd() : null,
+                card.colors(),
+                card.colorIdentity());
     }
 
     public record ScryfallListResponse(

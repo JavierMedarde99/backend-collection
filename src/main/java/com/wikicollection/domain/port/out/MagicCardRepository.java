@@ -14,5 +14,7 @@ public interface MagicCardRepository {
 
     Optional<MagicCard> findById(String id);
 
+    MagicCard save(MagicCard magicCard);
+
     void deleteById(String id);
 }

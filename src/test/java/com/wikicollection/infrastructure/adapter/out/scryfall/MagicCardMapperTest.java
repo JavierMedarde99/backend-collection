@@ -40,6 +40,8 @@ class MagicCardMapperTest {
         assertThat(result.setName()).isEqualTo("Marvel Super Heroes Commander");
         assertThat(result.imageUrl()).isEqualTo("http://normal");
         assertThat(result.priceUsd()).isEqualTo("0.65");
+        assertThat(result.colors()).containsExactly("R");
+        assertThat(result.colorIdentity()).containsExactly("R");
     }
 
     @Test
