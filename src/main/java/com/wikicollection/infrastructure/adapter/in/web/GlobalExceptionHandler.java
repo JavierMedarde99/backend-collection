@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
+import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MagicCardNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleMagicCardNotFound(MagicCardNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DeckNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDeckNotFound(DeckNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
