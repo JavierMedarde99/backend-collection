@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckCard;
+import com.wikicollection.domain.model.DeckStatus;
+import com.wikicollection.domain.model.DeckStatusReport;
 
 import org.springframework.stereotype.Component;
 
@@ -37,6 +39,16 @@ public class DeckDtoMapper {
                 cards,
                 deck.getCreatedAt(),
                 deck.getUpdatedAt());
+    }
+
+    public DeckStatusResponse toStatusResponse(DeckStatusReport report) {
+        if (report == null) {
+            return null;
+        }
+        String message = report.status() == DeckStatus.INVALID && report.reasons() != null
+                ? String.join("; ", report.reasons())
+                : null;
+        return new DeckStatusResponse(report.status(), message);
     }
 
     private DeckCardResponse toCardResponse(DeckCard card) {

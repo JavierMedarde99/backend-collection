@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckStatus;
+import com.wikicollection.domain.model.DeckStatusReport;
 
 public interface DeckUseCase {
 
@@ -24,4 +25,6 @@ public interface DeckUseCase {
     Deck removeCard(String deckId, String scryfallId);
 
     DeckStatus getStatus(String deckId);
+
+    DeckStatusReport getStatusReport(String deckId);
 }

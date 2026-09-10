@@ -7,6 +7,8 @@ import java.util.List;
 
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckCard;
+import com.wikicollection.domain.model.DeckStatus;
+import com.wikicollection.domain.model.DeckStatusReport;
 
 import org.junit.jupiter.api.Test;
 
@@ -61,6 +63,30 @@ class DeckDtoMapperTest {
         Deck deck = Deck.builder().id("d1").name("Vacio").build();
 
         assertThat(mapper.toResponse(deck).cards()).isEmpty();
+    }
+
+    @Test
+    void toStatusResponse_mapsInvalidWithJoinedMessage() {
+        DeckStatusReport report = new DeckStatusReport(
+                DeckStatus.INVALID, List.of("Razón uno", "Razón dos"));
+
+        DeckStatusResponse response = mapper.toStatusResponse(report);
+
+        assertThat(response.status()).isEqualTo(DeckStatus.INVALID);
+        assertThat(response.message()).isEqualTo("Razón uno; Razón dos");
+    }
+
+    @Test
+    void toStatusResponse_mapsValidWithNullMessage() {
+        DeckStatusResponse response = mapper.toStatusResponse(new DeckStatusReport(DeckStatus.DRAFT, List.of()));
+
+        assertThat(response.status()).isEqualTo(DeckStatus.DRAFT);
+        assertThat(response.message()).isNull();
+    }
+
+    @Test
+    void toStatusResponse_returnsNull_whenNull() {
+        assertThat(mapper.toStatusResponse(null)).isNull();
     }
 
     @Test
