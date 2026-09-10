@@ -195,6 +195,20 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void commanders_returnsResultsFromScryfall() throws Exception {
+        MagicCardSearchResult result = new MagicCardSearchResult(
+                "id-9", "Atraxa, Praetors' Voice", "{W}{U}{B}{G}", "Legendary Creature", "mythic",
+                "msc", "Set", "http://img", "5.00",
+                List.of("W", "U", "B", "G"), List.of("W", "U", "B", "G"));
+        when(scryfallClient.searchCommanders("wubg")).thenReturn(List.of(result));
+
+        mockMvc.perform(get("/api/magic/commanders").param("colors", "wubg"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[0].name").value("Atraxa, Praetors' Voice"))
+                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("W"));
+    }
+
+    @Test
     void cors_allowsFrontendOrigin() throws Exception {
         mockMvc.perform(options("/api/magic")
                         .header("Origin", "http://localhost:5173")
