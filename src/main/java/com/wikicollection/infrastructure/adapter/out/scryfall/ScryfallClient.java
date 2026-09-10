@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.out.scryfall;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchResult;
@@ -9,6 +10,7 @@ import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper.ScryfallCardResponse;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,18 +31,31 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     private final String baseUrl;
     private final int retryAttempts;
     private final long retryDelayMs;
+    private final long rateLimitDelayMs;
     private final MagicCardMapper mapper;
+    private final AtomicLong lastRequestTime = new AtomicLong(0);
 
+    @Autowired
     public ScryfallClient(@Qualifier("scryfallRestTemplate") RestTemplate scryfallRestTemplate,
                           @Value("${scryfall.api.base-url:https://api.scryfall.com}") String baseUrl,
                           @Value("${scryfall.api.retry-attempts:3}") int retryAttempts,
                           @Value("${scryfall.api.retry-delay-ms:1000}") long retryDelayMs,
+                          @Value("${scryfall.api.rate-limit-delay-ms:100}") long rateLimitDelayMs,
                           MagicCardMapper mapper) {
         this.scryfallRestTemplate = scryfallRestTemplate;
         this.baseUrl = baseUrl;
         this.retryAttempts = retryAttempts;
         this.retryDelayMs = retryDelayMs;
+        this.rateLimitDelayMs = rateLimitDelayMs;
         this.mapper = mapper;
+    }
+
+    public ScryfallClient(RestTemplate scryfallRestTemplate,
+                          String baseUrl,
+                          int retryAttempts,
+                          long retryDelayMs,
+                          MagicCardMapper mapper) {
+        this(scryfallRestTemplate, baseUrl, retryAttempts, retryDelayMs, 0, mapper);
     }
 
     @Override
@@ -48,6 +63,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
         if (query == null || query.isBlank()) {
             return List.of();
         }
+        pace();
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(SEARCH_PATH)
                 .queryParam("q", query)
@@ -72,6 +88,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
         if (colors != null && !colors.isBlank()) {
             query.append(" id<=").append(colors.trim().toLowerCase(Locale.ROOT));
         }
+        pace();
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(SEARCH_PATH)
                 .queryParam("q", query.toString())
@@ -92,6 +109,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
 
     @Override
     public MagicCard findById(String id) {
+        pace();
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(CARD_PATH)
                 .pathSegment(id)
@@ -112,6 +130,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
 
     @Override
     public MagicCard findByName(String name) {
+        pace();
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(NAMED_PATH)
                 .queryParam("fuzzy", name)
@@ -155,9 +174,26 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
         throw last;
     }
 
+    private void pace() {
+        if (rateLimitDelayMs <= 0) {
+            return;
+        }
+        synchronized (this) {
+            long waitMs = lastRequestTime.get() + rateLimitDelayMs - System.currentTimeMillis();
+            if (waitMs > 0) {
+                sleepMs(waitMs);
+            }
+            lastRequestTime.set(System.currentTimeMillis());
+        }
+    }
+
     private void sleep() {
+        sleepMs(retryDelayMs);
+    }
+
+    private void sleepMs(long millis) {
         try {
-            Thread.sleep(retryDelayMs);
+            Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
