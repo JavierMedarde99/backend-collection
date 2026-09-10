@@ -13,5 +13,7 @@ public interface DeckRepository {
 
     void deleteById(String id);
 
+    List<Deck> findAll();
+
     List<Deck> findByName(String name);
 }

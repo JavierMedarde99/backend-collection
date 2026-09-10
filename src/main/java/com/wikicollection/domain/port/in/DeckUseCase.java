@@ -1,9 +1,15 @@
 package com.wikicollection.domain.port.in;
 
+import java.util.List;
+
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckStatus;
 
 public interface DeckUseCase {
+
+    List<Deck> findAll();
+
+    List<Deck> findByName(String name);
 
     Deck findById(String id);
 

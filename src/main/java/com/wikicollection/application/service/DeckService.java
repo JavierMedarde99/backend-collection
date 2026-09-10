@@ -40,6 +40,16 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    public List<Deck> findAll() {
+        return deckRepository.findAll();
+    }
+
+    @Override
+    public List<Deck> findByName(String name) {
+        return deckRepository.findByName(name);
+    }
+
+    @Override
     public Deck findById(String id) {
         return deckRepository.findById(id)
                 .orElseThrow(() -> new DeckNotFoundException("Mazo no encontrado con id: " + id));

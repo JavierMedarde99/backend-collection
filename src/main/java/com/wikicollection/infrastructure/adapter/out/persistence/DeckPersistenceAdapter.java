@@ -37,6 +37,13 @@ public class DeckPersistenceAdapter implements DeckRepository {
     }
 
     @Override
+    public List<Deck> findAll() {
+        return springDataDeckRepository.findAll().stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Deck> findByName(String name) {
         return springDataDeckRepository.findByName(name).stream()
                 .map(mapper::toDomain)

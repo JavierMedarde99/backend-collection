@@ -88,6 +88,16 @@ class DeckPersistenceAdapterTest {
     }
 
     @Test
+    void findAll_mapsEntities() {
+        DeckEntity entity = DeckEntity.builder().id("d1").name("Mi Commander").build();
+        Deck expected = sampleDeck();
+        when(springDataDeckRepository.findAll()).thenReturn(List.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(expected);
+
+        assertThat(adapter.findAll()).containsExactly(expected);
+    }
+
+    @Test
     void findByName_mapsEntities() {
         DeckEntity entity = DeckEntity.builder().id("d1").name("Mi Commander").build();
         Deck expected = sampleDeck();

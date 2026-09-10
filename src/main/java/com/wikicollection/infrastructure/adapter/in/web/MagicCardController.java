@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
+import com.wikicollection.domain.port.in.DeckSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardDtoMapper;
@@ -38,13 +39,16 @@ public class MagicCardController {
 
     private final MagicCardUseCase magicCardUseCase;
     private final MagicCardSearchUseCase magicCardSearchUseCase;
+    private final DeckSearchUseCase deckSearchUseCase;
     private final MagicCardDtoMapper mapper;
 
     public MagicCardController(MagicCardUseCase magicCardUseCase,
                                MagicCardSearchUseCase magicCardSearchUseCase,
+                               DeckSearchUseCase deckSearchUseCase,
                                MagicCardDtoMapper mapper) {
         this.magicCardUseCase = magicCardUseCase;
         this.magicCardSearchUseCase = magicCardSearchUseCase;
+        this.deckSearchUseCase = deckSearchUseCase;
         this.mapper = mapper;
     }
 
@@ -114,6 +118,16 @@ public class MagicCardController {
     public MagicCardSearchResponse search(
             @Parameter(description = "Nombre a buscar") @RequestParam("name") String name) {
         return new MagicCardSearchResponse(name, magicCardSearchUseCase.search(name));
+    }
+
+    @GetMapping("/commanders")
+    @Operation(summary = "Busca comandantes en el catálogo externo", description = "Busca en Scryfall cartas que pueden ser comandante, filtrando por identidad de color (wubrg).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Resultados de búsqueda")
+    })
+    public MagicCardSearchResponse commanders(
+            @Parameter(description = "Colores en formato wubrg, p. ej. 'rug'") @RequestParam(value = "colors", required = false, defaultValue = "") String colors) {
+        return new MagicCardSearchResponse(colors, deckSearchUseCase.searchCommanders(colors));
     }
 
     private Sort buildSort(String sort) {
