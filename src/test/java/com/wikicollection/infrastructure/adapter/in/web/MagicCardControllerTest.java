@@ -89,8 +89,7 @@ class MagicCardControllerTest {
                         .param("name", "bolt")
                         .param("rarity", "rare")
                         .param("color", "R")
-                        .param("type", "Instant")
-                        .param("convertedManaCost", "1.0"))
+                        .param("type", "Instant"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<MagicCardSearchCriteria> captor = ArgumentCaptor.forClass(MagicCardSearchCriteria.class);
@@ -100,7 +99,6 @@ class MagicCardControllerTest {
         org.assertj.core.api.Assertions.assertThat(criteria.rarity()).isEqualTo("rare");
         org.assertj.core.api.Assertions.assertThat(criteria.color()).isEqualTo("R");
         org.assertj.core.api.Assertions.assertThat(criteria.type()).isEqualTo("Instant");
-        org.assertj.core.api.Assertions.assertThat(criteria.convertedManaCost()).isEqualTo(1.0);
     }
 
     @Test

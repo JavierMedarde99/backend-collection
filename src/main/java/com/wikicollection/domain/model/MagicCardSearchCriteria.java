@@ -4,11 +4,10 @@ public record MagicCardSearchCriteria(
         String name,
         String rarity,
         String color,
-        String type,
-        Double convertedManaCost) {
+        String type) {
 
     public MagicCardSearchCriteria(String name) {
-        this(name, null, null, null, null);
+        this(name, null, null, null);
     }
 
     public boolean hasName() {
@@ -25,9 +24,5 @@ public record MagicCardSearchCriteria(
 
     public boolean hasType() {
         return type != null && !type.isBlank();
-    }
-
-    public boolean hasConvertedManaCost() {
-        return convertedManaCost != null;
     }
 }
