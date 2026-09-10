@@ -116,8 +116,32 @@ class ScryfallClientTest {
     }
 
     @Test
-    void findByName_mapsFuzzyCard() throws Exception {
+    void searchCommanders_filtersByColorIdentity() throws Exception {
         server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(searchFixture()));
+
+        List<MagicCardSearchResult> results = client.searchCommanders("R");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).colors()).containsExactly("R");
+        assertThat(results.get(0).colorIdentity()).containsExactly("R");
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).startsWith("/cards/search");
+        assertThat(request.getPath()).contains("commander");
+    }
+
+    @Test
+    void searchCommanders_returnsEmpty_onServerError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500));
+
+        assertThat(client.searchCommanders("R")).isEmpty();
+    }
+
+    @Test
+    void findByName_mapsFuzzyCard() throws Exception {        server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(cardFixture()));

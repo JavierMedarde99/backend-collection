@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.out.scryfall;
 
 import java.util.List;
+import java.util.Locale;
 
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchResult;
@@ -50,6 +51,30 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(SEARCH_PATH)
                 .queryParam("q", query)
+                .build()
+                .toUriString();
+        try {
+            MagicCardMapper.ScryfallListResponse response =
+                    executeWithRetry(() -> scryfallRestTemplate.getForObject(uri, MagicCardMapper.ScryfallListResponse.class));
+            return mapper.mapResponse(response);
+        } catch (RestClientResponseException e) {
+            log.warn("Scryfall devolvió error {}: {}", e.getStatusCode(), e.getMessage());
+            return List.of();
+        } catch (ResourceAccessException e) {
+            log.warn("Scryfall no disponible: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<MagicCardSearchResult> searchCommanders(String colors) {
+        StringBuilder query = new StringBuilder("is:commander");
+        if (colors != null && !colors.isBlank()) {
+            query.append(" id<=").append(colors.trim().toLowerCase(Locale.ROOT));
+        }
+        String uri = UriComponentsBuilder.fromUriString(baseUrl)
+                .path(SEARCH_PATH)
+                .queryParam("q", query.toString())
                 .build()
                 .toUriString();
         try {

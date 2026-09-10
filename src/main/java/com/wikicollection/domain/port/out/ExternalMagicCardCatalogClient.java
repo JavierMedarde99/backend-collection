@@ -9,6 +9,8 @@ public interface ExternalMagicCardCatalogClient {
 
     List<MagicCardSearchResult> search(String query);
 
+    List<MagicCardSearchResult> searchCommanders(String colors);
+
     MagicCard findById(String id);
 
     MagicCard findByName(String name);
