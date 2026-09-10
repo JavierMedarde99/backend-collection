@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +20,7 @@ import com.wikicollection.domain.model.MagicCardSearchResult;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.infrastructure.adapter.out.scryfall.ScryfallClient;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +28,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.HttpClientErrorException;
 
 @SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})
 @AutoConfigureMockMvc
@@ -137,17 +141,51 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void addFromScryfall_returns201_withLocationAndColorIdentity() throws Exception {
+        MagicCard fetched = MagicCard.builder()
+                .scryfallId("sf-1")
+                .name("Lightning Bolt")
+                .colors(List.of("R"))
+                .colorIdentity(List.of("R"))
+                .build();
+        when(scryfallClient.findById("sf-1")).thenReturn(fetched);
+        when(magicCardRepository.save(fetched)).thenAnswer(invocation -> {
+            MagicCard saved = invocation.getArgument(0);
+            saved.setId("mc1");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/magic/scryfall/sf-1"))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", Matchers.containsString("/api/magic/mc1")))
+                .andExpect(jsonPath("$.id").value("mc1"))
+                .andExpect(jsonPath("$.scryfallId").value("sf-1"))
+                .andExpect(jsonPath("$.colorIdentity[0]").value("R"));
+    }
+
+    @Test
+    void addFromScryfall_returns404_whenCatalogMissing() throws Exception {
+        when(scryfallClient.findById("missing")).thenThrow(
+                new HttpClientErrorException(HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(post("/api/magic/scryfall/missing"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void search_returnsResultsFromScryfall() throws Exception {
         MagicCardSearchResult result = new MagicCardSearchResult(
                 "id-1", "Lightning Bolt", "{R}", "Instant", "uncommon",
-                "msc", "Marvel Super Heroes Commander", "http://img", "0.65");
+                "msc", "Marvel Super Heroes Commander", "http://img", "0.65",
+                List.of("R"), List.of("R"));
         when(scryfallClient.search("lightning")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/magic/search").param("name", "lightning"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.query").value("lightning"))
                 .andExpect(jsonPath("$.results[0].name").value("Lightning Bolt"))
-                .andExpect(jsonPath("$.results[0].setName").value("Marvel Super Heroes Commander"));
+                .andExpect(jsonPath("$.results[0].setName").value("Marvel Super Heroes Commander"))
+                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("R"));
     }
 
     @Test

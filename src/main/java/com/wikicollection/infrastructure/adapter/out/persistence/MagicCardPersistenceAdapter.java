@@ -72,6 +72,12 @@ public class MagicCardPersistenceAdapter implements MagicCardRepository {
     }
 
     @Override
+    public MagicCard save(MagicCard magicCard) {
+        MagicCardEntity saved = springDataMagicCardRepository.save(mapper.toEntity(magicCard));
+        return mapper.toDomain(saved);
+    }
+
+    @Override
     public void deleteById(String id) {
         springDataMagicCardRepository.deleteById(id);
     }

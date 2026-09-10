@@ -120,6 +120,19 @@ class MagicCardPersistenceAdapterTest {
     }
 
     @Test
+    void save_mapsDomainToEntity_andBack() {
+        MagicCard card = sampleCard();
+        MagicCardEntity entity = MagicCardEntity.builder().id("mc1").name("Lightning Bolt").build();
+        when(mapper.toEntity(card)).thenReturn(entity);
+        when(springDataMagicCardRepository.save(entity)).thenReturn(entity);
+        when(mapper.toDomain(entity)).thenReturn(card);
+
+        MagicCard result = adapter.save(card);
+
+        assertThat(result).isSameAs(card);
+    }
+
+    @Test
     void deleteById_delegatesToSpringData() {
         adapter.deleteById("mc1");
 

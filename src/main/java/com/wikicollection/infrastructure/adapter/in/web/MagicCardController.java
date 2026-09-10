@@ -7,6 +7,8 @@ import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardSearchResponse;
 
+import java.net.URI;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,9 +18,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,6 +77,20 @@ public class MagicCardController {
     public MagicCardResponse getById(
             @Parameter(description = "Identificador de la carta") @PathVariable String id) {
         return mapper.toResponse(magicCardUseCase.findById(id));
+    }
+
+    @PostMapping("/scryfall/{scryfallId}")
+    @Operation(summary = "Añade una carta Magic desde Scryfall", description = "Obtiene la carta completa de Scryfall por su identificador y la guarda en la colección local.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Carta añadida"),
+            @ApiResponse(responseCode = "404", description = "Carta no encontrada en Scryfall")
+    })
+    public ResponseEntity<MagicCardResponse> addFromScryfall(
+            @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId,
+            UriComponentsBuilder ucb) {
+        var saved = magicCardUseCase.addFromScryfall(scryfallId);
+        URI location = ucb.path("/api/magic/{id}").buildAndExpand(saved.getId()).toUri();
+        return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 
     @DeleteMapping("/{id}")
