@@ -10,6 +10,7 @@ import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper.ScryfallCardResponse;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     private final MagicCardMapper mapper;
     private final AtomicLong lastRequestTime = new AtomicLong(0);
 
+    @Autowired
     public ScryfallClient(@Qualifier("scryfallRestTemplate") RestTemplate scryfallRestTemplate,
                           @Value("${scryfall.api.base-url:https://api.scryfall.com}") String baseUrl,
                           @Value("${scryfall.api.retry-attempts:3}") int retryAttempts,
