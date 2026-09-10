@@ -9,6 +9,7 @@ import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
+import com.wikicollection.domain.model.DeckStatusReport;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.DeckUseCase;
@@ -129,6 +130,12 @@ public class DeckService implements DeckUseCase {
     @Override
     public DeckStatus getStatus(String deckId) {
         return validator.evaluate(findById(deckId));
+    }
+
+    @Override
+    public DeckStatusReport getStatusReport(String deckId) {
+        Deck deck = findById(deckId);
+        return new DeckStatusReport(validator.evaluate(deck), validator.validate(deck));
     }
 
     private MagicCard fetchFromCatalog(String scryfallId) {

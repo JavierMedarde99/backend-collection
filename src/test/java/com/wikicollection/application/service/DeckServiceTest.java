@@ -14,6 +14,7 @@ import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
+import com.wikicollection.domain.model.DeckStatusReport;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.out.DeckRepository;
@@ -199,6 +200,37 @@ class DeckServiceTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
         assertThat(deckService().getStatus("d1")).isEqualTo(DeckStatus.DRAFT);
+    }
+
+    @Test
+    void getStatusReport_returnsEmptyReasons_whenValid() {
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
+
+        DeckStatusReport report = deckService().getStatusReport("d1");
+
+        assertThat(report.status()).isEqualTo(DeckStatus.DRAFT);
+        assertThat(report.reasons()).isEmpty();
+    }
+
+    @Test
+    void getStatusReport_returnsReasons_whenInvalid() {
+        Deck deck = sampleDeck();
+        deck.setCards(new java.util.ArrayList<>(List.of(
+                DeckCard.builder().cardName("Black Lotus").quantity(1).scryfallId("sf-x").build())));
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+
+        DeckStatusReport report = deckService().getStatusReport("d1");
+
+        assertThat(report.status()).isEqualTo(DeckStatus.INVALID);
+        assertThat(report.reasons()).anyMatch(r -> r.contains("Black Lotus"));
+    }
+
+    @Test
+    void getStatusReport_throwsNotFound_whenMissing() {
+        when(deckRepository.findById("nope")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> deckService().getStatusReport("nope"))
+                .isInstanceOf(DeckNotFoundException.class);
     }
 
     @Test

@@ -220,11 +220,26 @@ class DeckControllerTest {
     }
 
     @Test
-    void status_returnsDraft_forNewDeck() throws Exception {
+    void status_returnsDraft_withNullMessage() throws Exception {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
         mockMvc.perform(get("/api/decks/d1/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value("DRAFT"));
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.message").doesNotExist());
+    }
+
+    @Test
+    void status_returnsInvalid_withReason() throws Exception {
+        Deck deck = sampleDeck();
+        deck.setCards(new java.util.ArrayList<>(List.of(
+                com.wikicollection.domain.model.DeckCard.builder()
+                        .cardName("Black Lotus").quantity(1).scryfallId("sf-x").build())));
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+
+        mockMvc.perform(get("/api/decks/d1/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("INVALID"))
+                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("Black Lotus")));
     }
 }

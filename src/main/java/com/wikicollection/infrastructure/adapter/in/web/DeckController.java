@@ -3,12 +3,12 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 
-import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.port.in.DeckUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckCardRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.DeckStatusResponse;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -136,8 +136,8 @@ public class DeckController {
             @ApiResponse(responseCode = "200", description = "Estado calculado"),
             @ApiResponse(responseCode = "404", description = "Mazo no encontrado")
     })
-    public DeckStatus status(
+    public DeckStatusResponse status(
             @Parameter(description = "Identificador del mazo") @PathVariable String id) {
-        return deckUseCase.getStatus(id);
+        return mapper.toStatusResponse(deckUseCase.getStatusReport(id));
     }
 }
