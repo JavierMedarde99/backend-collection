@@ -141,6 +141,28 @@ class ScryfallClientTest {
     }
 
     @Test
+    void rateLimit_spacesConsecutiveRequests() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(searchFixture()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(searchFixture()));
+        ScryfallClient paced = new ScryfallClient(new RestTemplate(), server.url("").toString(),
+                0, 0, 200, new MagicCardMapper());
+
+        long start = System.currentTimeMillis();
+        paced.search("lightning");
+        paced.search("bolt");
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertThat(server.getRequestCount()).isEqualTo(2);
+        assertThat(elapsed).isGreaterThanOrEqualTo(150L);
+    }
+
+    @Test
     void findByName_mapsFuzzyCard() throws Exception {        server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
