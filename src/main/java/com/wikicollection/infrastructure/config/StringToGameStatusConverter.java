@@ -10,6 +10,9 @@ public class StringToGameStatusConverter implements Converter<String, GameStatus
 
     @Override
     public GameStatus convert(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
         return GameStatus.valueOf(source.trim().toUpperCase());
     }
 }
