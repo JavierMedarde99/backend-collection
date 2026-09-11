@@ -29,7 +29,7 @@ class DeckSearchServiceTest {
 
     private MagicCardSearchResult sampleResult(String name) {
         return new MagicCardSearchResult("id-1", name, "{R}", "Legendary Creature", "mythic",
-                "msc", "Set", "http://img", "0.65", List.of("R"), List.of("R"));
+                "msc", "Set", "http://img", "0.65", List.of("R"), List.of("R"), "Flying, vigilance.");
     }
 
     @Test
