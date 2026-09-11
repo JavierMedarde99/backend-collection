@@ -21,7 +21,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document(collection = "GAMES")
+@Document(collection = "games")
 public class GameEntity {
 
     @Id

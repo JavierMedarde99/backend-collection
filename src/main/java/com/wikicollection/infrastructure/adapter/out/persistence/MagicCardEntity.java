@@ -23,7 +23,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document(collection = "MAGIC_CARDS")
+@Document(collection = "magic_cards")
 public class MagicCardEntity {
 
     @Id

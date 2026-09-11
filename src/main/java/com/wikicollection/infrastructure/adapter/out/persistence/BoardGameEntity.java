@@ -22,7 +22,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document(collection = "BOARD_GAMES")
+@Document(collection = "board_games")
 public class BoardGameEntity {
 
     @Id
