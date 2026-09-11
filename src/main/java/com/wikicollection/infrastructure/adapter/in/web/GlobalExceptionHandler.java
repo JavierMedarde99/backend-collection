@@ -7,6 +7,8 @@ import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.application.exception.MovieShowConflictException;
+import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
 
@@ -46,6 +48,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DeckNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleDeckNotFound(DeckNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(MovieShowNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMovieShowNotFound(MovieShowNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(MovieShowConflictException.class)
+    public ResponseEntity<ErrorResponse> handleMovieShowConflict(MovieShowConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BookConflictException.class)
