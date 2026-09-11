@@ -46,13 +46,22 @@ public class TmdbClient implements ExternalMovieCatalogClient {
 
     @Override
     public List<MovieSearchResult> search(String query) {
+        return search(query, null);
+    }
+
+    @Override
+    public List<MovieSearchResult> search(String query, MovieMediaType mediaType) {
         if (query == null || query.isBlank()) {
             return List.of();
         }
         try {
             List<MovieSearchResult> results = new ArrayList<>();
-            results.addAll(fetch(SEARCH_MOVIE_PATH, query, MovieMediaType.MOVIE));
-            results.addAll(fetch(SEARCH_TV_PATH, query, MovieMediaType.TV));
+            if (mediaType == null || mediaType == MovieMediaType.MOVIE) {
+                results.addAll(fetch(SEARCH_MOVIE_PATH, query, MovieMediaType.MOVIE));
+            }
+            if (mediaType == null || mediaType == MovieMediaType.TV) {
+                results.addAll(fetch(SEARCH_TV_PATH, query, MovieMediaType.TV));
+            }
             return results;
         } catch (RestClientResponseException e) {
             log.warn("TMDB devolvió error {}: {}", e.getStatusCode(), e.getMessage());

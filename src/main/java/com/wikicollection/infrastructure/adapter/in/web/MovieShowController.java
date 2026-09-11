@@ -125,14 +125,15 @@ public class MovieShowController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Busca películas y series en el catálogo externo", description = "Busca en TMDB por título.")
+    @Operation(summary = "Busca películas y series en el catálogo externo", description = "Busca en TMDB por título, opcionalmente filtrando por tipo.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Resultados de búsqueda"),
             @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio")
     })
     public List<MovieSearchResult> search(
-            @Parameter(description = "Título a buscar") @RequestParam("name") String name) {
-        return movieSearchUseCase.search(name);
+            @Parameter(description = "Título a buscar") @RequestParam("name") String name,
+            @Parameter(description = "Tipo: MOVIE o TV (por defecto ambos)") @RequestParam(required = false) MovieMediaType mediaType) {
+        return movieSearchUseCase.search(name, mediaType);
     }
 
     private Sort buildSort(String sort) {

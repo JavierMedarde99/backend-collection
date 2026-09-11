@@ -188,9 +188,22 @@ class MovieShowControllerTest {
         MovieSearchResult result = new MovieSearchResult("550", "Fight Club", "Overview",
                 LocalDate.of(1999, 10, 15), "http://poster", "http://backdrop",
                 8.4, MovieMediaType.MOVIE, "TMDB");
-        when(catalogClient.search("fight")).thenReturn(List.of(result));
+        when(catalogClient.search("fight", null)).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/movies/search").param("name", "fight"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Fight Club"))
+                .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
+    }
+
+    @Test
+    void search_filtersByMediaType() throws Exception {
+        MovieSearchResult result = new MovieSearchResult("550", "Fight Club", "Overview",
+                LocalDate.of(1999, 10, 15), "http://poster", "http://backdrop",
+                8.4, MovieMediaType.MOVIE, "TMDB");
+        when(catalogClient.search("fight", MovieMediaType.MOVIE)).thenReturn(List.of(result));
+
+        mockMvc.perform(get("/api/movies/search").param("name", "fight").param("mediaType", "movie"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Fight Club"))
                 .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
