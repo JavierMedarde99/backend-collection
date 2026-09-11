@@ -84,6 +84,74 @@ class TmdbClientTest {
     }
 
     @Test
+    void search_returnsEmpty_whenServiceUnreachable() {
+        RestClient unreachable = RestClient.builder().baseUrl("http://localhost:1").build();
+        TmdbClient offline = new TmdbClient(unreachable, "", 0, 0);
+
+        assertThat(offline.search("club")).isEmpty();
+    }
+
+    @Test
+    void search_sendsApiKey_whenConfigured() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(movieFixture()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(tvFixture()));
+        RestClient restClient = RestClient.builder().baseUrl(server.url("").toString()).build();
+        TmdbClient keyed = new TmdbClient(restClient, "secret", 0, 0);
+
+        assertThat(keyed.search("club")).hasSize(2);
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).contains("api_key=secret");
+    }
+
+    @Test
+    void search_skipsNullBody_andMapsMissingFields() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(""));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(partialFixture()));
+
+        List<MovieSearchResult> results = client.search("club");
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).externalId()).isNull();
+        assertThat(results.get(0).posterUrl()).isNull();
+        assertThat(results.get(0).releaseDate()).isNull();
+        assertThat(results.get(1).releaseDate()).isNull();
+    }
+
+    private String partialFixture() {
+        return """
+                {
+                  "page": 1,
+                  "results": [
+                    {
+                      "overview": "Sin id ni fecha válida",
+                      "release_date": "",
+                      "vote_average": 5.0
+                    },
+                    {
+                      "id": 7,
+                      "title": "Rara",
+                      "release_date": "not-a-date",
+                      "vote_average": 1.0
+                    }
+                  ],
+                  "total_results": 2
+                }
+                """;
+    }
+    @Test
     void retriesAndReturnsEmpty_whenUnavailable() throws Exception {
         for (int i = 0; i < 4; i++) {
             server.enqueue(new MockResponse().setResponseCode(503));

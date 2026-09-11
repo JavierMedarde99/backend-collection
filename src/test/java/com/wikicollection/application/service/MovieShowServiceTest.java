@@ -101,6 +101,19 @@ class MovieShowServiceTest {
     }
 
     @Test
+    void save_skipsDuplicateCheck_whenBlankExternalId() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        show.setExternalId("  ");
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MovieShow result = movieShowService.save(show);
+
+        assertThat(result).isSameAs(show);
+        verify(movieShowRepository, org.mockito.Mockito.never()).findByExternalId(any());
+    }
+
+    @Test
     void save_rejectsFutureDates() {
         MovieShow show = sampleShow();
         show.setDateAdded(LocalDate.now().plusDays(1));
