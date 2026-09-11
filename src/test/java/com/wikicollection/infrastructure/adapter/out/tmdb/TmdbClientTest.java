@@ -77,6 +77,36 @@ class TmdbClientTest {
     }
 
     @Test
+    void search_withMovieType_onlyCallsMovieEndpoint() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(movieFixture()));
+
+        List<MovieSearchResult> results = client.search("club", MovieMediaType.MOVIE);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).mediaType()).isEqualTo(MovieMediaType.MOVIE);
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(server.takeRequest().getPath()).startsWith("/search/movie");
+    }
+
+    @Test
+    void search_withTvType_onlyCallsTvEndpoint() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(tvFixture()));
+
+        List<MovieSearchResult> results = client.search("breaking", MovieMediaType.TV);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).mediaType()).isEqualTo(MovieMediaType.TV);
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(server.takeRequest().getPath()).startsWith("/search/tv");
+    }
+
+    @Test
     void search_returnsEmpty_onUnauthorized() throws Exception {
         server.enqueue(new MockResponse().setResponseCode(401));
 

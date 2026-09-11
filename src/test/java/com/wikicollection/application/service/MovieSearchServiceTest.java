@@ -38,12 +38,23 @@ class MovieSearchServiceTest {
     @Test
     void search_returnsResultsFromCatalog() {
         MovieSearchResult result = sampleResult("Fight Club");
-        when(catalogClient.search("fight")).thenReturn(List.of(result));
+        when(catalogClient.search("fight", null)).thenReturn(List.of(result));
 
         List<MovieSearchResult> results = movieSearchService.search("fight");
 
         assertThat(results).containsExactly(result);
-        verify(catalogClient).search("fight");
+        verify(catalogClient).search("fight", null);
+    }
+
+    @Test
+    void search_withMediaType_delegatesFilter() {
+        MovieSearchResult result = sampleResult("Fight Club");
+        when(catalogClient.search("fight", MovieMediaType.MOVIE)).thenReturn(List.of(result));
+
+        List<MovieSearchResult> results = movieSearchService.search("fight", MovieMediaType.MOVIE);
+
+        assertThat(results).containsExactly(result);
+        verify(catalogClient).search("fight", MovieMediaType.MOVIE);
     }
 
     @Test
@@ -51,7 +62,7 @@ class MovieSearchServiceTest {
         List<MovieSearchResult> results = java.util.stream.IntStream.range(0, 15)
                 .mapToObj(i -> sampleResult("Título " + i))
                 .toList();
-        when(catalogClient.search("titulo")).thenReturn(results);
+        when(catalogClient.search("titulo", null)).thenReturn(results);
 
         assertThat(movieSearchService.search("titulo")).hasSize(10);
     }
