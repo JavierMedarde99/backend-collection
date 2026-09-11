@@ -41,7 +41,7 @@ class MovieShowModelTest {
     @Test
     void enums_haveExpectedValues() {
         assertThat(MovieStatus.values()).containsExactly(
-                MovieStatus.WATCHING, MovieStatus.WATCHED, MovieStatus.WISHLIST, MovieStatus.PLAN_TO_WATCH);
+                MovieStatus.WATCHING, MovieStatus.WATCHED, MovieStatus.PLAN_TO_WATCH);
         assertThat(MovieMediaType.values()).containsExactly(MovieMediaType.MOVIE, MovieMediaType.TV);
     }
 }
