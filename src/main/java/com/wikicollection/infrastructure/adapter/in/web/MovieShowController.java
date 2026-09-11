@@ -39,7 +39,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/movies")
+@RequestMapping("/api/movieshows")
 @Validated
 @Tag(name = "Películas y series", description = "Gestión del catálogo de películas y series")
 public class MovieShowController {
@@ -94,7 +94,7 @@ public class MovieShowController {
     })
     public ResponseEntity<MovieShowResponse> create(@Valid @RequestBody MovieShowRequest request, UriComponentsBuilder ucb) {
         var saved = movieShowUseCase.save(mapper.toDomain(request));
-        URI location = ucb.path("/api/movies/{id}").buildAndExpand(saved.getId()).toUri();
+        URI location = ucb.path("/api/movieshows/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 
