@@ -32,7 +32,7 @@ class MagicCardSearchServiceTest {
     private MagicCardSearchResult sampleResult(String name) {
         return new MagicCardSearchResult("id-1", name, "{R}", "Instant", "uncommon",
                 "msc", "Marvel Super Heroes Commander", "http://img", "0.65",
-                List.of("R"), List.of("R"));
+                List.of("R"), List.of("R"), "Lightning Bolt deals 3 damage to any target.");
     }
 
     @Test

@@ -175,7 +175,7 @@ class MagicCardControllerTest {
         MagicCardSearchResult result = new MagicCardSearchResult(
                 "id-1", "Lightning Bolt", "{R}", "Instant", "uncommon",
                 "msc", "Marvel Super Heroes Commander", "http://img", "0.65",
-                List.of("R"), List.of("R"));
+                List.of("R"), List.of("R"), "Lightning Bolt deals 3 damage to any target.");
         when(scryfallClient.search("lightning")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/magic/search").param("name", "lightning"))
@@ -183,7 +183,8 @@ class MagicCardControllerTest {
                 .andExpect(jsonPath("$.query").value("lightning"))
                 .andExpect(jsonPath("$.results[0].name").value("Lightning Bolt"))
                 .andExpect(jsonPath("$.results[0].setName").value("Marvel Super Heroes Commander"))
-                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("R"));
+                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("R"))
+                .andExpect(jsonPath("$.results[0].text").value("Lightning Bolt deals 3 damage to any target."));
     }
 
     @Test
@@ -197,7 +198,7 @@ class MagicCardControllerTest {
         MagicCardSearchResult result = new MagicCardSearchResult(
                 "id-9", "Atraxa, Praetors' Voice", "{W}{U}{B}{G}", "Legendary Creature", "mythic",
                 "msc", "Set", "http://img", "5.00",
-                List.of("W", "U", "B", "G"), List.of("W", "U", "B", "G"));
+                List.of("W", "U", "B", "G"), List.of("W", "U", "B", "G"), "Flying, vigilance.");
         when(scryfallClient.searchCommanders("wubg")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/magic/commanders").param("colors", "wubg"))

@@ -42,6 +42,7 @@ class MagicCardMapperTest {
         assertThat(result.priceUsd()).isEqualTo("0.65");
         assertThat(result.colors()).containsExactly("R");
         assertThat(result.colorIdentity()).containsExactly("R");
+        assertThat(result.text()).isEqualTo("texto");
     }
 
     @Test
