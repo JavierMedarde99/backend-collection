@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 class BggXmlClientTest {
 
@@ -29,7 +29,7 @@ class BggXmlClientTest {
     void setUp() throws Exception {
         server = new MockWebServer();
         server.start();
-        client = new BggXmlClient(new RestTemplate(), server.url("/xmlapi2").toString(), 1, 0, new BoardGameXmlMapper());
+        client = new BggXmlClient(RestClient.builder().baseUrl(server.url("/xmlapi2").toString()).build(), server.url("/xmlapi2").toString(), 1, 0, new BoardGameXmlMapper());
     }
 
     @AfterEach
@@ -184,13 +184,15 @@ class BggXmlClientTest {
 
     @Test
     void search_sendsBearerTokenInBothSearchAndThingCalls() throws Exception {
-        RestTemplate authenticatedTemplate = new RestTemplate();
         ClientHttpRequestInterceptor interceptor = (request, body, execution) -> {
             request.getHeaders().setBearerAuth("test-token");
             return execution.execute(request, body);
         };
-        authenticatedTemplate.getInterceptors().add(interceptor);
-        BggXmlClient authenticatedClient = new BggXmlClient(authenticatedTemplate, server.url("/xmlapi2").toString(), 1, 0, new BoardGameXmlMapper());
+        RestClient authenticatedRestClient = RestClient.builder()
+                .baseUrl(server.url("/xmlapi2").toString())
+                .requestInterceptor(interceptor)
+                .build();
+        BggXmlClient authenticatedClient = new BggXmlClient(authenticatedRestClient, server.url("/xmlapi2").toString(), 1, 0, new BoardGameXmlMapper());
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")

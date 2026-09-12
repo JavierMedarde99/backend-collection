@@ -11,16 +11,14 @@ import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapp
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
@@ -31,18 +29,18 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
     private static final String THING_PATH = "/thing";
     private static final int MAX_THING_IDS = 20;
 
-    private final RestTemplate bggXmlRestTemplate;
+    private final RestClient bggXmlRestClient;
     private final String baseUrl;
     private final int retryAttempts;
     private final long retryDelayMs;
     private final BoardGameXmlMapper mapper;
 
-    public BggXmlClient(@Qualifier("bggXmlRestTemplate") RestTemplate bggXmlRestTemplate,
+    public BggXmlClient(@Qualifier("bggXmlRestClient") RestClient bggXmlRestClient,
                         @Value("${bgg.api.xml-url:https://boardgamegeek.com/xmlapi2}") String baseUrl,
                         @Value("${bgg.api.retry-attempts:3}") int retryAttempts,
                         @Value("${bgg.api.retry-delay-ms:2000}") long retryDelayMs,
                         BoardGameXmlMapper mapper) {
-        this.bggXmlRestTemplate = bggXmlRestTemplate;
+        this.bggXmlRestClient = bggXmlRestClient;
         this.baseUrl = baseUrl;
         this.retryAttempts = retryAttempts;
         this.retryDelayMs = retryDelayMs;
@@ -109,8 +107,17 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
     private ResponseEntity<String> callWithRetry(String label, String uri) {
         String cookie = null;
         for (int attempt = 1; attempt <= retryAttempts + 1; attempt++) {
-            HttpEntity<Void> entity = new HttpEntity<>(headers(cookie));
-            ResponseEntity<String> response = bggXmlRestTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
+            final String currentCookie = cookie;
+            ResponseEntity<String> response = bggXmlRestClient.get()
+                    .uri(uri)
+                    .headers(httpHeaders -> {
+                        httpHeaders.setAccept(List.of(MediaType.APPLICATION_XML));
+                        if (currentCookie != null && !currentCookie.isBlank()) {
+                            httpHeaders.set(HttpHeaders.COOKIE, currentCookie);
+                        }
+                    })
+                    .retrieve()
+                    .toEntity(String.class);
             if (response.getStatusCode() != HttpStatus.ACCEPTED) {
                 return response;
             }
@@ -125,15 +132,6 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
         }
         log.warn("BGG XML siguió devolviendo 202 tras {} reintentos en '{}'", retryAttempts, label);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-    }
-
-    private HttpHeaders headers(String cookie) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_XML));
-        if (cookie != null && !cookie.isBlank()) {
-            headers.set(HttpHeaders.COOKIE, cookie);
-        }
-        return headers;
     }
 
     private String firstSetCookie(ResponseEntity<String> response) {

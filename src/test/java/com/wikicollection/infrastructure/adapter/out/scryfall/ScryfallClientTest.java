@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 class ScryfallClientTest {
 
@@ -28,7 +28,7 @@ class ScryfallClientTest {
     void setUp() throws Exception {
         server = new MockWebServer();
         server.start();
-        client = new ScryfallClient(new RestTemplate(), server.url("").toString(), 0, 0, new MagicCardMapper());
+        client = new ScryfallClient(RestClient.builder().baseUrl(server.url("").toString()).build(), server.url("").toString(), 0, 0, new MagicCardMapper());
     }
 
     @AfterEach
@@ -83,7 +83,7 @@ class ScryfallClientTest {
             server.enqueue(new MockResponse().setResponseCode(503));
         }
 
-        ScryfallClient retrying = new ScryfallClient(new RestTemplate(), server.url("").toString(), 3, 0, new MagicCardMapper());
+        ScryfallClient retrying = new ScryfallClient(RestClient.builder().baseUrl(server.url("").toString()).build(), server.url("").toString(), 3, 0, new MagicCardMapper());
         List<MagicCardSearchResult> results = retrying.search("catan");
 
         assertThat(results).isEmpty();
@@ -150,7 +150,7 @@ class ScryfallClientTest {
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(searchFixture()));
-        ScryfallClient paced = new ScryfallClient(new RestTemplate(), server.url("").toString(),
+        ScryfallClient paced = new ScryfallClient(RestClient.builder().baseUrl(server.url("").toString()).build(), server.url("").toString(),
                 0, 0, 200, new MagicCardMapper());
 
         long start = System.currentTimeMillis();

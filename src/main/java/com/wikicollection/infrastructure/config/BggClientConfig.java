@@ -4,18 +4,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class BggClientConfig {
 
     @Bean
-    public RestTemplate bggXmlRestTemplate(@Value("${bgg.auth.token:}") String token) {
-        RestTemplate restTemplate = new RestTemplate();
+    public RestClient bggXmlRestClient(@Value("${bgg.auth.token:}") String token) {
+        var builder = RestClient.builder()
+                .baseUrl("https://boardgamegeek.com/xmlapi2");
         if (token != null && !token.isBlank()) {
-            restTemplate.getInterceptors().add(bearerTokenInterceptor(token));
+            builder.requestInterceptor(bearerTokenInterceptor(token));
         }
-        return restTemplate;
+        return builder.build();
     }
 
     private ClientHttpRequestInterceptor bearerTokenInterceptor(String token) {
