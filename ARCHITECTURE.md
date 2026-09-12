@@ -159,3 +159,15 @@ Tests mirror the layers and live in the same package structure under `src/test`:
 
 - **Language:** field/method names in code are mix of English structure and Spanish business fields (e.g. `descripcion`, `comment`, `start`, `frontpage` mirror the domain model); error messages are in Spanish.
 - **Workflow:** changes are made on feature branches (`feat/*`, `fix/*`, `docs/*`) and merged to `main` via pull requests, usually closing a linked issue.
+
+## Mapper pattern (manual mapping, no MapStruct)
+
+DTO and persistence mappers are written by hand, one pair per aggregate
+(e.g. `GameDtoMapper` + `GameEntityMapper`, `MovieShowDtoMapper` + `MovieShowEntityMapper`).
+This duplication is deliberate: each mapper is explicit, null-safe (`toDomain(null)` /
+`toResponse(null)` / `toEntity(null)` return `null`), covered by round-trip tests
+(`mapper_roundTripsAllFields`, `mapper_handlesNull`), and keeps the hexagonal boundary
+visible (web DTOs and Mongo entities never leak into the domain). MapStruct was evaluated
+and rejected to avoid another annotation-processor dependency next to Lombok on JDK 25.
+When adding a field to a domain model, update both mappers of that aggregate plus their
+round-trip tests — `mvn verify` (coverage gate ≥ 0.80) will catch a forgotten mapping.
