@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
@@ -68,6 +69,9 @@ public class TmdbClient implements ExternalMovieCatalogClient {
             return List.of();
         } catch (ResourceAccessException e) {
             log.warn("TMDB no disponible: {}", e.getMessage());
+            return List.of();
+        } catch (RestClientException e) {
+            log.warn("TMDB falló: {}", e.getMessage());
             return List.of();
         }
     }

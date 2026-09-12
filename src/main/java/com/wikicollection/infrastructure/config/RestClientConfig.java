@@ -7,38 +7,34 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class RestClientConfig {
 
+    private final HttpClientProperties httpClientProperties;
+
+    public RestClientConfig(HttpClientProperties httpClientProperties) {
+        this.httpClientProperties = httpClientProperties;
+    }
+
     @Bean
     public RestClient googleBooksRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://www.googleapis.com/books")
-                .build();
+        return httpClientProperties.restClientBuilder("https://www.googleapis.com/books").build();
     }
 
     @Bean
     public RestClient rawgRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://api.rawg.io/api")
-                .build();
+        return httpClientProperties.restClientBuilder("https://api.rawg.io/api").build();
     }
 
     @Bean
     public RestClient freeToGameRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://www.freetogame.com/api")
-                .build();
+        return httpClientProperties.restClientBuilder("https://www.freetogame.com/api").build();
     }
 
     @Bean
     public RestClient steamRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://api.steampowered.com")
-                .build();
+        return httpClientProperties.restClientBuilder("https://api.steampowered.com").build();
     }
 
     @Bean
     public RestClient steamStoreRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://store.steampowered.com/api")
-                .build();
+        return httpClientProperties.restClientBuilder("https://store.steampowered.com/api").build();
     }
 }
