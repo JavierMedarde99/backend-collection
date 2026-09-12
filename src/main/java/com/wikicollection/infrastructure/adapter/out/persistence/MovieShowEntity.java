@@ -30,8 +30,7 @@ public class MovieShowEntity {
 
     @Id
     private String id;
-
-    @Indexed(unique = true)
+    
     private String externalId;
 
     @Indexed

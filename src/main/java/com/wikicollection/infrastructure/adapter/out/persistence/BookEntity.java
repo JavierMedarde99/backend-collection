@@ -28,7 +28,6 @@ public class BookEntity {
     @Id
     private String id;
 
-    @Indexed(unique = true)
     private String externalId;
 
     private String title;
