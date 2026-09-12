@@ -10,6 +10,9 @@ public class StringToBookStateConverter implements Converter<String, BookState> 
 
     @Override
     public BookState convert(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
         return BookState.valueOf(source.trim().toUpperCase());
     }
 }

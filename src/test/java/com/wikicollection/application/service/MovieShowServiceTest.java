@@ -101,6 +101,20 @@ class MovieShowServiceTest {
     }
 
     @Test
+    void save_persists_whenExistingHasNullId() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        MovieShow existingWithoutId = sampleShow();
+        existingWithoutId.setId(null);
+        when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(existingWithoutId));
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MovieShow result = movieShowService.save(show);
+
+        assertThat(result).isSameAs(show);
+    }
+
+    @Test
     void save_skipsDuplicateCheck_whenBlankExternalId() {
         MovieShow show = sampleShow();
         show.setId(null);

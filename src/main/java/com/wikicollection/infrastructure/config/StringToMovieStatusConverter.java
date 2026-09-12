@@ -10,6 +10,9 @@ public class StringToMovieStatusConverter implements Converter<String, MovieStat
 
     @Override
     public MovieStatus convert(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
         return MovieStatus.valueOf(source.trim().toUpperCase());
     }
 }

@@ -10,6 +10,9 @@ public class StringToMovieMediaTypeConverter implements Converter<String, MovieM
 
     @Override
     public MovieMediaType convert(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
         return MovieMediaType.valueOf(source.trim().toUpperCase());
     }
 }

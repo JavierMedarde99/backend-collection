@@ -1,5 +1,7 @@
 package com.wikicollection.application.service;
 
+import java.util.Objects;
+
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.domain.model.MovieSearchCriteria;
@@ -61,7 +63,7 @@ public class MovieShowService implements MovieShowUseCase {
             return;
         }
         movieShowRepository.findByExternalId(externalId)
-                .filter(existing -> !existing.getId().equals(currentId))
+                .filter(existing -> !Objects.equals(existing.getId(), currentId))
                 .ifPresent(existing -> {
                     throw new MovieShowConflictException(
                             "Ya existe una película/serie con externalId: " + externalId);
