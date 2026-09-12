@@ -15,8 +15,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
@@ -27,7 +27,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     private static final String NAMED_PATH = "/cards/named";
     private static final String CARD_PATH = "/cards";
 
-    private final RestTemplate scryfallRestTemplate;
+    private final RestClient scryfallRestClient;
     private final String baseUrl;
     private final int retryAttempts;
     private final long retryDelayMs;
@@ -36,13 +36,13 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     private final AtomicLong lastRequestTime = new AtomicLong(0);
 
     @Autowired
-    public ScryfallClient(@Qualifier("scryfallRestTemplate") RestTemplate scryfallRestTemplate,
+    public ScryfallClient(@Qualifier("scryfallRestClient") RestClient scryfallRestClient,
                           @Value("${scryfall.api.base-url:https://api.scryfall.com}") String baseUrl,
                           @Value("${scryfall.api.retry-attempts:3}") int retryAttempts,
                           @Value("${scryfall.api.retry-delay-ms:1000}") long retryDelayMs,
                           @Value("${scryfall.api.rate-limit-delay-ms:100}") long rateLimitDelayMs,
                           MagicCardMapper mapper) {
-        this.scryfallRestTemplate = scryfallRestTemplate;
+        this.scryfallRestClient = scryfallRestClient;
         this.baseUrl = baseUrl;
         this.retryAttempts = retryAttempts;
         this.retryDelayMs = retryDelayMs;
@@ -50,12 +50,12 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
         this.mapper = mapper;
     }
 
-    public ScryfallClient(RestTemplate scryfallRestTemplate,
+    public ScryfallClient(RestClient scryfallRestClient,
                           String baseUrl,
                           int retryAttempts,
                           long retryDelayMs,
                           MagicCardMapper mapper) {
-        this(scryfallRestTemplate, baseUrl, retryAttempts, retryDelayMs, 0, mapper);
+        this(scryfallRestClient, baseUrl, retryAttempts, retryDelayMs, 0, mapper);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
                 .toUriString();
         try {
             MagicCardMapper.ScryfallListResponse response =
-                    executeWithRetry(() -> scryfallRestTemplate.getForObject(uri, MagicCardMapper.ScryfallListResponse.class));
+                    executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
             return mapper.mapResponse(response);
         } catch (RestClientResponseException e) {
             log.warn("Scryfall devolvió error {}: {}", e.getStatusCode(), e.getMessage());
@@ -96,7 +96,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
                 .toUriString();
         try {
             MagicCardMapper.ScryfallListResponse response =
-                    executeWithRetry(() -> scryfallRestTemplate.getForObject(uri, MagicCardMapper.ScryfallListResponse.class));
+                    executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
             return mapper.mapResponse(response);
         } catch (RestClientResponseException e) {
             log.warn("Scryfall devolvió error {}: {}", e.getStatusCode(), e.getMessage());
@@ -117,7 +117,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
                 .toUriString();
         try {
             ScryfallCardResponse response =
-                    executeWithRetry(() -> scryfallRestTemplate.getForObject(uri, ScryfallCardResponse.class));
+                    executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(ScryfallCardResponse.class));
             return mapper.map(response);
         } catch (RestClientResponseException e) {
             log.warn("Scryfall devolvió error {} al obtener carta {}: {}", e.getStatusCode(), id, e.getMessage());
@@ -138,7 +138,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
                 .toUriString();
         try {
             ScryfallCardResponse response =
-                    executeWithRetry(() -> scryfallRestTemplate.getForObject(uri, ScryfallCardResponse.class));
+                    executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(ScryfallCardResponse.class));
             return mapper.map(response);
         } catch (RestClientResponseException e) {
             log.warn("Scryfall devolvió error {} al buscar carta {}: {}", e.getStatusCode(), name, e.getMessage());

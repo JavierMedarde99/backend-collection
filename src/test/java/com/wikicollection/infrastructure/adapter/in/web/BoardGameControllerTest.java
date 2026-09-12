@@ -60,7 +60,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/boardgames"))
+        mockMvc.perform(get("/api/v1/boardgames"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -78,7 +78,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/boardgames")
+        mockMvc.perform(get("/api/v1/boardgames")
                         .param("name", "catan")
                         .param("status", "WISHLIST"))
                 .andExpect(status().isOk());
@@ -92,14 +92,14 @@ class BoardGameControllerTest {
 
     @Test
     void listGames_rejectsLegacyStatus() throws Exception {
-        mockMvc.perform(get("/api/boardgames")
+        mockMvc.perform(get("/api/v1/boardgames")
                         .param("status", "PREVIOUSLY_OWNED"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void createBoardGame_rejectsLegacyStatus() throws Exception {
-        mockMvc.perform(post("/api/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"FOR_TRADE"}
@@ -111,7 +111,7 @@ class BoardGameControllerTest {
     void getBoardGame_returnsGame_whenExists() throws Exception {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(get("/api/boardgames/bg1"))
+        mockMvc.perform(get("/api/v1/boardgames/bg1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("bg1"))
                 .andExpect(jsonPath("$.title").value("Catan"))
@@ -122,7 +122,7 @@ class BoardGameControllerTest {
     void getBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/boardgames/nope"))
+        mockMvc.perform(get("/api/v1/boardgames/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -134,20 +134,20 @@ class BoardGameControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/boardgames/bg-new")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/boardgames/bg-new")))
                 .andExpect(jsonPath("$.id").value("bg-new"))
                 .andExpect(jsonPath("$.title").value("Catan"));
     }
 
     @Test
     void createBoardGame_returns400_whenBlankTitle() throws Exception {
-        mockMvc.perform(post("/api/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","status":"OWNED"}
@@ -157,7 +157,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_returns400_whenMissingStatus() throws Exception {
-        mockMvc.perform(post("/api/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan"}
@@ -167,7 +167,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_returns400_whenMinPlayersOutOfRange() throws Exception {
-        mockMvc.perform(post("/api/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED","minPlayers":0}
@@ -180,7 +180,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/boardgames/bg1")
+        mockMvc.perform(put("/api/v1/boardgames/bg1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","status":"WISHLIST","notes":"Quiero jugarlo"}
@@ -195,7 +195,7 @@ class BoardGameControllerTest {
     void updateBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/boardgames/nope")
+        mockMvc.perform(put("/api/v1/boardgames/nope")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED"}
@@ -207,7 +207,7 @@ class BoardGameControllerTest {
     void deleteBoardGame_returns204_whenExists() throws Exception {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(delete("/api/boardgames/bg1"))
+        mockMvc.perform(delete("/api/v1/boardgames/bg1"))
                 .andExpect(status().isNoContent());
 
         verify(boardGameRepository).deleteById("bg1");
@@ -217,7 +217,7 @@ class BoardGameControllerTest {
     void deleteBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/boardgames/nope"))
+        mockMvc.perform(delete("/api/v1/boardgames/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -229,7 +229,7 @@ class BoardGameControllerTest {
                 "http://img", "http://thumb", new java.math.BigDecimal("8.3"), "BGG");
         when(bggXmlClient.search("catan")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/boardgames/search").param("name", "catan"))
+        mockMvc.perform(get("/api/v1/boardgames/search").param("name", "catan"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.query").value("catan"))
                 .andExpect(jsonPath("$.results[0].title").value("Catan"))
@@ -238,13 +238,13 @@ class BoardGameControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/boardgames/search").param("name", " "))
+        mockMvc.perform(get("/api/v1/boardgames/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        mockMvc.perform(options("/api/boardgames")
+        mockMvc.perform(options("/api/v1/boardgames")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())

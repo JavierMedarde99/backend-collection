@@ -72,7 +72,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/movieshows"))
+        mockMvc.perform(get("/api/v1/movieshows"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -92,7 +92,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/movieshows")
+        mockMvc.perform(get("/api/v1/movieshows")
                         .param("name", "fight")
                         .param("status", "watched")
                         .param("mediaType", "movie"))
@@ -110,7 +110,7 @@ class MovieShowControllerTest {
     void getShow_returnsShow_whenExists() throws Exception {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
 
-        mockMvc.perform(get("/api/movieshows/m1"))
+        mockMvc.perform(get("/api/v1/movieshows/m1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("m1"))
                 .andExpect(jsonPath("$.title").value("Fight Club"));
@@ -120,7 +120,7 @@ class MovieShowControllerTest {
     void getShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/movieshows/nope"))
+        mockMvc.perform(get("/api/v1/movieshows/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -133,20 +133,20 @@ class MovieShowControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/movieshows")
+        mockMvc.perform(post("/api/v1/movieshows")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Fight Club","mediaType":"MOVIE","status":"WATCHED"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/movieshows/m-new")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/movieshows/m-new")))
                 .andExpect(jsonPath("$.id").value("m-new"))
                 .andExpect(jsonPath("$.title").value("Fight Club"));
     }
 
     @Test
     void createShow_returns400_whenBlankTitle() throws Exception {
-        mockMvc.perform(post("/api/movieshows")
+        mockMvc.perform(post("/api/v1/movieshows")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":""}
@@ -160,7 +160,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(sampleShow()));
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/movieshows/m1")
+        mockMvc.perform(put("/api/v1/movieshows/m1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Se7en","mediaType":"MOVIE","status":"WATCHED"}
@@ -173,7 +173,7 @@ class MovieShowControllerTest {
     void updateShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/movieshows/nope")
+        mockMvc.perform(put("/api/v1/movieshows/nope")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Se7en"}
@@ -185,7 +185,7 @@ class MovieShowControllerTest {
     void deleteShow_returns204_whenExists() throws Exception {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
 
-        mockMvc.perform(delete("/api/movieshows/m1"))
+        mockMvc.perform(delete("/api/v1/movieshows/m1"))
                 .andExpect(status().isNoContent());
 
         verify(movieShowRepository).deleteById("m1");
@@ -195,7 +195,7 @@ class MovieShowControllerTest {
     void deleteShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/movieshows/nope"))
+        mockMvc.perform(delete("/api/v1/movieshows/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -206,7 +206,7 @@ class MovieShowControllerTest {
                 8.4, MovieMediaType.MOVIE, "TMDB");
         when(catalogClient.search("fight", null)).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/movieshows/search").param("name", "fight"))
+        mockMvc.perform(get("/api/v1/movieshows/search").param("name", "fight"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Fight Club"))
                 .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
@@ -219,7 +219,7 @@ class MovieShowControllerTest {
                 8.4, MovieMediaType.MOVIE, "TMDB");
         when(catalogClient.search("fight", MovieMediaType.MOVIE)).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/movieshows/search").param("name", "fight").param("mediaType", "movie"))
+        mockMvc.perform(get("/api/v1/movieshows/search").param("name", "fight").param("mediaType", "movie"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Fight Club"))
                 .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
@@ -227,13 +227,13 @@ class MovieShowControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/movieshows/search").param("name", " "))
+        mockMvc.perform(get("/api/v1/movieshows/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        mockMvc.perform(options("/api/movieshows")
+        mockMvc.perform(options("/api/v1/movieshows")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())

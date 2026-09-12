@@ -61,7 +61,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/magic"))
+        mockMvc.perform(get("/api/v1/magic"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -79,7 +79,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/magic").param("name", "lightning"))
+        mockMvc.perform(get("/api/v1/magic").param("name", "lightning"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<MagicCardSearchCriteria> captor = ArgumentCaptor.forClass(MagicCardSearchCriteria.class);
@@ -92,7 +92,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/magic")
+        mockMvc.perform(get("/api/v1/magic")
                         .param("name", "bolt")
                         .param("rarity", "rare")
                         .param("color", "R")
@@ -112,7 +112,7 @@ class MagicCardControllerTest {
     void getCard_returnsCard_whenExists() throws Exception {
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(sampleCard()));
 
-        mockMvc.perform(get("/api/magic/mc1"))
+        mockMvc.perform(get("/api/v1/magic/mc1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("mc1"))
                 .andExpect(jsonPath("$.name").value("Lightning Bolt"))
@@ -123,7 +123,7 @@ class MagicCardControllerTest {
     void getCard_returns404_whenMissing() throws Exception {
         when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/magic/nope"))
+        mockMvc.perform(get("/api/v1/magic/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -131,7 +131,7 @@ class MagicCardControllerTest {
     void deleteCard_returns204_whenExists() throws Exception {
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(sampleCard()));
 
-        mockMvc.perform(delete("/api/magic/mc1"))
+        mockMvc.perform(delete("/api/v1/magic/mc1"))
                 .andExpect(status().isNoContent());
 
         verify(magicCardRepository).deleteById("mc1");
@@ -141,7 +141,7 @@ class MagicCardControllerTest {
     void deleteCard_returns404_whenMissing() throws Exception {
         when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/magic/nope"))
+        mockMvc.perform(delete("/api/v1/magic/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -160,9 +160,9 @@ class MagicCardControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/magic/scryfall/sf-1"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1"))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/magic/mc1")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/magic/mc1")))
                 .andExpect(jsonPath("$.id").value("mc1"))
                 .andExpect(jsonPath("$.scryfallId").value("sf-1"))
                 .andExpect(jsonPath("$.colorIdentity[0]").value("R"));
@@ -173,7 +173,7 @@ class MagicCardControllerTest {
         when(scryfallClient.findById("missing")).thenThrow(
                 new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        mockMvc.perform(post("/api/magic/scryfall/missing"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/missing"))
                 .andExpect(status().isNotFound());
     }
 
@@ -185,7 +185,7 @@ class MagicCardControllerTest {
                 List.of("R"), List.of("R"), "Lightning Bolt deals 3 damage to any target.");
         when(scryfallClient.search("lightning")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/magic/search").param("name", "lightning"))
+        mockMvc.perform(get("/api/v1/magic/search").param("name", "lightning"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.query").value("lightning"))
                 .andExpect(jsonPath("$.results[0].name").value("Lightning Bolt"))
@@ -196,7 +196,7 @@ class MagicCardControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/magic/search").param("name", " "))
+        mockMvc.perform(get("/api/v1/magic/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
@@ -208,7 +208,7 @@ class MagicCardControllerTest {
                 List.of("W", "U", "B", "G"), List.of("W", "U", "B", "G"), "Flying, vigilance.");
         when(scryfallClient.searchCommanders("wubg")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/magic/commanders").param("colors", "wubg"))
+        mockMvc.perform(get("/api/v1/magic/commanders").param("colors", "wubg"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[0].name").value("Atraxa, Praetors' Voice"))
                 .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("W"));
@@ -216,7 +216,7 @@ class MagicCardControllerTest {
 
     @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        mockMvc.perform(options("/api/magic")
+        mockMvc.perform(options("/api/v1/magic")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())

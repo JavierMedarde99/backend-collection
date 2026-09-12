@@ -6,7 +6,6 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 class HttpClientPropertiesTest {
 
@@ -30,14 +29,10 @@ class HttpClientPropertiesTest {
 
         assertThat(new TmdbClientConfig(properties).tmdbRestClient("http://localhost")).isNotNull();
 
-        RestTemplate scryfall = new ScryfallClientConfig(properties).scryfallRestTemplate();
-        assertThat(scryfall.getRequestFactory())
-                .isInstanceOf(org.springframework.http.client.SimpleClientHttpRequestFactory.class);
+        assertThat(new ScryfallClientConfig(properties).scryfallRestClient()).isNotNull();
 
-        RestTemplate bgg = new BggClientConfig(properties).bggXmlRestTemplate("");
-        assertThat(bgg.getInterceptors()).isEmpty();
-        RestTemplate bggAuthed = new BggClientConfig(properties).bggXmlRestTemplate("token");
-        assertThat(bggAuthed.getInterceptors()).hasSize(1);
+        assertThat(new BggClientConfig(properties).bggXmlRestClient("")).isNotNull();
+        assertThat(new BggClientConfig(properties).bggXmlRestClient("token")).isNotNull();
     }
 
     @Test

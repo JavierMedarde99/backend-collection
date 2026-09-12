@@ -41,7 +41,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/books")
+@RequestMapping("/api/v1/books")
 @Validated
 @Tag(name = "Libros", description = "Gestión del catálogo de libros")
 public class BookController {
@@ -94,7 +94,7 @@ public class BookController {
     })
     public ResponseEntity<BookResponse> create(@Valid @RequestBody BookRequest request, UriComponentsBuilder ucb) {
         var saved = bookUseCase.save(mapper.toDomain(request));
-        URI location = ucb.path("/api/books/{id}").buildAndExpand(saved.getId()).toUri();
+        URI location = ucb.path("/api/v1/books/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 

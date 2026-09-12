@@ -66,7 +66,7 @@ class BookControllerTest {
     void listBooks_returnsEmptyPage_whenNoBooks() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/books"))
+        mockMvc.perform(get("/api/v1/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -76,7 +76,7 @@ class BookControllerTest {
     void listBooks_filtersByState() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/books").param("state", "READING"))
+        mockMvc.perform(get("/api/v1/books").param("state", "READING"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
@@ -95,7 +95,7 @@ class BookControllerTest {
     void listBooks_filtersByNameAuthorAndType() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/books")
+        mockMvc.perform(get("/api/v1/books")
                         .param("name", "cien")
                         .param("author", "garcía")
                         .param("type", "NOVEL"))
@@ -113,7 +113,7 @@ class BookControllerTest {
     void getBook_returnsBook_whenExists() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
-        mockMvc.perform(get("/api/books/b1"))
+        mockMvc.perform(get("/api/v1/books/b1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("b1"))
                 .andExpect(jsonPath("$.title").value("Cien años de soledad"))
@@ -124,7 +124,7 @@ class BookControllerTest {
     void getBook_returns404_whenMissing() throws Exception {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/books/nope"))
+        mockMvc.perform(get("/api/v1/books/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -136,20 +136,20 @@ class BookControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años de soledad","author":"Gabriel García Márquez","state":"TO_READ","type":"NOVEL"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/books/b-new")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/books/b-new")))
                 .andExpect(jsonPath("$.id").value("b-new"))
                 .andExpect(jsonPath("$.title").value("Cien años de soledad"));
     }
 
     @Test
     void createBook_returns400_whenInvalid() throws Exception {
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","author":"","state":"TO_READ","type":"NOVEL"}
@@ -163,7 +163,7 @@ class BookControllerTest {
         existing.setExternalId("gb123");
         when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.of(existing));
 
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años de soledad","author":"Gabriel","externalId":"gb123","state":"TO_READ","type":"NOVEL"}
@@ -173,7 +173,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartOutOfRange() throws Exception {
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","start":9}
@@ -183,7 +183,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartDateIsFuture() throws Exception {
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2099-01-01"}
@@ -194,7 +194,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartAfterEnd() throws Exception {
-        mockMvc.perform(post("/api/books")
+        mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2024-06-01","endDate":"2024-01-01"}
@@ -207,7 +207,7 @@ class BookControllerTest {
     void updateBook_returns400_whenEndDateIsFuture() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
-        mockMvc.perform(put("/api/books/b1")
+        mockMvc.perform(put("/api/v1/books/b1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","endDate":"2099-01-01"}
@@ -221,7 +221,7 @@ class BookControllerTest {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/books/b1")
+        mockMvc.perform(put("/api/v1/books/b1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","pages":300}
@@ -237,7 +237,7 @@ class BookControllerTest {
     void deleteBook_returns204_whenExists() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
-        mockMvc.perform(delete("/api/books/b1"))
+        mockMvc.perform(delete("/api/v1/books/b1"))
                 .andExpect(status().isNoContent());
 
         verify(bookRepository).deleteById("b1");
@@ -247,7 +247,7 @@ class BookControllerTest {
     void deleteBook_returns404_whenMissing() throws Exception {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/books/nope"))
+        mockMvc.perform(delete("/api/v1/books/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -259,7 +259,7 @@ class BookControllerTest {
                 "Vintage Español", "2011-05-03", "es", List.of("Literatura"));
         when(googleBooksClient.search("cien")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/books/search").param("name", "cien"))
+        mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Cien años de soledad"))
                 .andExpect(jsonPath("$[0].isbn").value("9780307474728"));
@@ -267,7 +267,7 @@ class BookControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/books/search").param("name", " "))
+        mockMvc.perform(get("/api/v1/books/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
@@ -275,7 +275,7 @@ class BookControllerTest {
     void search_returnsEmpty_whenGoogleUnavailable() throws Exception {
         when(googleBooksClient.search("cien")).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/books/search").param("name", "cien"))
+        mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
@@ -286,7 +286,7 @@ class BookControllerTest {
                 new RestClientResponseException(
                         "error", 500, "Internal Server Error", HttpHeaders.EMPTY, new byte[0], StandardCharsets.UTF_8));
 
-        mockMvc.perform(get("/api/books/search").param("name", "cien"))
+        mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.status").value(502));
     }
@@ -295,14 +295,14 @@ class BookControllerTest {
     void search_returns503_whenGoogleUnreachable() throws Exception {
         when(googleBooksClient.search("cien")).thenThrow(new ResourceAccessException("no disponible"));
 
-        mockMvc.perform(get("/api/books/search").param("name", "cien"))
+        mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.status").value(503));
     }
 
     @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        mockMvc.perform(options("/api/books")
+        mockMvc.perform(options("/api/v1/books")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
