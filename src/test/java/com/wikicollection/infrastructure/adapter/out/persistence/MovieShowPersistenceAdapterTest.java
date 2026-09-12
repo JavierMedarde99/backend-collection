@@ -155,6 +155,8 @@ class MovieShowPersistenceAdapterTest {
                 .dateAdded(LocalDate.of(2026, 1, 1))
                 .dateCompleted(LocalDate.of(2026, 1, 2))
                 .externalSource("TMDB")
+                .createdAt(java.time.LocalDateTime.of(2026, 1, 1, 12, 0))
+                .updatedAt(java.time.LocalDateTime.of(2026, 1, 2, 12, 0))
                 .build();
 
         MovieShow roundTripped = new MovieShowEntityMapper().toDomain(new MovieShowEntityMapper().toEntity(show));
