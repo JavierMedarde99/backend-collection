@@ -6,6 +6,7 @@ import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -27,6 +28,7 @@ public class BookEntity {
     @Id
     private String id;
 
+    @Indexed(unique = true)
     private String externalId;
 
     private String title;
