@@ -7,9 +7,11 @@ import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.domain.port.out.BookRepository;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookService implements BookUseCase {
@@ -34,19 +36,29 @@ public class BookService implements BookUseCase {
     }
 
     @Override
+    @Transactional
     public Book save(Book book) {
         checkExternalIdUnique(book.getExternalId(), null);
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
-        return bookRepository.save(book);
+        return saveOrConflict(book);
     }
 
     @Override
+    @Transactional
     public Book update(String id, Book updates) {
         Book existing = findById(id);
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
-        return bookRepository.save(existing);
+        return saveOrConflict(existing);
+    }
+
+    private Book saveOrConflict(Book book) {
+        try {
+            return bookRepository.save(book);
+        } catch (DuplicateKeyException e) {
+            throw new BookConflictException("Ya existe un libro con externalId: " + book.getExternalId());
+        }
     }
 
     private void checkExternalIdUnique(String externalId, String currentId) {
