@@ -26,76 +26,76 @@ documentada con OpenAPI y persiste en MongoDB.
 Paginación común en los listados: `page` (base 0), `size`, `sort` (`campo,asc|desc`).
 Documentación interactiva: `/swagger-ui.html` (OpenAPI en `/v3/api-docs`).
 
-### Libros — `/api/books`
+### Libros — `/api/v1/books`
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/books?name=&author=&type=&state=` | Listar con filtros |
-| GET | `/api/books/{id}` | Obtener por id |
-| POST | `/api/books` | Crear |
-| PUT | `/api/books/{id}` | Actualizar |
-| DELETE | `/api/books/{id}` | Eliminar (204) |
-| GET | `/api/books/search?name=` | Buscar en Google Books |
+| GET | `/api/v1/books?name=&author=&type=&state=` | Listar con filtros |
+| GET | `/api/v1/books/{id}` | Obtener por id |
+| POST | `/api/v1/books` | Crear |
+| PUT | `/api/v1/books/{id}` | Actualizar |
+| DELETE | `/api/v1/books/{id}` | Eliminar (204) |
+| GET | `/api/v1/books/search?name=` | Buscar en Google Books |
 
-### Videojuegos — `/api/games`
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/games?name=&platform=&status=` | Listar con filtros |
-| GET | `/api/games/{id}` | Obtener por id |
-| POST | `/api/games` | Crear |
-| PUT | `/api/games/{id}` | Actualizar |
-| DELETE | `/api/games/{id}` | Eliminar (204) |
-| GET | `/api/games/{id}/achievements?steamId=` | Logros de Steam |
-| GET | `/api/games/search?name=` | Buscar en RAWG/FreeToGame |
-
-### Juegos de mesa — `/api/boardgames`
+### Videojuegos — `/api/v1/games`
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/boardgames?name=&status=` | Listar con filtros (`OWNED`, `WISHLIST`) |
-| GET | `/api/boardgames/{id}` | Obtener por id |
-| POST | `/api/boardgames` | Crear |
-| PUT | `/api/boardgames/{id}` | Actualizar |
-| DELETE | `/api/boardgames/{id}` | Eliminar (204) |
-| GET | `/api/boardgames/search?name=` | Buscar en BoardGameGeek |
+| GET | `/api/v1/games?name=&platform=&status=` | Listar con filtros |
+| GET | `/api/v1/games/{id}` | Obtener por id |
+| POST | `/api/v1/games` | Crear |
+| PUT | `/api/v1/games/{id}` | Actualizar |
+| DELETE | `/api/v1/games/{id}` | Eliminar (204) |
+| GET | `/api/v1/games/{id}/achievements?steamId=` | Logros de Steam |
+| GET | `/api/v1/games/search?name=` | Buscar en RAWG/FreeToGame |
 
-### Cartas Magic — `/api/magic`
+### Juegos de mesa — `/api/v1/boardgames`
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/api/v1/boardgames?name=&status=` | Listar con filtros (`OWNED`, `WISHLIST`) |
+| GET | `/api/v1/boardgames/{id}` | Obtener por id |
+| POST | `/api/v1/boardgames` | Crear |
+| PUT | `/api/v1/boardgames/{id}` | Actualizar |
+| DELETE | `/api/v1/boardgames/{id}` | Eliminar (204) |
+| GET | `/api/v1/boardgames/search?name=` | Buscar en BoardGameGeek |
+
+### Cartas Magic — `/api/v1/magic`
 
 Sin creación ni edición manual: las cartas se añaden desde Scryfall.
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/magic?name=&rarity=&color=&type=` | Listar colección local con filtros |
-| GET | `/api/magic/{id}` | Obtener por id |
-| POST | `/api/magic/scryfall/{scryfallId}` | Añadir carta desde Scryfall (201) |
-| DELETE | `/api/magic/{id}` | Eliminar (204) |
-| GET | `/api/magic/search?name=` | Buscar en Scryfall (incluye texto y `colorIdentity`) |
-| GET | `/api/magic/commanders?colors=` | Comandantes por identidad de color (`wubrg`) |
+| GET | `/api/v1/magic?name=&rarity=&color=&type=` | Listar colección local con filtros |
+| GET | `/api/v1/magic/{id}` | Obtener por id |
+| POST | `/api/v1/magic/scryfall/{scryfallId}` | Añadir carta desde Scryfall (201) |
+| DELETE | `/api/v1/magic/{id}` | Eliminar (204) |
+| GET | `/api/v1/magic/search?name=` | Buscar en Scryfall (incluye texto y `colorIdentity`) |
+| GET | `/api/v1/magic/commanders?colors=` | Comandantes por identidad de color (`wubrg`) |
 
-### Mazos Commander — `/api/decks`
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/decks?name=` | Listar (`name` opcional) |
-| GET | `/api/decks/{id}` | Obtener por id |
-| POST | `/api/decks` | Crear |
-| PUT | `/api/decks/{id}` | Actualizar |
-| DELETE | `/api/decks/{id}` | Eliminar (204) |
-| POST | `/api/decks/{id}/cards` | Añadir carta desde Scryfall (`{scryfallId, quantity}`; marca `inCollection`/`isProxy`) |
-| DELETE | `/api/decks/{id}/cards/{scryfallId}` | Quitar carta |
-| GET | `/api/decks/{id}/status` | `{status, message}`: `DRAFT`/`COMPLETE`/`INVALID` (`message` con la razón solo si es inválido: singleton, colores, baneadas, tamaño) |
-
-### Películas y series — `/api/movieshows`
+### Mazos Commander — `/api/v1/decks`
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/movieshows?name=&status=&mediaType=` | Listar con filtros (`MOVIE`/`TV`) |
-| GET | `/api/movieshows/{id}` | Obtener por id |
-| POST | `/api/movieshows` | Crear (409 si ya existe el `externalId`) |
-| PUT | `/api/movieshows/{id}` | Actualizar |
-| DELETE | `/api/movieshows/{id}` | Eliminar (204) |
-| GET | `/api/movieshows/search?name=&mediaType=` | Buscar en TMDB (pelis y series; `mediaType` opcional) |
+| GET | `/api/v1/decks?name=` | Listar (`name` opcional) |
+| GET | `/api/v1/decks/{id}` | Obtener por id |
+| POST | `/api/v1/decks` | Crear |
+| PUT | `/api/v1/decks/{id}` | Actualizar |
+| DELETE | `/api/v1/decks/{id}` | Eliminar (204) |
+| POST | `/api/v1/decks/{id}/cards` | Añadir carta desde Scryfall (`{scryfallId, quantity}`; marca `inCollection`/`isProxy`) |
+| DELETE | `/api/v1/decks/{id}/cards/{scryfallId}` | Quitar carta |
+| GET | `/api/v1/decks/{id}/status` | `{status, message}`: `DRAFT`/`COMPLETE`/`INVALID` (`message` con la razón solo si es inválido: singleton, colores, baneadas, tamaño) |
+
+### Películas y series — `/api/v1/movieshows`
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/api/v1/movieshows?name=&status=&mediaType=` | Listar con filtros (`MOVIE`/`TV`) |
+| GET | `/api/v1/movieshows/{id}` | Obtener por id |
+| POST | `/api/v1/movieshows` | Crear (409 si ya existe el `externalId`) |
+| PUT | `/api/v1/movieshows/{id}` | Actualizar |
+| DELETE | `/api/v1/movieshows/{id}` | Eliminar (204) |
+| GET | `/api/v1/movieshows/search?name=&mediaType=` | Buscar en TMDB (pelis y series; `mediaType` opcional) |
 
 Estados de visionado (`MovieStatus`): `WATCHING`, `WATCHED`, `PLAN_TO_WATCH`.
 

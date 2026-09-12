@@ -37,7 +37,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/boardgames")
+@RequestMapping("/api/v1/boardgames")
 @Validated
 @Tag(name = "Juegos de mesa", description = "Gestión del catálogo de juegos de mesa")
 public class BoardGameController {
@@ -90,7 +90,7 @@ public class BoardGameController {
     })
     public ResponseEntity<BoardGameResponse> create(@Valid @RequestBody BoardGameRequest request, UriComponentsBuilder ucb) {
         var saved = boardGameUseCase.save(mapper.toDomain(request));
-        URI location = ucb.path("/api/boardgames/{id}").buildAndExpand(saved.getId()).toUri();
+        URI location = ucb.path("/api/v1/boardgames/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 

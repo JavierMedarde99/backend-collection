@@ -70,7 +70,7 @@ class DeckControllerTest {
                 .thenAnswer(invocation -> new PageImpl<>(
                         List.of(deck), invocation.getArgument(0), 1));
 
-        mockMvc.perform(get("/api/decks"))
+        mockMvc.perform(get("/api/v1/decks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value("d1"))
                 .andExpect(jsonPath("$.content[0].name").value("Mi Commander"))
@@ -112,7 +112,7 @@ class DeckControllerTest {
                 .thenAnswer(invocation -> new PageImpl<>(
                         List.of(deck), invocation.getArgument(1), 1));
 
-        mockMvc.perform(get("/api/decks").param("name", "Mi Commander"))
+        mockMvc.perform(get("/api/v1/decks").param("name", "Mi Commander"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value("d1"));
 
@@ -123,7 +123,7 @@ class DeckControllerTest {
     void getDeck_returnsDeck_whenExists() throws Exception {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        mockMvc.perform(get("/api/decks/d1"))
+        mockMvc.perform(get("/api/v1/decks/d1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.commander").value("Atraxa, Praetors' Voice"));
     }
@@ -132,7 +132,7 @@ class DeckControllerTest {
     void getDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/decks/nope"))
+        mockMvc.perform(get("/api/v1/decks/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -144,19 +144,19 @@ class DeckControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/decks")
+        mockMvc.perform(post("/api/v1/decks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Nuevo","commander":"Atraxa, Praetors' Voice"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/decks/d-new")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/decks/d-new")))
                 .andExpect(jsonPath("$.id").value("d-new"));
     }
 
     @Test
     void createDeck_returns400_whenBlankName() throws Exception {
-        mockMvc.perform(post("/api/decks")
+        mockMvc.perform(post("/api/v1/decks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":""}
@@ -169,7 +169,7 @@ class DeckControllerTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/decks/d1")
+        mockMvc.perform(put("/api/v1/decks/d1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Renombrado"}
@@ -182,7 +182,7 @@ class DeckControllerTest {
     void updateDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/decks/nope")
+        mockMvc.perform(put("/api/v1/decks/nope")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Renombrado"}
@@ -194,7 +194,7 @@ class DeckControllerTest {
     void deleteDeck_returns204_whenExists() throws Exception {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        mockMvc.perform(delete("/api/decks/d1"))
+        mockMvc.perform(delete("/api/v1/decks/d1"))
                 .andExpect(status().isNoContent());
 
         verify(deckRepository).deleteById("d1");
@@ -204,7 +204,7 @@ class DeckControllerTest {
     void deleteDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/decks/nope"))
+        mockMvc.perform(delete("/api/v1/decks/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -219,7 +219,7 @@ class DeckControllerTest {
                 .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(post("/api/decks/d1/cards")
+        mockMvc.perform(post("/api/v1/decks/d1/cards")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scryfallId":"sf-1","quantity":1}
@@ -235,7 +235,7 @@ class DeckControllerTest {
         when(scryfallClient.findById("missing"))
                 .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        mockMvc.perform(post("/api/decks/d1/cards")
+        mockMvc.perform(post("/api/v1/decks/d1/cards")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scryfallId":"missing","quantity":1}
@@ -252,7 +252,7 @@ class DeckControllerTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(delete("/api/decks/d1/cards/sf-1"))
+        mockMvc.perform(delete("/api/v1/decks/d1/cards/sf-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cards").isEmpty());
     }
@@ -261,7 +261,7 @@ class DeckControllerTest {
     void status_returnsDraft_withNullMessage() throws Exception {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        mockMvc.perform(get("/api/decks/d1/status"))
+        mockMvc.perform(get("/api/v1/decks/d1/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.message").doesNotExist());
@@ -275,7 +275,7 @@ class DeckControllerTest {
                         .cardName("Black Lotus").quantity(1).scryfallId("sf-x").build())));
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
 
-        mockMvc.perform(get("/api/decks/d1/status"))
+        mockMvc.perform(get("/api/v1/decks/d1/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("INVALID"))
                 .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("Black Lotus")));

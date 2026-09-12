@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/magic")
+@RequestMapping("/api/v1/magic")
 @Validated
 @Tag(name = "Cartas Magic", description = "Gestión del catálogo de cartas Magic: The Gathering")
 public class MagicCardController {
@@ -92,7 +92,7 @@ public class MagicCardController {
             @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId,
             UriComponentsBuilder ucb) {
         var saved = magicCardUseCase.addFromScryfall(scryfallId);
-        URI location = ucb.path("/api/magic/{id}").buildAndExpand(saved.getId()).toUri();
+        URI location = ucb.path("/api/v1/magic/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 
