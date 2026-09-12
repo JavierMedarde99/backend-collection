@@ -72,6 +72,15 @@ class MovieShowControllerTest {
     }
 
     @Test
+    void listShows_returns400_whenStatusInvalid() throws Exception {
+        mockMvc.perform(get("/api/movieshows")
+                        .param("status", "NO_EXISTE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Valor de parámetro inválido: status"));
+    }
+
+    @Test
     void listShows_filtersByNameStatusAndType() throws Exception {
         when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
