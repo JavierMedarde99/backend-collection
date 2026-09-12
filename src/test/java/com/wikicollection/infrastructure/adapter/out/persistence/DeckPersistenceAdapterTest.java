@@ -16,6 +16,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class DeckPersistenceAdapterTest {
@@ -91,22 +95,27 @@ class DeckPersistenceAdapterTest {
     void findAll_mapsEntities() {
         DeckEntity entity = DeckEntity.builder().id("d1").name("Mi Commander").build();
         Deck expected = sampleDeck();
-        when(springDataDeckRepository.findAll()).thenReturn(List.of(entity));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(springDataDeckRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        assertThat(adapter.findAll()).containsExactly(expected);
+        assertThat(adapter.findAll(pageable).getContent()).containsExactly(expected);
     }
 
     @Test
     void findByName_mapsEntities() {
         DeckEntity entity = DeckEntity.builder().id("d1").name("Mi Commander").build();
         Deck expected = sampleDeck();
-        when(springDataDeckRepository.findByName("Mi Commander")).thenReturn(List.of(entity));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(springDataDeckRepository.findByName("Mi Commander", pageable))
+                .thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        List<Deck> result = adapter.findByName("Mi Commander");
+        Page<Deck> result = adapter.findByName("Mi Commander", pageable);
 
-        assertThat(result).containsExactly(expected);
+        assertThat(result.getContent()).containsExactly(expected);
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     @Test

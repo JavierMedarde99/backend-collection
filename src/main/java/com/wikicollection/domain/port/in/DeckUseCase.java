@@ -1,16 +1,17 @@
 package com.wikicollection.domain.port.in;
 
-import java.util.List;
-
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.model.DeckStatusReport;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface DeckUseCase {
 
-    List<Deck> findAll();
+    Page<Deck> findAll(Pageable pageable);
 
-    List<Deck> findByName(String name);
+    Page<Deck> findByName(String name, Pageable pageable);
 
     Deck findById(String id);
 
