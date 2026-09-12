@@ -24,9 +24,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceTest {
@@ -89,6 +91,26 @@ class BookServiceTest {
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
+    }
+
+    @Test
+    void save_throwsConflict_whenDuplicateKeyOnSave() {
+        Book book = sampleBook();
+        book.setExternalId("gb123");
+        when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.empty());
+        when(bookRepository.save(any(Book.class))).thenThrow(new DuplicateKeyException("dup"));
+
+        assertThatThrownBy(() -> bookService.save(book))
+                .isInstanceOf(BookConflictException.class)
+                .hasMessageContaining("gb123");
+    }
+
+    @Test
+    void saveAndUpdate_areTransactional() throws Exception {
+        assertThat(BookService.class.getMethod("save", Book.class).isAnnotationPresent(Transactional.class))
+                .isTrue();
+        assertThat(BookService.class.getMethod("update", String.class, Book.class)
+                .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
     @Test

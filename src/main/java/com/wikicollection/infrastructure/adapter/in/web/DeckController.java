@@ -1,7 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import java.net.URI;
-import java.util.List;
 
 import com.wikicollection.domain.port.in.DeckUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckCardRequest;
@@ -10,6 +9,10 @@ import com.wikicollection.infrastructure.adapter.in.web.dto.DeckRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckStatusResponse;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,14 +49,21 @@ public class DeckController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista mazos", description = "Devuelve todos los mazos o filtra por nombre exacto.")
+    @Operation(summary = "Lista mazos", description = "Devuelve una página de mazos, opcionalmente filtrada por nombre exacto.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de mazos")
+            @ApiResponse(responseCode = "200", description = "Página de mazos"),
+            @ApiResponse(responseCode = "400", description = "Parámetros de paginación inválidos")
     })
-    public List<DeckResponse> list(
+    public Page<DeckResponse> list(
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "name,asc") String sort,
             @Parameter(description = "Filtro por nombre exacto") @RequestParam(required = false) String name) {
-        var decks = (name == null || name.isBlank()) ? deckUseCase.findAll() : deckUseCase.findByName(name);
-        return decks.stream().map(mapper::toResponse).toList();
+        Pageable pageable = PageRequest.of(page, size, buildSort(sort));
+        var decks = (name == null || name.isBlank())
+                ? deckUseCase.findAll(pageable)
+                : deckUseCase.findByName(name, pageable);
+        return decks.map(mapper::toResponse);
     }
 
     @GetMapping("/{id}")
@@ -139,5 +149,22 @@ public class DeckController {
     public DeckStatusResponse status(
             @Parameter(description = "Identificador del mazo") @PathVariable String id) {
         return mapper.toStatusResponse(deckUseCase.getStatusReport(id));
+    }
+
+    private Sort buildSort(String sort) {
+        String field = "name";
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sort != null && !sort.isBlank()) {
+            String[] parts = sort.split(",");
+            if (parts.length > 0 && !parts[0].isBlank()) {
+                field = parts[0].trim();
+            }
+            if (parts.length > 1 && !parts[1].isBlank()) {
+                direction = "asc".equalsIgnoreCase(parts[1].trim())
+                        ? Sort.Direction.ASC
+                        : Sort.Direction.DESC;
+            }
+        }
+        return Sort.by(direction, field);
     }
 }

@@ -9,10 +9,15 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class BggClientConfig {
 
+    private final HttpClientProperties httpClientProperties;
+
+    public BggClientConfig(HttpClientProperties httpClientProperties) {
+        this.httpClientProperties = httpClientProperties;
+    }
+
     @Bean
     public RestClient bggXmlRestClient(@Value("${bgg.auth.token:}") String token) {
-        var builder = RestClient.builder()
-                .baseUrl("https://boardgamegeek.com/xmlapi2");
+        var builder = httpClientProperties.restClientBuilder("https://boardgamegeek.com/xmlapi2");
         if (token != null && !token.isBlank()) {
             builder.requestInterceptor(bearerTokenInterceptor(token));
         }

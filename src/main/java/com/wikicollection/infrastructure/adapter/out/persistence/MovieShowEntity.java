@@ -1,11 +1,14 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieStatus;
 
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -27,8 +30,7 @@ public class MovieShowEntity {
 
     @Id
     private String id;
-
-    @Indexed(unique = true)
+    
     private String externalId;
 
     @Indexed
@@ -58,4 +60,10 @@ public class MovieShowEntity {
     private LocalDate dateCompleted;
 
     private String externalSource;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }

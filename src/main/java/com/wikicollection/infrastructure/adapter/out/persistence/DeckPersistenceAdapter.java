@@ -1,11 +1,12 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
-import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.port.out.DeckRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,16 +38,12 @@ public class DeckPersistenceAdapter implements DeckRepository {
     }
 
     @Override
-    public List<Deck> findAll() {
-        return springDataDeckRepository.findAll().stream()
-                .map(mapper::toDomain)
-                .toList();
+    public Page<Deck> findAll(Pageable pageable) {
+        return springDataDeckRepository.findAll(pageable).map(mapper::toDomain);
     }
 
     @Override
-    public List<Deck> findByName(String name) {
-        return springDataDeckRepository.findByName(name).stream()
-                .map(mapper::toDomain)
-                .toList();
+    public Page<Deck> findByName(String name, Pageable pageable) {
+        return springDataDeckRepository.findByName(name, pageable).map(mapper::toDomain);
     }
 }
