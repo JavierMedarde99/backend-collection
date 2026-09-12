@@ -17,7 +17,9 @@ import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
@@ -41,13 +43,13 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
-    public List<Deck> findAll() {
-        return deckRepository.findAll();
+    public Page<Deck> findAll(Pageable pageable) {
+        return deckRepository.findAll(pageable);
     }
 
     @Override
-    public List<Deck> findByName(String name) {
-        return deckRepository.findByName(name);
+    public Page<Deck> findByName(String name, Pageable pageable) {
+        return deckRepository.findByName(name, pageable);
     }
 
     @Override

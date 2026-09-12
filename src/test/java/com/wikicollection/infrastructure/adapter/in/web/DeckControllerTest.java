@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -23,10 +24,12 @@ import com.wikicollection.infrastructure.adapter.out.scryfall.ScryfallClient;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -61,24 +64,59 @@ class DeckControllerTest {
     }
 
     @Test
-    void listDecks_returnsAll_whenNoName() throws Exception {
-        when(deckRepository.findAll()).thenReturn(List.of(sampleDeck()));
+    void listDecks_returnsPage_whenNoName() throws Exception {
+        Deck deck = sampleDeck();
+        when(deckRepository.findAll(any(Pageable.class)))
+                .thenAnswer(invocation -> new PageImpl<>(
+                        List.of(deck), invocation.getArgument(0), 1));
 
         mockMvc.perform(get("/api/decks"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("d1"))
-                .andExpect(jsonPath("$[0].name").value("Mi Commander"));
+                .andExpect(jsonPath("$.content[0].id").value("d1"))
+                .andExpect(jsonPath("$.content[0].name").value("Mi Commander"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void listDecks_supportsPaginationAndSort() throws Exception {
+        when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/decks").param("page", "1").param("size", "5").param("sort", "name,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty());
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(deckRepository).findAll(captor.capture());
+        Pageable pageable = captor.getValue();
+        org.assertj.core.api.Assertions.assertThat(pageable.getPageNumber()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(pageable.getPageSize()).isEqualTo(5);
+        org.assertj.core.api.Assertions.assertThat(pageable.getSort().getOrderFor("name").getDirection())
+                .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+    }
+
+    @Test
+    void listDecks_returnsEmptyPage_whenNoDecks() throws Exception {
+        when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/decks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test
     void listDecks_filtersByName() throws Exception {
-        when(deckRepository.findByName("Mi Commander")).thenReturn(List.of(sampleDeck()));
+        Deck deck = sampleDeck();
+        when(deckRepository.findByName(eq("Mi Commander"), any(Pageable.class)))
+                .thenAnswer(invocation -> new PageImpl<>(
+                        List.of(deck), invocation.getArgument(1), 1));
 
         mockMvc.perform(get("/api/decks").param("name", "Mi Commander"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("d1"));
+                .andExpect(jsonPath("$.content[0].id").value("d1"));
 
-        verify(deckRepository).findByName("Mi Commander");
+        verify(deckRepository).findByName(eq("Mi Commander"), any(Pageable.class));
     }
 
     @Test

@@ -1,9 +1,11 @@
 package com.wikicollection.domain.port.out;
 
-import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Deck;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface DeckRepository {
 
@@ -13,7 +15,7 @@ public interface DeckRepository {
 
     void deleteById(String id);
 
-    List<Deck> findAll();
+    Page<Deck> findAll(Pageable pageable);
 
-    List<Deck> findByName(String name);
+    Page<Deck> findByName(String name, Pageable pageable);
 }
