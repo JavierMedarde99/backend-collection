@@ -27,6 +27,8 @@ public class MovieShowEntityMapper {
                 .dateAdded(movieShow.getDateAdded())
                 .dateCompleted(movieShow.getDateCompleted())
                 .externalSource(movieShow.getExternalSource())
+                .createdAt(movieShow.getCreatedAt())
+                .updatedAt(movieShow.getUpdatedAt())
                 .build();
     }
 
@@ -50,6 +52,8 @@ public class MovieShowEntityMapper {
                 .dateAdded(entity.getDateAdded())
                 .dateCompleted(entity.getDateCompleted())
                 .externalSource(entity.getExternalSource())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 }

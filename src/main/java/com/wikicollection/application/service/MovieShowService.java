@@ -1,5 +1,7 @@
 package com.wikicollection.application.service;
 
+import java.util.Objects;
+
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.domain.model.MovieSearchCriteria;
@@ -7,9 +9,11 @@ import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.port.in.MovieShowUseCase;
 import com.wikicollection.domain.port.out.MovieShowRepository;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MovieShowService implements MovieShowUseCase {
@@ -35,19 +39,30 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
+    @Transactional
     public MovieShow save(MovieShow movieShow) {
         dateRangeValidator.validate(movieShow.getDateAdded(), movieShow.getDateCompleted());
         assertNoDuplicate(movieShow.getExternalId(), null);
-        return movieShowRepository.save(movieShow);
+        return saveOrConflict(movieShow);
     }
 
     @Override
+    @Transactional
     public MovieShow update(String id, MovieShow updates) {
         MovieShow existing = findById(id);
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         assertNoDuplicate(existing.getExternalId(), id);
-        return movieShowRepository.save(existing);
+        return saveOrConflict(existing);
+    }
+
+    private MovieShow saveOrConflict(MovieShow movieShow) {
+        try {
+            return movieShowRepository.save(movieShow);
+        } catch (DuplicateKeyException e) {
+            throw new MovieShowConflictException(
+                    "Ya existe una película/serie con externalId: " + movieShow.getExternalId());
+        }
     }
 
     @Override
@@ -61,7 +76,7 @@ public class MovieShowService implements MovieShowUseCase {
             return;
         }
         movieShowRepository.findByExternalId(externalId)
-                .filter(existing -> !existing.getId().equals(currentId))
+                .filter(existing -> !Objects.equals(existing.getId(), currentId))
                 .ifPresent(existing -> {
                     throw new MovieShowConflictException(
                             "Ya existe una película/serie con externalId: " + externalId);

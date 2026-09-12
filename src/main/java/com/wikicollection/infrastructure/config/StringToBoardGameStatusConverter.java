@@ -10,6 +10,9 @@ public class StringToBoardGameStatusConverter implements Converter<String, Board
 
     @Override
     public BoardGameStatus convert(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
         return BoardGameStatus.valueOf(source.trim().toUpperCase());
     }
 }
