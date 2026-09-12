@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/decks")
+@RequestMapping("/api/v1/decks")
 @Validated
 @Tag(name = "Mazos Commander", description = "Gestión de mazos Commander de Magic: The Gathering")
 public class DeckController {
@@ -75,7 +75,7 @@ public class DeckController {
     })
     public ResponseEntity<DeckResponse> create(@Valid @RequestBody DeckRequest request, UriComponentsBuilder ucb) {
         var saved = deckUseCase.save(mapper.toDomain(request));
-        URI location = ucb.path("/api/decks/{id}").buildAndExpand(saved.getId()).toUri();
+        URI location = ucb.path("/api/v1/decks/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 

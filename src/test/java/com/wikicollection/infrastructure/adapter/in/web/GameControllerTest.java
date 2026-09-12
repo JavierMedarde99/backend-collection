@@ -77,7 +77,7 @@ class GameControllerTest {
     void listGames_returnsEmptyPage_whenNoGames() throws Exception {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/games"))
+        mockMvc.perform(get("/api/v1/games"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -87,7 +87,7 @@ class GameControllerTest {
     void listGames_filtersByNamePlatformAndStatus() throws Exception {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/games")
+        mockMvc.perform(get("/api/v1/games")
                         .param("name", "witc")
                         .param("platform", "PC")
                         .param("status", "PLAYING"))
@@ -105,7 +105,7 @@ class GameControllerTest {
     void getGame_returnsGame_whenExists() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(get("/api/games/g1"))
+        mockMvc.perform(get("/api/v1/games/g1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("g1"))
                 .andExpect(jsonPath("$.title").value("The Witcher 3"))
@@ -116,7 +116,7 @@ class GameControllerTest {
     void getGame_returns404_whenMissing() throws Exception {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/games/nope"))
+        mockMvc.perform(get("/api/v1/games/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -128,20 +128,20 @@ class GameControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", Matchers.containsString("/api/games/g-new")))
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/games/g-new")))
                 .andExpect(jsonPath("$.id").value("g-new"))
                 .andExpect(jsonPath("$.title").value("The Witcher 3"));
     }
 
     @Test
     void createGame_returns400_whenInvalid() throws Exception {
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","platform":"PC","status":"PLAYING"}
@@ -151,7 +151,7 @@ class GameControllerTest {
 
     @Test
     void createGame_returns400_whenUserRatingOutOfRange() throws Exception {
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING","userRating":9}
@@ -161,7 +161,7 @@ class GameControllerTest {
 
     @Test
     void createGame_returns400_whenDateAddedIsFuture() throws Exception {
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING","dateAdded":"2099-01-01"}
@@ -172,7 +172,7 @@ class GameControllerTest {
 
     @Test
     void createGame_returns400_whenDateAddedAfterDateCompleted() throws Exception {
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING","dateAdded":"2024-06-01","dateCompleted":"2024-01-01"}
@@ -185,7 +185,7 @@ class GameControllerTest {
     void updateGame_returns400_whenDateCompletedIsFuture() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(put("/api/games/g1")
+        mockMvc.perform(put("/api/v1/games/g1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","platform":"PC","status":"PLAYING","dateCompleted":"2099-01-01"}
@@ -199,7 +199,7 @@ class GameControllerTest {
         when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING","obtainPlatinum":true}
@@ -216,7 +216,7 @@ class GameControllerTest {
     void createGame_usesBodyAppIdWithoutCallingSteam() throws Exception {
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING","steamAppId":"999"}
@@ -231,7 +231,7 @@ class GameControllerTest {
     void createGame_doesNotCallSteam_whenObtainPlatinumFalse() throws Exception {
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(post("/api/games")
+        mockMvc.perform(post("/api/v1/games")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"The Witcher 3","platform":"PC","status":"PLAYING"}
@@ -246,7 +246,7 @@ class GameControllerTest {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/games/g1")
+        mockMvc.perform(put("/api/v1/games/g1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","platform":"PC","status":"COMPLETED","userRating":5}
@@ -265,7 +265,7 @@ class GameControllerTest {
         when(steamCatalogueClient.searchGameByName("Nuevo título")).thenReturn(570L);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/games/g1")
+        mockMvc.perform(put("/api/v1/games/g1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","platform":"PC","status":"PLAYING","obtainPlatinum":true}
@@ -278,7 +278,7 @@ class GameControllerTest {
     void deleteGame_returns204_whenExists() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(delete("/api/games/g1"))
+        mockMvc.perform(delete("/api/v1/games/g1"))
                 .andExpect(status().isNoContent());
 
         verify(gameRepository).deleteById("g1");
@@ -288,7 +288,7 @@ class GameControllerTest {
     void deleteGame_returns404_whenMissing() throws Exception {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/games/nope"))
+        mockMvc.perform(delete("/api/v1/games/nope"))
                 .andExpect(status().isNotFound());
     }
 
@@ -299,7 +299,7 @@ class GameControllerTest {
                 "CD Projekt Red", "CD Projekt Red", null, "http://img", "RAWG");
         when(rawgClient.search("witcher")).thenReturn(List.of(result));
 
-        mockMvc.perform(get("/api/games/search").param("name", "witcher"))
+        mockMvc.perform(get("/api/v1/games/search").param("name", "witcher"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("The Witcher 3"))
                 .andExpect(jsonPath("$[0].platform").value("PC"));
@@ -307,7 +307,7 @@ class GameControllerTest {
 
     @Test
     void search_returns400_whenBlankQuery() throws Exception {
-        mockMvc.perform(get("/api/games/search").param("name", " "))
+        mockMvc.perform(get("/api/v1/games/search").param("name", " "))
                 .andExpect(status().isBadRequest());
     }
 
@@ -317,7 +317,7 @@ class GameControllerTest {
                 List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", "http://icon")),
                 1, 1, 100.0));
 
-        mockMvc.perform(get("/api/games/g1/achievements").param("steamId", "7656"))
+        mockMvc.perform(get("/api/v1/games/g1/achievements").param("steamId", "7656"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.achievements[0].name").value("El nacimiento"))
                 .andExpect(jsonPath("$.achievements[0].achieved").value(true))
@@ -332,7 +332,7 @@ class GameControllerTest {
         when(gameAchievementsUseCase.getAchievements("nope", "7656"))
                 .thenThrow(new GameNotFoundException("Juego no encontrado con id: nope"));
 
-        mockMvc.perform(get("/api/games/nope/achievements").param("steamId", "7656"))
+        mockMvc.perform(get("/api/v1/games/nope/achievements").param("steamId", "7656"))
                 .andExpect(status().isNotFound());
     }
 
@@ -341,19 +341,19 @@ class GameControllerTest {
         when(gameAchievementsUseCase.getAchievements("g1", "7656"))
                 .thenThrow(new IllegalArgumentException("El juego no está vinculado a Steam"));
 
-        mockMvc.perform(get("/api/games/g1/achievements").param("steamId", "7656"))
+        mockMvc.perform(get("/api/v1/games/g1/achievements").param("steamId", "7656"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getAchievements_returns400_whenSteamIdMissing() throws Exception {
-        mockMvc.perform(get("/api/games/g1/achievements"))
+        mockMvc.perform(get("/api/v1/games/g1/achievements"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        mockMvc.perform(options("/api/games")
+        mockMvc.perform(options("/api/v1/games")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
