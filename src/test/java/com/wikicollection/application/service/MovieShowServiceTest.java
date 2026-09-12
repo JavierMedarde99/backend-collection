@@ -26,6 +26,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class MovieShowServiceTest {
@@ -98,6 +100,26 @@ class MovieShowServiceTest {
         assertThatThrownBy(() -> movieShowService.save(show))
                 .isInstanceOf(MovieShowConflictException.class)
                 .hasMessageContaining("550");
+    }
+
+    @Test
+    void save_throwsConflict_whenDuplicateKeyOnSave() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
+        when(movieShowRepository.save(any(MovieShow.class))).thenThrow(new DuplicateKeyException("dup"));
+
+        assertThatThrownBy(() -> movieShowService.save(show))
+                .isInstanceOf(MovieShowConflictException.class)
+                .hasMessageContaining("550");
+    }
+
+    @Test
+    void saveAndUpdate_areTransactional() throws Exception {
+        assertThat(MovieShowService.class.getMethod("save", MovieShow.class)
+                .isAnnotationPresent(Transactional.class)).isTrue();
+        assertThat(MovieShowService.class.getMethod("update", String.class, MovieShow.class)
+                .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
     @Test
