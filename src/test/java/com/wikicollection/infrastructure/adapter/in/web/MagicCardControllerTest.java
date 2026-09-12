@@ -68,6 +68,13 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void listCards_returns400_whenNameTooLong() throws Exception {
+        mockMvc.perform(get("/api/magic").param("name", "a".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void listCards_filtersByName() throws Exception {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());

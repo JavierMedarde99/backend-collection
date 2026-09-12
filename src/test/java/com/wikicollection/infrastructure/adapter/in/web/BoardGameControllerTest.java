@@ -67,6 +67,13 @@ class BoardGameControllerTest {
     }
 
     @Test
+    void listBoardGames_returns400_whenNameTooLong() throws Exception {
+        mockMvc.perform(get("/api/boardgames").param("name", "a".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void listGames_filtersByNameAndStatus() throws Exception {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());

@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.validation.constraints.Size;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -62,7 +64,7 @@ public class MagicCardController {
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "name,asc") String sort,
-            @Parameter(description = "Filtro por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name,
+            @Parameter(description = "Filtro por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por rareza") @RequestParam(required = false) String rarity,
             @Parameter(description = "Filtro por color") @RequestParam(required = false) String color,
             @Parameter(description = "Filtro por tipo (p. ej. Artifact, Creature)") @RequestParam(required = false) String type) {
@@ -115,7 +117,7 @@ public class MagicCardController {
             @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio")
     })
     public MagicCardSearchResponse search(
-            @Parameter(description = "Nombre a buscar") @RequestParam("name") String name) {
+            @Parameter(description = "Nombre a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
         return new MagicCardSearchResponse(name, magicCardSearchUseCase.search(name));
     }
 
@@ -125,7 +127,7 @@ public class MagicCardController {
             @ApiResponse(responseCode = "200", description = "Resultados de búsqueda")
     })
     public MagicCardSearchResponse commanders(
-            @Parameter(description = "Colores en formato wubrg, p. ej. 'rug'") @RequestParam(value = "colors", required = false, defaultValue = "") String colors) {
+            @Parameter(description = "Colores en formato wubrg, p. ej. 'rug'") @RequestParam(value = "colors", required = false, defaultValue = "") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String colors) {
         return new MagicCardSearchResponse(colors, deckSearchUseCase.searchCommanders(colors));
     }
 

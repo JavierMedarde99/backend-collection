@@ -30,6 +30,8 @@ import org.springframework.web.client.ResourceAccessException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
@@ -72,8 +74,19 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void illegalArgument_returns400() {
-        ResponseEntity<ErrorResponse> response =
+    void constraintViolation_returns400() {
+        ConstraintViolation<?> violation = org.mockito.Mockito.mock(ConstraintViolation.class);
+        when(violation.getMessage()).thenReturn("La búsqueda no puede superar los 100 caracteres");
+        ConstraintViolationException ex = new ConstraintViolationException(java.util.Set.of(violation));
+
+        ResponseEntity<ErrorResponse> response = handler.handleConstraintViolation(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).contains("100 caracteres");
+    }
+
+    @Test
+    void illegalArgument_returns400() {        ResponseEntity<ErrorResponse> response =
                 handler.handleBadRequest(new IllegalArgumentException("mal"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
