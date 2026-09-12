@@ -2,7 +2,7 @@ package com.wikicollection.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class ScryfallClientConfig {
@@ -14,7 +14,7 @@ public class ScryfallClientConfig {
     }
 
     @Bean
-    public RestTemplate scryfallRestTemplate() {
-        return new RestTemplate(httpClientProperties.requestFactory());
+    public RestClient scryfallRestClient() {
+        return httpClientProperties.restClientBuilder("https://api.scryfall.com").build();
     }
 }
