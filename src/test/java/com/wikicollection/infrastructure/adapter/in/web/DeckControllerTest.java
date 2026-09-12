@@ -64,6 +64,13 @@ class DeckControllerTest {
     }
 
     @Test
+    void listDecks_returns400_whenNameTooLong() throws Exception {
+        mockMvc.perform(get("/api/decks").param("name", "a".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void listDecks_returnsPage_whenNoName() throws Exception {
         Deck deck = sampleDeck();
         when(deckRepository.findAll(any(Pageable.class)))

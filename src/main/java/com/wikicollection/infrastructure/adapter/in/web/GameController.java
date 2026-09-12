@@ -36,6 +36,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
 
+import jakarta.validation.constraints.Size;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -74,7 +76,7 @@ public class GameController {
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
-            @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String name,
+            @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por plataforma") @RequestParam(required = false) GamePlatform platform,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
@@ -158,7 +160,7 @@ public class GameController {
             @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
     })
     public List<GameSearchResult> search(
-            @Parameter(description = "Título a buscar") @RequestParam("name") String name) {
+            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
         return gameSearchUseCase.search(name);
     }
 
