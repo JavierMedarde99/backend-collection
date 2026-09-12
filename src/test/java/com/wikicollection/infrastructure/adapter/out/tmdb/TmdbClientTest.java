@@ -182,6 +182,22 @@ class TmdbClientTest {
                 """;
     }
     @Test
+    void search_returnsEmpty_whenReadTimeoutExceeded() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(movieFixture())
+                .setBodyDelay(2, java.util.concurrent.TimeUnit.SECONDS));
+        com.wikicollection.infrastructure.config.HttpClientProperties properties =
+                new com.wikicollection.infrastructure.config.HttpClientProperties();
+        properties.setReadTimeout(java.time.Duration.ofMillis(100));
+        RestClient timedClient = properties.restClientBuilder(server.url("").toString()).build();
+        TmdbClient impatient = new TmdbClient(timedClient, "", 0, 0);
+
+        assertThat(impatient.search("club")).isEmpty();
+    }
+
+    @Test
     void retriesAndReturnsEmpty_whenUnavailable() throws Exception {
         for (int i = 0; i < 4; i++) {
             server.enqueue(new MockResponse().setResponseCode(503));

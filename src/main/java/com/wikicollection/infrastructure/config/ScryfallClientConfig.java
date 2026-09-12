@@ -7,8 +7,14 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class ScryfallClientConfig {
 
+    private final HttpClientProperties httpClientProperties;
+
+    public ScryfallClientConfig(HttpClientProperties httpClientProperties) {
+        this.httpClientProperties = httpClientProperties;
+    }
+
     @Bean
     public RestTemplate scryfallRestTemplate() {
-        return new RestTemplate();
+        return new RestTemplate(httpClientProperties.requestFactory());
     }
 }

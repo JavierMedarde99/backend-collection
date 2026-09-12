@@ -9,9 +9,15 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class BggClientConfig {
 
+    private final HttpClientProperties httpClientProperties;
+
+    public BggClientConfig(HttpClientProperties httpClientProperties) {
+        this.httpClientProperties = httpClientProperties;
+    }
+
     @Bean
     public RestTemplate bggXmlRestTemplate(@Value("${bgg.auth.token:}") String token) {
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate(httpClientProperties.requestFactory());
         if (token != null && !token.isBlank()) {
             restTemplate.getInterceptors().add(bearerTokenInterceptor(token));
         }
