@@ -62,7 +62,7 @@ class MovieShowControllerTest {
 
     @Test
     void listShows_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/movieshows").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/movieshows").param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -80,7 +80,7 @@ class MovieShowControllerTest {
 
     @Test
     void listShows_returns400_whenStatusInvalid() throws Exception {
-        mockMvc.perform(get("/api/movieshows")
+        mockMvc.perform(get("/api/v1/movieshows")
                         .param("status", "NO_EXISTE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))

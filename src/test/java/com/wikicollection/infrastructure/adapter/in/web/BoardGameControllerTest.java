@@ -68,7 +68,7 @@ class BoardGameControllerTest {
 
     @Test
     void listBoardGames_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/boardgames").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/boardgames").param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }

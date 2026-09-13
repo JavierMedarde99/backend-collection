@@ -65,7 +65,7 @@ class DeckControllerTest {
 
     @Test
     void listDecks_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/decks").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/decks").param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -89,7 +89,7 @@ class DeckControllerTest {
     void listDecks_supportsPaginationAndSort() throws Exception {
         when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/decks").param("page", "1").param("size", "5").param("sort", "name,desc"))
+        mockMvc.perform(get("/api/v1/decks").param("page", "1").param("size", "5").param("sort", "name,desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
 
@@ -106,7 +106,7 @@ class DeckControllerTest {
     void listDecks_returnsEmptyPage_whenNoDecks() throws Exception {
         when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/decks"))
+        mockMvc.perform(get("/api/v1/decks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
