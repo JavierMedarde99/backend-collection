@@ -37,4 +37,9 @@ public class RestClientConfig {
     public RestClient steamStoreRestClient() {
         return httpClientProperties.restClientBuilder("https://store.steampowered.com/api").build();
     }
+
+    @Bean
+    public RestClient catboxRestClient() {
+        return httpClientProperties.restClientBuilder("https://catbox.moe").build();
+    }
 }

@@ -10,7 +10,7 @@ import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
-import com.wikicollection.application.exception.ImageNotFoundException;
+import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
@@ -67,9 +67,11 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void imageNotFound_returns404() {
-        assertThat(handler.handleImageNotFound(new ImageNotFoundException("x"), request).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+    void catboxError_returns502() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleCatboxError(new CatboxUploadException("caído"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
     }
 
     @Test
