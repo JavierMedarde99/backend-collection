@@ -86,6 +86,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void maxUploadSize_returns400() {
+        ResponseEntity<ErrorResponse> response = handler.handleMaxUploadSize(
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(5242880), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).contains("tamaño máximo");
+    }
+
+    @Test
     void illegalArgument_returns400() {        ResponseEntity<ErrorResponse> response =
                 handler.handleBadRequest(new IllegalArgumentException("mal"), request);
 
