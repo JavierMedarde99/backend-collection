@@ -10,6 +10,7 @@ import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.application.exception.ImageNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
@@ -66,8 +67,13 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void conflictExceptions_return409() {
-        assertThat(handler.handleBookConflict(new BookConflictException("x"), request).getStatusCode())
+    void imageNotFound_returns404() {
+        assertThat(handler.handleImageNotFound(new ImageNotFoundException("x"), request).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void conflictExceptions_return409() {        assertThat(handler.handleBookConflict(new BookConflictException("x"), request).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
         assertThat(handler.handleMovieShowConflict(new MovieShowConflictException("x"), request).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
