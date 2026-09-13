@@ -37,7 +37,10 @@ public class MagicCardService implements MagicCardUseCase {
     }
 
     @Override
-    public MagicCard addFromScryfall(String scryfallId) {
+    public MagicCard addFromScryfall(String scryfallId, int quantity) {
+        if (quantity < 1) {
+            throw new IllegalArgumentException("La cantidad mínima es 1");
+        }
         MagicCard fetched;
         try {
             fetched = catalogClient.findById(scryfallId);
@@ -47,6 +50,7 @@ public class MagicCardService implements MagicCardUseCase {
             }
             throw e;
         }
+        fetched.setQuantity(quantity);
         return magicCardRepository.save(fetched);
     }
 

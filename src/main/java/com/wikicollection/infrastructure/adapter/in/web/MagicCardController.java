@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -92,8 +93,9 @@ public class MagicCardController {
     })
     public ResponseEntity<MagicCardResponse> addFromScryfall(
             @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId,
+            @Parameter(description = "Cantidad de copias (por defecto 1, permite repetidas)") @RequestParam(defaultValue = "1") @Min(1) int quantity,
             UriComponentsBuilder ucb) {
-        var saved = magicCardUseCase.addFromScryfall(scryfallId);
+        var saved = magicCardUseCase.addFromScryfall(scryfallId, quantity);
         URI location = ucb.path("/api/v1/magic/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }

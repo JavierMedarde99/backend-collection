@@ -12,7 +12,7 @@ public interface MagicCardUseCase {
 
     MagicCard findById(String id);
 
-    MagicCard addFromScryfall(String scryfallId);
+    MagicCard addFromScryfall(String scryfallId, int quantity);
 
     void delete(String id);
 }
