@@ -7,6 +7,7 @@ import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.application.exception.ImageNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
@@ -55,6 +56,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MovieShowNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleMovieShowNotFound(MovieShowNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ImageNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleImageNotFound(ImageNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
