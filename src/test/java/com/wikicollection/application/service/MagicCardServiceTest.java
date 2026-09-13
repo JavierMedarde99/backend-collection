@@ -102,7 +102,7 @@ class MagicCardServiceTest {
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
         when(magicCardRepository.save(fetched)).thenReturn(saved);
 
-        MagicCard result = magicCardService.addFromScryfall("sf-1");
+        MagicCard result = magicCardService.addFromScryfall("sf-1", 1);
 
         assertThat(result).isSameAs(saved);
         assertThat(result.getColorIdentity()).containsExactly("R");
@@ -111,11 +111,32 @@ class MagicCardServiceTest {
     }
 
     @Test
+    void addFromScryfall_setsQuantity() {
+        MagicCard fetched = MagicCard.builder()
+                .scryfallId("sf-1")
+                .name("Lightning Bolt")
+                .build();
+        when(catalogClient.findById("sf-1")).thenReturn(fetched);
+        when(magicCardRepository.save(fetched)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MagicCard result = magicCardService.addFromScryfall("sf-1", 4);
+
+        assertThat(result.getQuantity()).isEqualTo(4);
+        assertThat(fetched.getQuantity()).isEqualTo(4);
+    }
+
+    @Test
+    void addFromScryfall_rejectsInvalidQuantity() {
+        assertThatThrownBy(() -> magicCardService.addFromScryfall("sf-1", 0))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void addFromScryfall_throwsNotFound_whenCatalog404() {
         when(catalogClient.findById("missing")).thenThrow(
                 new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> magicCardService.addFromScryfall("missing"))
+        assertThatThrownBy(() -> magicCardService.addFromScryfall("missing", 1))
                 .isInstanceOf(MagicCardNotFoundException.class)
                 .hasMessageContaining("missing");
     }

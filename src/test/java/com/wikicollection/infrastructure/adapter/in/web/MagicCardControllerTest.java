@@ -169,6 +169,30 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void addFromScryfall_returns201_withQuantity() throws Exception {
+        MagicCard fetched = MagicCard.builder()
+                .scryfallId("sf-1")
+                .name("Lightning Bolt")
+                .build();
+        when(scryfallClient.findById("sf-1")).thenReturn(fetched);
+        when(magicCardRepository.save(fetched)).thenAnswer(invocation -> {
+            MagicCard saved = invocation.getArgument(0);
+            saved.setId("mc1");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").param("quantity", "4"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.quantity").value(4));
+    }
+
+    @Test
+    void addFromScryfall_returns400_whenQuantityInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").param("quantity", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void addFromScryfall_returns404_whenCatalogMissing() throws Exception {
         when(scryfallClient.findById("missing")).thenThrow(
                 new HttpClientErrorException(HttpStatus.NOT_FOUND));
