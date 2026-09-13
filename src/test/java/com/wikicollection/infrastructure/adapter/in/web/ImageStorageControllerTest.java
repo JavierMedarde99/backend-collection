@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -76,6 +77,25 @@ class ImageStorageControllerTest {
         doThrow(new ImageNotFoundException("nope")).when(imageStorageService).delete("nope.png");
 
         mockMvc.perform(delete("/api/v1/images/nope.png"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void serve_returnsContent_withCacheHeaders() throws Exception {
+        byte[] content = {(byte) 0x89, 0x50, 0x4E, 0x47};
+        when(imageStorageService.load("abc-123.png"))
+                .thenReturn(new org.springframework.core.io.ByteArrayResource(content));
+
+        mockMvc.perform(get("/api/v1/images/abc-123.png"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", Matchers.containsString("max-age=86400")));
+    }
+
+    @Test
+    void serve_returns404_whenMissing() throws Exception {
+        when(imageStorageService.load("nope.png")).thenThrow(new ImageNotFoundException("nope"));
+
+        mockMvc.perform(get("/api/v1/images/nope.png"))
                 .andExpect(status().isNotFound());
     }
 
