@@ -2,21 +2,14 @@ package com.wikicollection.application.service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.wikicollection.application.exception.ImageNotFoundException;
+import com.wikicollection.domain.port.out.ImageHostingClient;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,15 +22,15 @@ public class ImageStorageService {
             "image/webp", ".webp",
             "image/gif", ".gif");
 
-    private final Path storagePath;
+    private final ImageHostingClient imageHostingClient;
     private final long maxSize;
     private final Set<String> allowedTypes;
 
     public ImageStorageService(
-            @Value("${app.image.storage.path:./uploads/images}") String storagePath,
+            ImageHostingClient imageHostingClient,
             @Value("${app.image.max-size:5242880}") long maxSize,
             @Value("${app.image.allowed-types:image/jpeg,image/png,image/webp,image/gif}") String allowedTypes) {
-        this.storagePath = Paths.get(storagePath).toAbsolutePath().normalize();
+        this.imageHostingClient = imageHostingClient;
         this.maxSize = maxSize;
         this.allowedTypes = Arrays.stream(allowedTypes.split(","))
                 .map(String::trim)
@@ -47,41 +40,23 @@ public class ImageStorageService {
 
     public String store(MultipartFile file) {
         validate(file);
-        String extension = EXTENSION_BY_MIME.get(file.getContentType());
-        String filename = UUID.randomUUID() + extension;
         try {
-            Files.createDirectories(storagePath);
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, storagePath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-            }
-            return filename;
+            byte[] content = file.getInputStream().readAllBytes();
+            String filename = file.getOriginalFilename() != null && !file.getOriginalFilename().isBlank()
+                    ? file.getOriginalFilename()
+                    : "upload" + EXTENSION_BY_MIME.get(file.getContentType());
+            return imageHostingClient.upload(content, filename, file.getContentType());
         } catch (IOException e) {
-            throw new IllegalStateException("No se pudo almacenar la imagen", e);
-        }
-    }
-
-    public Resource load(String filename) {
-        Path file = resolve(filename);
-        try {
-            Resource resource = new UrlResource(file.toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new ImageNotFoundException("Imagen no encontrada: " + filename);
-            }
-            return resource;
-        } catch (IOException e) {
-            throw new ImageNotFoundException("Imagen no encontrada: " + filename);
+            throw new IllegalStateException("No se pudo leer la imagen", e);
         }
     }
 
     public void delete(String filename) {
-        Path file = resolve(filename);
-        try {
-            if (!Files.deleteIfExists(file)) {
-                throw new ImageNotFoundException("Imagen no encontrada: " + filename);
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("No se pudo eliminar la imagen: " + filename, e);
+        if (filename == null || filename.isBlank()
+                || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            throw new IllegalArgumentException("Nombre de archivo inválido: " + filename);
         }
+        imageHostingClient.delete(filename);
     }
 
     public void validate(MultipartFile file) {
@@ -127,13 +102,5 @@ public class ImageStorageService {
             }
         }
         return true;
-    }
-
-    private Path resolve(String filename) {
-        if (filename == null || filename.isBlank()
-                || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
-            throw new IllegalArgumentException("Nombre de archivo inválido: " + filename);
-        }
-        return storagePath.resolve(filename).normalize();
     }
 }

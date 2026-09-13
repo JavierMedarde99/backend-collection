@@ -26,7 +26,7 @@ class WebConfigTest {
         when(registration.allowedOrigins(any(String[].class))).thenReturn(registration);
         when(registration.allowedMethods(any(String[].class))).thenReturn(registration);
 
-        new WebConfig("https://app.example.com,https://admin.example.com", "target/test-images")
+        new WebConfig("https://app.example.com,https://admin.example.com")
                 .addCorsMappings(registry);
 
         verify(registry).addMapping("/api/**");

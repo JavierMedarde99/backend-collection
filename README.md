@@ -102,22 +102,21 @@ Estados de visionado (`MovieStatus`): `WATCHING`, `WATCHED`, `PLAN_TO_WATCH`.
 ### Imágenes — `/api/v1/images`
 
 Flujo en dos pasos (endpoints separados, sin multipart en los CRUD): primero se sube
-el archivo y luego se usa la URL devuelta en el campo de imagen de la entidad
+el archivo a Catbox y luego se usa la URL devuelta en el campo de imagen de la entidad
 (`frontpage`, `thumbnailUrl`, `posterUrl`, etc.).
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| POST | `/api/v1/images/upload` | Subir imagen (`multipart/form-data`, campo `file`) → 201 `{url, filename}` |
-| GET | `/api/v1/images/{filename}` | Servir imagen (cache pública 1 día) |
-| DELETE | `/api/v1/images/{filename}` | Eliminar (204) |
+| POST | `/api/v1/images/upload` | Subir imagen (`multipart/form-data`, campo `file`) → 201 `{url, filename}` (URL de Catbox) |
+| DELETE | `/api/v1/images/{filename}` | Eliminar en Catbox (204; requiere `catbox.userhash`) |
 
 Validaciones: 5 MB máximo, MIME `image/jpeg`, `image/png`, `image/webp`, `image/gif`
-con comprobación de magic bytes, nombre único UUID. Configuración: `app.image.storage.path`
-(`./uploads/images`), `app.image.max-size`, `app.image.allowed-types`.
+con comprobación de magic bytes. Configuración: `app.image.max-size`,
+`app.image.allowed-types`, `catbox.api.base-url`, `catbox.userhash` (`CATBOX_USERHASH`).
 
 ```bash
 curl -X POST -F "file=@foto.jpg" http://localhost:8080/api/v1/images/upload
-# {"url":"http://localhost:8080/api/v1/images/abc-123.jpg","filename":"abc-123.jpg"}
+# {"url":"https://files.catbox.moe/abc123.jpg","filename":"abc123.jpg"}
 ```
 
 ## Configuración

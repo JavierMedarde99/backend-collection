@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
+import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
-import com.wikicollection.application.exception.ImageNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
@@ -59,11 +59,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(ImageNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleImageNotFound(ImageNotFoundException ex, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
-
     @ExceptionHandler(MovieShowConflictException.class)
     public ResponseEntity<ErrorResponse> handleMovieShowConflict(MovieShowConflictException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
@@ -110,6 +105,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "El archivo supera el tamaño máximo permitido", request);
+    }
+
+    @ExceptionHandler(CatboxUploadException.class)
+    public ResponseEntity<ErrorResponse> handleCatboxError(CatboxUploadException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_GATEWAY, "El servicio de imágenes devolvió un error: " + ex.getMessage(), request);
     }
 
     @ExceptionHandler(RestClientResponseException.class)
