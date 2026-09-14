@@ -211,7 +211,7 @@ class BggXmlClientTest {
     }
 
     @Test
-    void search_limitsThingIdsToTwenty_whenManySearchResults() throws Exception {
+    void search_fetchesThingDetailsInBatchesOfTwenty() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
@@ -220,15 +220,20 @@ class BggXmlClientTest {
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
                 .setBody(bggThingFixture()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(bggThingFixture()));
 
         List<BoardGameSearchResult> results = client.search("catan");
 
+        assertThat(server.getRequestCount()).isEqualTo(3);
         server.takeRequest();
-        RecordedRequest thingRequest = server.takeRequest();
-        assertThat(thingRequest.getPath()).startsWith("/xmlapi2/thing?id=");
-        String idParam = thingRequest.getRequestUrl().queryParameter("id");
-        assertThat(idParam).isNotNull();
-        assertThat(idParam.split(",").length).isLessThanOrEqualTo(20);
+        RecordedRequest firstBatch = server.takeRequest();
+        assertThat(firstBatch.getPath()).startsWith("/xmlapi2/thing?id=");
+        assertThat(firstBatch.getRequestUrl().queryParameter("id").split(",").length).isEqualTo(20);
+        RecordedRequest secondBatch = server.takeRequest();
+        assertThat(secondBatch.getRequestUrl().queryParameter("id").split(",").length).isEqualTo(5);
         assertThat(results).hasSize(25);
         assertThat(results.get(0).description()).isEqualTo("Un juego de colonización");
     }
