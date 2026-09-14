@@ -1,5 +1,7 @@
 package com.wikicollection.infrastructure.adapter.out.bgg.xml;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,13 +70,12 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
 
             List<String> ids = results.stream()
                     .map(BoardGameSearchResult::bggId)
-                    .limit(MAX_THING_IDS)
                     .toList();
-            if (results.size() > MAX_THING_IDS) {
-                log.warn("Búsqueda '{}' devolvió {} resultados; BGG permite máx. {} ids en /thing, se enriquecerán los primeros {}",
-                        query, results.size(), MAX_THING_IDS, MAX_THING_IDS);
+            if (ids.size() > MAX_THING_IDS) {
+                log.info("Búsqueda '{}' devolvió {} resultados; /thing admite máx. {} ids por llamada, se pedirán en {} lotes",
+                        query, ids.size(), MAX_THING_IDS, (ids.size() + MAX_THING_IDS - 1) / MAX_THING_IDS);
             }
-            Map<String, BggXmlItem> details = fetchDetails(ids);
+            Map<String, BggXmlItem> details = fetchAllDetails(ids);
 
             return results.stream()
                     .map(r -> mapper.enrich(r, details.get(r.bggId())))
@@ -86,6 +87,14 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
             log.warn("BGG XML no disponible: {}", e.getMessage());
             return List.of();
         }
+    }
+
+    private Map<String, BggXmlItem> fetchAllDetails(List<String> ids) {
+        Map<String, BggXmlItem> details = new HashMap<>();
+        for (int from = 0; from < ids.size(); from += MAX_THING_IDS) {
+            details.putAll(fetchDetails(ids.subList(from, Math.min(from + MAX_THING_IDS, ids.size()))));
+        }
+        return details;
     }
 
     private Map<String, BggXmlItem> fetchDetails(List<String> ids) {
