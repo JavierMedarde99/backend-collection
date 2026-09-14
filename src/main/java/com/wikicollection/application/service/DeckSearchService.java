@@ -3,9 +3,11 @@ package com.wikicollection.application.service;
 import java.util.List;
 
 import com.wikicollection.domain.model.MagicCardSearchResult;
+import com.wikicollection.infrastructure.config.CacheConfig;
 import com.wikicollection.domain.port.in.DeckSearchUseCase;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +22,7 @@ public class DeckSearchService implements DeckSearchUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.COMMANDER_SEARCH, key = "#colors")
     public List<MagicCardSearchResult> searchCommanders(String colors) {
         String filter = colors == null ? "" : colors.trim();
         List<MagicCardSearchResult> results = catalogClient.searchCommanders(filter);

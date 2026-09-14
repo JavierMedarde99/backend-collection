@@ -4,9 +4,11 @@ import java.util.List;
 
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchResult;
+import com.wikicollection.infrastructure.config.CacheConfig;
 import com.wikicollection.domain.port.in.MagicCardSearchUseCase;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,6 +23,7 @@ public class MagicCardSearchService implements MagicCardSearchUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MAGIC_SEARCH, key = "#query")
     public List<MagicCardSearchResult> search(String query) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("El parámetro de búsqueda 'name' es obligatorio");
