@@ -61,7 +61,7 @@ class RAWGClientTest {
         RecordedRequest request = server.takeRequest();
         assertThat(request.getPath()).startsWith("/games?search=witcher");
         assertThat(request.getPath()).contains("key=my-secret-key");
-        assertThat(request.getPath()).contains("page_size=5");
+        assertThat(request.getPath()).doesNotContain("page_size");
     }
 
     @Test

@@ -35,7 +35,7 @@ class GoogleBooksClientTest {
 
     @Test
     void search_mapsGoogleBooksResponse() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&maxResults=10&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.search("cien");
@@ -62,7 +62,7 @@ class GoogleBooksClientTest {
         MockRestServiceServer keyServer = MockRestServiceServer.bindTo(keyBuilder).build();
         GoogleBooksClient clientWithKey = new GoogleBooksClient(keyBuilder.build(), "my-secret-key", 0);
         keyServer.expect(once(),
-                        requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:test&maxResults=10&langRestrict=es&key=my-secret-key"))
+                        requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:test&langRestrict=es&key=my-secret-key"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = clientWithKey.search("test");
@@ -73,7 +73,7 @@ class GoogleBooksClientTest {
 
     @Test
     void search_returnsEmpty_whenNoItems() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:vacio&maxResults=10&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:vacio&langRestrict=es"))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.search("vacio");
