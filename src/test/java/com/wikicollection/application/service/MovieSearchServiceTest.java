@@ -13,6 +13,8 @@ import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,9 +42,9 @@ class MovieSearchServiceTest {
         MovieSearchResult result = sampleResult("Fight Club");
         when(catalogClient.search("fight", null)).thenReturn(List.of(result));
 
-        List<MovieSearchResult> results = movieSearchService.search("fight");
+        Page<MovieSearchResult> results = movieSearchService.search("fight", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
         verify(catalogClient).search("fight", null);
     }
 
@@ -51,9 +53,9 @@ class MovieSearchServiceTest {
         MovieSearchResult result = sampleResult("Fight Club");
         when(catalogClient.search("fight", MovieMediaType.MOVIE)).thenReturn(List.of(result));
 
-        List<MovieSearchResult> results = movieSearchService.search("fight", MovieMediaType.MOVIE);
+        Page<MovieSearchResult> results = movieSearchService.search("fight", MovieMediaType.MOVIE, PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
         verify(catalogClient).search("fight", MovieMediaType.MOVIE);
     }
 
@@ -64,12 +66,17 @@ class MovieSearchServiceTest {
                 .toList();
         when(catalogClient.search("titulo", null)).thenReturn(results);
 
-        assertThat(movieSearchService.search("titulo")).hasSize(10);
+        Page<MovieSearchResult> first = movieSearchService.search("titulo", PageRequest.of(0, 10));
+        Page<MovieSearchResult> second = movieSearchService.search("titulo", null, PageRequest.of(1, 10));
+
+        assertThat(first.getContent()).isEqualTo(results.subList(0, 10));
+        assertThat(first.getTotalElements()).isEqualTo(15);
+        assertThat(second.getContent()).isEqualTo(results.subList(10, 15));
     }
 
     @Test
     void search_rejectsBlankQuery() {
-        assertThatThrownBy(() -> movieSearchService.search("  "))
+        assertThatThrownBy(() -> movieSearchService.search("  ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

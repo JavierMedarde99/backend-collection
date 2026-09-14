@@ -208,8 +208,9 @@ class MovieShowControllerTest {
 
         mockMvc.perform(get("/api/v1/movieshows/search").param("name", "fight"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Fight Club"))
-                .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
+                .andExpect(jsonPath("$.content[0].title").value("Fight Club"))
+                .andExpect(jsonPath("$.content[0].mediaType").value("MOVIE"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
@@ -221,8 +222,8 @@ class MovieShowControllerTest {
 
         mockMvc.perform(get("/api/v1/movieshows/search").param("name", "fight").param("mediaType", "movie"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Fight Club"))
-                .andExpect(jsonPath("$[0].mediaType").value("MOVIE"));
+                .andExpect(jsonPath("$.content[0].title").value("Fight Club"))
+                .andExpect(jsonPath("$.content[0].mediaType").value("MOVIE"));
     }
 
     @Test

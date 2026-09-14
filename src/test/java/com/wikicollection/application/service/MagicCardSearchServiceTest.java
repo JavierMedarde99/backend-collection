@@ -12,6 +12,8 @@ import com.wikicollection.domain.model.MagicCardSearchResult;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,9 +42,9 @@ class MagicCardSearchServiceTest {
         MagicCardSearchResult result = sampleResult("Lightning Bolt");
         when(scryfallClient.search("lightning")).thenReturn(List.of(result));
 
-        List<MagicCardSearchResult> results = magicCardSearchService.search("lightning");
+        Page<MagicCardSearchResult> results = magicCardSearchService.search("lightning", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
         verify(scryfallClient).search("lightning");
     }
 
@@ -50,7 +52,7 @@ class MagicCardSearchServiceTest {
     void search_returnsEmpty_whenClientEmpty() {
         when(scryfallClient.search("nada")).thenReturn(List.of());
 
-        List<MagicCardSearchResult> results = magicCardSearchService.search("nada");
+        Page<MagicCardSearchResult> results = magicCardSearchService.search("nada", PageRequest.of(0, 10));
 
         assertThat(results).isEmpty();
     }
@@ -62,21 +64,21 @@ class MagicCardSearchServiceTest {
                 .toList();
         when(scryfallClient.search("carta")).thenReturn(results);
 
-        List<MagicCardSearchResult> result = magicCardSearchService.search("carta");
+        Page<MagicCardSearchResult> result = magicCardSearchService.search("carta", PageRequest.of(1, 10));
 
-        assertThat(result).hasSize(10);
-        assertThat(result).isEqualTo(results.subList(0, 10));
+        assertThat(result.getContent()).isEqualTo(results.subList(10, 15));
+        assertThat(result.getTotalElements()).isEqualTo(15);
     }
 
     @Test
     void search_rejectsBlankQuery() {
-        assertThatThrownBy(() -> magicCardSearchService.search("   "))
+        assertThatThrownBy(() -> magicCardSearchService.search("   ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void search_rejectsNullQuery() {
-        assertThatThrownBy(() -> magicCardSearchService.search(null))
+        assertThatThrownBy(() -> magicCardSearchService.search(null, PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

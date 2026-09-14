@@ -7,8 +7,10 @@ import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -44,6 +46,7 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "#query")
     public List<BookSearchResult> search(String query) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;

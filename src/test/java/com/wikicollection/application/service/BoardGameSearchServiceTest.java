@@ -11,6 +11,8 @@ import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.port.out.ExternalBoardGameCatalogClient;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,9 +42,10 @@ class BoardGameSearchServiceTest {
         BoardGameSearchResult result = sampleResult("Catan");
         when(bggXmlClient.search("catan")).thenReturn(List.of(result));
 
-        List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
+        Page<BoardGameSearchResult> results = boardGameSearchService.search("catan", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
+        assertThat(results.getTotalElements()).isEqualTo(1);
         verify(bggXmlClient).search("catan");
     }
 
@@ -50,7 +53,7 @@ class BoardGameSearchServiceTest {
     void search_returnsEmpty_whenNoResults() {
         when(bggXmlClient.search("catan")).thenReturn(List.of());
 
-        List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
+        Page<BoardGameSearchResult> results = boardGameSearchService.search("catan", PageRequest.of(0, 10));
 
         assertThat(results).isEmpty();
     }
@@ -62,21 +65,23 @@ class BoardGameSearchServiceTest {
                 .toList();
         when(bggXmlClient.search("catan")).thenReturn(many);
 
-        List<BoardGameSearchResult> results = boardGameSearchService.search("catan");
+        Page<BoardGameSearchResult> first = boardGameSearchService.search("catan", PageRequest.of(0, 10));
+        Page<BoardGameSearchResult> second = boardGameSearchService.search("catan", PageRequest.of(1, 10));
 
-        assertThat(results).hasSize(10);
-        assertThat(results).isEqualTo(many.subList(0, 10));
+        assertThat(first.getContent()).isEqualTo(many.subList(0, 10));
+        assertThat(first.getTotalElements()).isEqualTo(15);
+        assertThat(second.getContent()).isEqualTo(many.subList(10, 15));
     }
 
     @Test
     void search_rejectsBlankQuery() {
-        assertThatThrownBy(() -> boardGameSearchService.search("   "))
+        assertThatThrownBy(() -> boardGameSearchService.search("   ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void search_rejectsNullQuery() {
-        assertThatThrownBy(() -> boardGameSearchService.search(null))
+        assertThatThrownBy(() -> boardGameSearchService.search(null, PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

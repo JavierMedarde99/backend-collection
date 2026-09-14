@@ -23,16 +23,13 @@ import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.infrastructure.adapter.out.google.GoogleBooksClient;
-import com.wikicollection.infrastructure.config.CacheConfig;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
@@ -54,19 +51,6 @@ class BookControllerTest {
 
     @MockitoBean
     private GoogleBooksClient googleBooksClient;
-
-    @Autowired
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void clearCaches() {
-        CacheConfig.CACHE_NAMES.forEach(name -> {
-            var cache = cacheManager.getCache(name);
-            if (cache != null) {
-                cache.clear();
-            }
-        });
-    }
 
     private Book sampleBook() {
         return Book.builder()
@@ -277,8 +261,9 @@ class BookControllerTest {
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Cien años de soledad"))
-                .andExpect(jsonPath("$[0].isbn").value("9780307474728"));
+                .andExpect(jsonPath("$.content[0].title").value("Cien años de soledad"))
+                .andExpect(jsonPath("$.content[0].isbn").value("9780307474728"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
@@ -293,7 +278,7 @@ class BookControllerTest {
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.content").isEmpty());
     }
 
     @Test

@@ -131,9 +131,11 @@ public class BookController {
             @ApiResponse(responseCode = "502", description = "El catálogo externo devolvió un error"),
             @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
     })
-    public List<BookSearchResult> search(
-            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
-        return bookSearchUseCase.search(name);
+    public Page<BookSearchResult> search(
+            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+        return bookSearchUseCase.search(name, PageRequest.of(page, size));
     }
 
     private Sort buildSort(String sort) {

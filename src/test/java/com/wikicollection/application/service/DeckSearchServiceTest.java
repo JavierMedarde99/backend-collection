@@ -10,6 +10,8 @@ import com.wikicollection.domain.model.MagicCardSearchResult;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -37,9 +39,10 @@ class DeckSearchServiceTest {
         MagicCardSearchResult result = sampleResult("Atraxa");
         when(catalogClient.searchCommanders("wubg")).thenReturn(List.of(result));
 
-        List<MagicCardSearchResult> results = deckSearchService.searchCommanders("wubg");
+        Page<MagicCardSearchResult> results = deckSearchService.searchCommanders("wubg", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
+        assertThat(results.getTotalElements()).isEqualTo(1);
         verify(catalogClient).searchCommanders("wubg");
     }
 
@@ -50,9 +53,10 @@ class DeckSearchServiceTest {
                 .toList();
         when(catalogClient.searchCommanders("")).thenReturn(results);
 
-        List<MagicCardSearchResult> result = deckSearchService.searchCommanders(" ");
+        Page<MagicCardSearchResult> result = deckSearchService.searchCommanders(" ", PageRequest.of(1, 10));
 
-        assertThat(result).hasSize(10);
+        assertThat(result.getContent()).isEqualTo(results.subList(10, 15));
+        assertThat(result.getTotalElements()).isEqualTo(15);
         verify(catalogClient).searchCommanders("");
     }
 }
