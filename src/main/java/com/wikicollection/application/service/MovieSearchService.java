@@ -6,7 +6,9 @@ import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.port.in.MovieSearchUseCase;
 import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
+import com.wikicollection.infrastructure.config.CacheConfig;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +28,7 @@ public class MovieSearchService implements MovieSearchUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MOVIE_SEARCH, key = "#query + '-' + #mediaType")
     public List<MovieSearchResult> search(String query, MovieMediaType mediaType) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("El parámetro de búsqueda 'name' es obligatorio");
