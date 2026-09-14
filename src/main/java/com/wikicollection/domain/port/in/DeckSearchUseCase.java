@@ -1,10 +1,11 @@
 package com.wikicollection.domain.port.in;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.wikicollection.domain.model.MagicCardSearchResult;
 
 public interface DeckSearchUseCase {
 
-    List<MagicCardSearchResult> searchCommanders(String colors);
+    Page<MagicCardSearchResult> searchCommanders(String colors, Pageable pageable);
 }

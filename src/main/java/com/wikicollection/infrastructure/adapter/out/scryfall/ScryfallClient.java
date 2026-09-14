@@ -10,9 +10,11 @@ import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper.ScryfallCardResponse;
 
 import lombok.extern.slf4j.Slf4j;
+import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -59,6 +61,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MAGIC_SEARCH, key = "#query")
     public List<MagicCardSearchResult> search(String query) {
         if (query == null || query.isBlank()) {
             return List.of();
@@ -83,6 +86,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.COMMANDER_SEARCH, key = "#colors")
     public List<MagicCardSearchResult> searchCommanders(String colors) {
         StringBuilder query = new StringBuilder("is:commander");
         if (colors != null && !colors.isBlank()) {

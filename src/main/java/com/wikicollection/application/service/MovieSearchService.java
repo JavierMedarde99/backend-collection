@@ -1,20 +1,16 @@
 package com.wikicollection.application.service;
 
-import java.util.List;
-
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.port.in.MovieSearchUseCase;
 import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
-import com.wikicollection.infrastructure.config.CacheConfig;
 
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MovieSearchService implements MovieSearchUseCase {
-
-    private static final int MAX_RESULTS = 10;
 
     private final ExternalMovieCatalogClient catalogClient;
 
@@ -23,17 +19,15 @@ public class MovieSearchService implements MovieSearchUseCase {
     }
 
     @Override
-    public List<MovieSearchResult> search(String query) {
-        return search(query, null);
+    public Page<MovieSearchResult> search(String query, Pageable pageable) {
+        return search(query, null, pageable);
     }
 
     @Override
-    @Cacheable(cacheNames = CacheConfig.MOVIE_SEARCH, key = "#query + '-' + #mediaType")
-    public List<MovieSearchResult> search(String query, MovieMediaType mediaType) {
+    public Page<MovieSearchResult> search(String query, MovieMediaType mediaType, Pageable pageable) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("El parámetro de búsqueda 'name' es obligatorio");
         }
-        List<MovieSearchResult> results = catalogClient.search(query, mediaType);
-        return results.size() > MAX_RESULTS ? results.subList(0, MAX_RESULTS) : results;
+        return PagedResults.slice(catalogClient.search(query, mediaType), pageable);
     }
 }

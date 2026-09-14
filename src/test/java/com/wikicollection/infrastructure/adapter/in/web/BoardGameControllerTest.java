@@ -232,8 +232,9 @@ class BoardGameControllerTest {
         mockMvc.perform(get("/api/v1/boardgames/search").param("name", "catan"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.query").value("catan"))
-                .andExpect(jsonPath("$.results[0].title").value("Catan"))
-                .andExpect(jsonPath("$.results[0].publisher").value("Kosmos"));
+                .andExpect(jsonPath("$.results.content[0].title").value("Catan"))
+                .andExpect(jsonPath("$.results.content[0].publisher").value("Kosmos"))
+                .andExpect(jsonPath("$.results.totalElements").value(1));
     }
 
     @Test

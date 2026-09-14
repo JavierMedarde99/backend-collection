@@ -308,8 +308,9 @@ class GameControllerTest {
 
         mockMvc.perform(get("/api/v1/games/search").param("name", "witcher"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("The Witcher 3"))
-                .andExpect(jsonPath("$[0].platform").value("PC"));
+                .andExpect(jsonPath("$.content[0].title").value("The Witcher 3"))
+                .andExpect(jsonPath("$.content[0].platform").value("PC"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

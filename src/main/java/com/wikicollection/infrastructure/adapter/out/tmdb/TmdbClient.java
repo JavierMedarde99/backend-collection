@@ -12,8 +12,10 @@ import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -51,6 +53,7 @@ public class TmdbClient implements ExternalMovieCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MOVIE_SEARCH, key = "#query + '|' + #mediaType")
     public List<MovieSearchResult> search(String query, MovieMediaType mediaType) {
         if (query == null || query.isBlank()) {
             return List.of();

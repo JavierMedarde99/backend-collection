@@ -12,7 +12,9 @@ import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -31,6 +33,7 @@ public class FreeToGameClient implements ExternalGameCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.GAME_SEARCH, key = "'ftg:' + #query")
     public List<GameSearchResult> search(String query) {
         try {
             FreeToGameResponse[] response = freeToGameClient.get()

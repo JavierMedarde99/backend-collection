@@ -10,6 +10,8 @@ import java.util.List;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,21 +35,22 @@ class BookSearchServiceTest {
                 "Vintage Español", "2011-05-03", "es", List.of("Literatura"));
         when(externalBookCatalogClient.search("cien")).thenReturn(List.of(result));
 
-        List<BookSearchResult> results = bookSearchService.search("cien");
+        Page<BookSearchResult> results = bookSearchService.search("cien", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(result);
+        assertThat(results.getContent()).containsExactly(result);
+        assertThat(results.getTotalElements()).isEqualTo(1);
         verify(externalBookCatalogClient).search("cien");
     }
 
     @Test
     void search_rejectsBlankQuery() {
-        assertThatThrownBy(() -> bookSearchService.search("   "))
+        assertThatThrownBy(() -> bookSearchService.search("   ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void search_rejectsNullQuery() {
-        assertThatThrownBy(() -> bookSearchService.search(null))
+        assertThatThrownBy(() -> bookSearchService.search(null, PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

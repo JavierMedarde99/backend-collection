@@ -14,6 +14,8 @@ import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -46,9 +48,10 @@ class GameSearchServiceTest {
         GameSearchResult rawg = sampleResult("The Witcher 3");
         when(rawgClient.search("witcher")).thenReturn(List.of(rawg));
 
-        List<GameSearchResult> results = gameSearchService.search("witcher");
+        Page<GameSearchResult> results = gameSearchService.search("witcher", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(rawg);
+        assertThat(results.getContent()).containsExactly(rawg);
+        assertThat(results.getTotalElements()).isEqualTo(1);
         verify(rawgClient).search("witcher");
         verify(freeToGameClient, never()).search("witcher");
     }
@@ -62,9 +65,9 @@ class GameSearchServiceTest {
         when(rawgClient.search("witcher")).thenReturn(List.of());
         when(freeToGameClient.search("witcher")).thenReturn(List.of(free));
 
-        List<GameSearchResult> results = gameSearchService.search("witcher");
+        Page<GameSearchResult> results = gameSearchService.search("witcher", PageRequest.of(0, 10));
 
-        assertThat(results).containsExactly(free);
+        assertThat(results.getContent()).containsExactly(free);
         verify(rawgClient).search("witcher");
         verify(freeToGameClient).search("witcher");
     }
@@ -74,33 +77,36 @@ class GameSearchServiceTest {
         when(rawgClient.search("witcher")).thenReturn(List.of());
         when(freeToGameClient.search("witcher")).thenReturn(List.of());
 
-        List<GameSearchResult> results = gameSearchService.search("witcher");
+        Page<GameSearchResult> results = gameSearchService.search("witcher", PageRequest.of(0, 10));
 
         assertThat(results).isEmpty();
     }
 
     @Test
-    void search_limitsResultsToFive() {
+    void search_paginatesResults() {
         List<GameSearchResult> rawg = java.util.stream.IntStream.range(0, 8)
                 .mapToObj(i -> sampleResult("Juego " + i))
                 .toList();
         when(rawgClient.search("witcher")).thenReturn(rawg);
 
-        List<GameSearchResult> results = gameSearchService.search("witcher");
+        Page<GameSearchResult> first = gameSearchService.search("witcher", PageRequest.of(0, 5));
+        Page<GameSearchResult> second = gameSearchService.search("witcher", PageRequest.of(1, 5));
 
-        assertThat(results).hasSize(5);
-        assertThat(results).isEqualTo(rawg.subList(0, 5));
+        assertThat(first.getContent()).isEqualTo(rawg.subList(0, 5));
+        assertThat(first.getTotalElements()).isEqualTo(8);
+        assertThat(first.getTotalPages()).isEqualTo(2);
+        assertThat(second.getContent()).isEqualTo(rawg.subList(5, 8));
     }
 
     @Test
     void search_rejectsBlankQuery() {
-        assertThatThrownBy(() -> gameSearchService.search("   "))
+        assertThatThrownBy(() -> gameSearchService.search("   ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void search_rejectsNullQuery() {
-        assertThatThrownBy(() -> gameSearchService.search(null))
+        assertThatThrownBy(() -> gameSearchService.search(null, PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

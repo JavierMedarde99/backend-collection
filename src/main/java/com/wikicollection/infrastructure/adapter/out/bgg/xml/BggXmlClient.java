@@ -9,12 +9,14 @@ import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapp
 import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper.BggXmlItem;
 
 import lombok.extern.slf4j.Slf4j;
+import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -48,6 +50,7 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.BOARDGAME_SEARCH, key = "#query")
     public List<BoardGameSearchResult> search(String query) {
         try {
             String searchUri = UriComponentsBuilder.fromUriString(baseUrl)

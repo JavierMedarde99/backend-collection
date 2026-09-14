@@ -132,10 +132,12 @@ public class MovieShowController {
             @ApiResponse(responseCode = "200", description = "Resultados de búsqueda"),
             @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio")
     })
-    public List<MovieSearchResult> search(
+    public Page<MovieSearchResult> search(
             @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
-            @Parameter(description = "Tipo: MOVIE o TV (por defecto ambos)") @RequestParam(required = false) MovieMediaType mediaType) {
-        return movieSearchUseCase.search(name, mediaType);
+            @Parameter(description = "Tipo: MOVIE o TV (por defecto ambos)") @RequestParam(required = false) MovieMediaType mediaType,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+        return movieSearchUseCase.search(name, mediaType, PageRequest.of(page, size));
     }
 
     private Sort buildSort(String sort) {

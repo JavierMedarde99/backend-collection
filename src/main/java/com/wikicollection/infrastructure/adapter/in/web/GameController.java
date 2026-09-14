@@ -159,9 +159,11 @@ public class GameController {
             @ApiResponse(responseCode = "502", description = "El catálogo externo devolvió un error"),
             @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
     })
-    public List<GameSearchResult> search(
-            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
-        return gameSearchUseCase.search(name);
+    public Page<GameSearchResult> search(
+            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+        return gameSearchUseCase.search(name, PageRequest.of(page, size));
     }
 
 private Sort buildSort(String sort) {

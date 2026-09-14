@@ -119,8 +119,10 @@ public class MagicCardController {
             @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio")
     })
     public MagicCardSearchResponse search(
-            @Parameter(description = "Nombre a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
-        return new MagicCardSearchResponse(name, magicCardSearchUseCase.search(name));
+            @Parameter(description = "Nombre a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+        return new MagicCardSearchResponse(name, magicCardSearchUseCase.search(name, PageRequest.of(page, size)));
     }
 
     @GetMapping("/commanders")
@@ -129,8 +131,10 @@ public class MagicCardController {
             @ApiResponse(responseCode = "200", description = "Resultados de búsqueda")
     })
     public MagicCardSearchResponse commanders(
-            @Parameter(description = "Colores en formato wubrg, p. ej. 'rug'") @RequestParam(value = "colors", required = false, defaultValue = "") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String colors) {
-        return new MagicCardSearchResponse(colors, deckSearchUseCase.searchCommanders(colors));
+            @Parameter(description = "Colores en formato wubrg, p. ej. 'rug'") @RequestParam(value = "colors", required = false, defaultValue = "") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String colors,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+        return new MagicCardSearchResponse(colors, deckSearchUseCase.searchCommanders(colors, PageRequest.of(page, size)));
     }
 
     private Sort buildSort(String sort) {

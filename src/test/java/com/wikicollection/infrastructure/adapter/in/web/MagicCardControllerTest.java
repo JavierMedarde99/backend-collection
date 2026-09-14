@@ -212,10 +212,11 @@ class MagicCardControllerTest {
         mockMvc.perform(get("/api/v1/magic/search").param("name", "lightning"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.query").value("lightning"))
-                .andExpect(jsonPath("$.results[0].name").value("Lightning Bolt"))
-                .andExpect(jsonPath("$.results[0].setName").value("Marvel Super Heroes Commander"))
-                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("R"))
-                .andExpect(jsonPath("$.results[0].text").value("Lightning Bolt deals 3 damage to any target."));
+                .andExpect(jsonPath("$.results.content[0].name").value("Lightning Bolt"))
+                .andExpect(jsonPath("$.results.content[0].setName").value("Marvel Super Heroes Commander"))
+                .andExpect(jsonPath("$.results.content[0].colorIdentity[0]").value("R"))
+                .andExpect(jsonPath("$.results.content[0].text").value("Lightning Bolt deals 3 damage to any target."))
+                .andExpect(jsonPath("$.results.totalElements").value(1));
     }
 
     @Test
@@ -234,8 +235,8 @@ class MagicCardControllerTest {
 
         mockMvc.perform(get("/api/v1/magic/commanders").param("colors", "wubg"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.results[0].name").value("Atraxa, Praetors' Voice"))
-                .andExpect(jsonPath("$.results[0].colorIdentity[0]").value("W"));
+                .andExpect(jsonPath("$.results.content[0].name").value("Atraxa, Praetors' Voice"))
+                .andExpect(jsonPath("$.results.content[0].colorIdentity[0]").value("W"));
     }
 
     @Test
