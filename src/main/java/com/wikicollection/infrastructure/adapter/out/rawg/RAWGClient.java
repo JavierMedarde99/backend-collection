@@ -25,7 +25,6 @@ import org.springframework.web.client.RestClientResponseException;
 public class RAWGClient implements ExternalGameCatalogClient {
 
     private static final String GAMES_PATH = "/games";
-    private static final int PAGE_SIZE = 5;
 
     private final RestClient rawgRestClient;
     private final String apiKey;
@@ -44,8 +43,7 @@ public class RAWGClient implements ExternalGameCatalogClient {
             RawgResponse response = rawgRestClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.path(GAMES_PATH)
-                                .queryParam("search", query)
-                                .queryParam("page_size", PAGE_SIZE);
+                                .queryParam("search", query);
                         if (apiKey != null && !apiKey.isBlank()) {
                             uriBuilder.queryParam("key", apiKey);
                         }
