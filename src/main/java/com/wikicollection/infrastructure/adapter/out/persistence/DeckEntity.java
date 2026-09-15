@@ -24,6 +24,7 @@ public class DeckEntity {
 
     @Id
     private String id;
+    private String ownerId;
 
     private String name;
 

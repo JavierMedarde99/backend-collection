@@ -13,6 +13,7 @@ public class MovieShowEntityMapper {
         }
         return MovieShowEntity.builder()
                 .id(movieShow.getId())
+                .ownerId(movieShow.getOwnerId())
                 .externalId(movieShow.getExternalId())
                 .title(movieShow.getTitle())
                 .overview(movieShow.getOverview())
@@ -38,6 +39,7 @@ public class MovieShowEntityMapper {
         }
         return MovieShow.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .externalId(entity.getExternalId())
                 .title(entity.getTitle())
                 .overview(entity.getOverview())

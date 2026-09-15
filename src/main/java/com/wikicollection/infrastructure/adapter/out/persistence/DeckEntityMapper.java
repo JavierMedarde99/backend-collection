@@ -16,6 +16,7 @@ public class DeckEntityMapper {
         }
         return DeckEntity.builder()
                 .id(deck.getId())
+                .ownerId(deck.getOwnerId())
                 .name(deck.getName())
                 .description(deck.getDescription())
                 .commander(deck.getCommander())
@@ -32,6 +33,7 @@ public class DeckEntityMapper {
         }
         return Deck.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .commander(entity.getCommander())

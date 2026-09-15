@@ -28,6 +28,7 @@ public class MagicCardEntity {
 
     @Id
     private String id;
+    private String ownerId;
 
     private String scryfallId;
 

@@ -27,6 +27,7 @@ public class BoardGameEntity {
 
     @Id
     private String id;
+    private String ownerId;
 
     private String title;
 
