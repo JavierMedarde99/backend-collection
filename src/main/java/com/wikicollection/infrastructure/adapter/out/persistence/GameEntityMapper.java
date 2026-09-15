@@ -13,6 +13,7 @@ public class GameEntityMapper {
         }
         return GameEntity.builder()
                 .id(game.getId())
+                .ownerId(game.getOwnerId())
                 .externalId(game.getExternalId())
                 .title(game.getTitle())
                 .platform(game.getPlatform())
@@ -33,6 +34,7 @@ public class GameEntityMapper {
         }
         return Game.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .externalId(entity.getExternalId())
                 .title(entity.getTitle())
                 .platform(entity.getPlatform())

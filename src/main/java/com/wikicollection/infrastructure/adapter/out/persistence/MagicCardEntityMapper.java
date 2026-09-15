@@ -13,6 +13,7 @@ public class MagicCardEntityMapper {
         }
         return MagicCardEntity.builder()
                 .id(magicCard.getId())
+                .ownerId(magicCard.getOwnerId())
                 .scryfallId(magicCard.getScryfallId())
                 .oracleId(magicCard.getOracleId())
                 .name(magicCard.getName())
@@ -55,6 +56,7 @@ public class MagicCardEntityMapper {
         }
         return MagicCard.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .scryfallId(entity.getScryfallId())
                 .oracleId(entity.getOracleId())
                 .name(entity.getName())

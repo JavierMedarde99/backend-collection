@@ -18,6 +18,7 @@ import lombok.ToString;
 public class Book {
 
     private String id;
+    private String ownerId;
     private String externalId;
     private String title;
     private String descripcion;

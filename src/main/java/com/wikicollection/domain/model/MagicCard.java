@@ -20,6 +20,7 @@ import lombok.ToString;
 public class MagicCard {
 
     private String id;
+    private String ownerId;
     private String scryfallId;
     private String oracleId;
     private String name;

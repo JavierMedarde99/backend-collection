@@ -13,6 +13,7 @@ public class BoardGameEntityMapper {
         }
         return BoardGameEntity.builder()
                 .id(boardGame.getId())
+                .ownerId(boardGame.getOwnerId())
                 .title(boardGame.getTitle())
                 .description(boardGame.getDescription())
                 .yearPublished(boardGame.getYearPublished())
@@ -40,6 +41,7 @@ public class BoardGameEntityMapper {
         }
         return BoardGame.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .title(entity.getTitle())
                 .description(entity.getDescription())
                 .yearPublished(entity.getYearPublished())

@@ -19,6 +19,7 @@ import lombok.ToString;
 public class MovieShow {
 
     private String id;
+    private String ownerId;
     private String externalId;
     private String title;
     private String overview;

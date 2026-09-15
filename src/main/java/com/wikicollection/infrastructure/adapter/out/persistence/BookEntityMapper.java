@@ -13,6 +13,7 @@ public class BookEntityMapper {
         }
         return BookEntity.builder()
                 .id(book.getId())
+                .ownerId(book.getOwnerId())
                 .externalId(book.getExternalId())
                 .title(book.getTitle())
                 .descripcion(book.getDescripcion())
@@ -34,6 +35,7 @@ public class BookEntityMapper {
         }
         return Book.builder()
                 .id(entity.getId())
+                .ownerId(entity.getOwnerId())
                 .externalId(entity.getExternalId())
                 .title(entity.getTitle())
                 .descripcion(entity.getDescripcion())

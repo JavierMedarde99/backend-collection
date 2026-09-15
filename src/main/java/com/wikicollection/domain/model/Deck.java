@@ -19,6 +19,7 @@ import lombok.ToString;
 public class Deck {
 
     private String id;
+    private String ownerId;
     private String name;
     private String description;
     private String commander;

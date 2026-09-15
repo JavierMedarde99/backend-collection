@@ -27,6 +27,7 @@ public class GameEntity {
 
     @Id
     private String id;
+    private String ownerId;
 
     private String externalId;
 
