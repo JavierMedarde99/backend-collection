@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -101,9 +102,9 @@ public class GameController {
             @ApiResponse(responseCode = "201", description = "Juego creado"),
             @ApiResponse(responseCode = "400", description = "Datos del juego inválidos")
     })
-    public ResponseEntity<GameResponse> create(@Valid @RequestBody GameRequest request, UriComponentsBuilder ucb) {
+    public ResponseEntity<GameResponse> create(@Valid @RequestBody GameRequest request, @CurrentUser String currentUserId, UriComponentsBuilder ucb) {
         boolean obtainPlatinum = Boolean.TRUE.equals(request.obtainPlatinum());
-        var saved = gameUseCase.save(mapper.toDomain(request), obtainPlatinum);
+        var saved = gameUseCase.save(mapper.toDomain(request), obtainPlatinum, currentUserId);
         URI location = ucb.path("/api/v1/games/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -117,9 +118,9 @@ public class GameController {
     })
     public GameResponse update(
             @Parameter(description = "Identificador del juego") @PathVariable String id,
-            @Valid @RequestBody GameRequest request) {
+            @Valid @RequestBody GameRequest request, @CurrentUser String currentUserId) {
         boolean obtainPlatinum = Boolean.TRUE.equals(request.obtainPlatinum());
-        return mapper.toResponse(gameUseCase.update(id, mapper.toDomain(request), obtainPlatinum));
+        return mapper.toResponse(gameUseCase.update(id, mapper.toDomain(request), obtainPlatinum, currentUserId));
     }
 
     @DeleteMapping("/{id}")
@@ -129,8 +130,8 @@ public class GameController {
             @ApiResponse(responseCode = "404", description = "Juego no encontrado")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador del juego") @PathVariable String id) {
-        gameUseCase.delete(id);
+            @Parameter(description = "Identificador del juego") @PathVariable String id, @CurrentUser String currentUserId) {
+        gameUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 

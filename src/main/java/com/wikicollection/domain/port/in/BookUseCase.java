@@ -12,9 +12,9 @@ public interface BookUseCase {
 
     Book findById(String id);
 
-    Book save(Book book);
+    Book save(Book book, String ownerId);
 
-    Book update(String id, Book updates);
+    Book update(String id, Book updates, String userId);
 
-    void delete(String id);
+    void delete(String id, String userId);
 }

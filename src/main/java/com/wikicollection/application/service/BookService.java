@@ -18,10 +18,13 @@ public class BookService implements BookUseCase {
 
     private final BookRepository bookRepository;
     private final DateRangeValidator dateRangeValidator;
+    private final OwnershipValidator ownershipValidator;
 
-    public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator) {
+    public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator,
+                       OwnershipValidator ownershipValidator) {
         this.bookRepository = bookRepository;
         this.dateRangeValidator = dateRangeValidator;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -37,7 +40,8 @@ public class BookService implements BookUseCase {
 
     @Override
     @Transactional
-    public Book save(Book book) {
+    public Book save(Book book, String ownerId) {
+        book.setOwnerId(ownerId);
         checkExternalIdUnique(book.getExternalId(), null);
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return saveOrConflict(book);
@@ -45,8 +49,9 @@ public class BookService implements BookUseCase {
 
     @Override
     @Transactional
-    public Book update(String id, Book updates) {
+    public Book update(String id, Book updates, String userId) {
         Book existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
@@ -73,8 +78,9 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        Book existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         bookRepository.deleteById(id);
     }
 

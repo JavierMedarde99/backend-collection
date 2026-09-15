@@ -12,9 +12,9 @@ public interface MovieShowUseCase {
 
     MovieShow findById(String id);
 
-    MovieShow save(MovieShow movieShow);
+    MovieShow save(MovieShow movieShow, String ownerId);
 
-    MovieShow update(String id, MovieShow updates);
+    MovieShow update(String id, MovieShow updates, String userId);
 
-    void delete(String id);
+    void delete(String id, String userId);
 }

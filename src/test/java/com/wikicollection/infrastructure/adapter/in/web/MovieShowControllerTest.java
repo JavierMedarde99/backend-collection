@@ -53,6 +53,7 @@ class MovieShowControllerTest {
     private MovieShow sampleShow() {
         return MovieShow.builder()
                 .id("m1")
+                .ownerId("u1")
                 .externalId("550")
                 .title("Fight Club")
                 .mediaType(MovieMediaType.MOVIE)

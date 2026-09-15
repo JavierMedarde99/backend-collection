@@ -42,6 +42,9 @@ class GameServiceTest {
     @Spy
     private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     @InjectMocks
     private GameService gameService;
 
@@ -90,7 +93,7 @@ class GameServiceTest {
         Game game = sampleGame();
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game, false);
+        Game result = gameService.save(game, false, "u1");
 
         assertThat(result).isSameAs(game);
         verify(gameRepository).save(game);
@@ -101,7 +104,7 @@ class GameServiceTest {
         Game game = sampleGame();
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        gameService.save(game, false);
+        gameService.save(game, false, "u1");
 
         verify(gameRepository).save(game);
         verifyNoInteractions(steamCatalogueClient);
@@ -114,7 +117,7 @@ class GameServiceTest {
         when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game, true);
+        Game result = gameService.save(game, true, "u1");
 
         assertThat(result.getSteamAppId()).isEqualTo("570");
         verify(steamCatalogueClient).searchGameByName("The Witcher 3");
@@ -126,7 +129,7 @@ class GameServiceTest {
         game.setSteamAppId("999");
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game, true);
+        Game result = gameService.save(game, true, "u1");
 
         assertThat(result.getSteamAppId()).isEqualTo("999");
         verifyNoInteractions(steamCatalogueClient);
@@ -138,7 +141,7 @@ class GameServiceTest {
         when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(null);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game, true);
+        Game result = gameService.save(game, true, "u1");
 
         assertThat(result.getSteamAppId()).isNull();
         verify(steamCatalogueClient).searchGameByName("The Witcher 3");
@@ -149,7 +152,7 @@ class GameServiceTest {
         Game game = sampleGame();
         game.setDateAdded(LocalDate.now().plusDays(1));
 
-        assertThatThrownBy(() -> gameService.save(game, false))
+        assertThatThrownBy(() -> gameService.save(game, false, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(gameRepository, never()).save(any(Game.class));
@@ -160,7 +163,7 @@ class GameServiceTest {
         Game game = sampleGame();
         game.setDateCompleted(LocalDate.now().plusDays(1));
 
-        assertThatThrownBy(() -> gameService.save(game, false))
+        assertThatThrownBy(() -> gameService.save(game, false, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(gameRepository, never()).save(any(Game.class));
@@ -173,7 +176,7 @@ class GameServiceTest {
         game.setDateAdded(today);
         game.setDateCompleted(today.minusDays(1));
 
-        assertThatThrownBy(() -> gameService.save(game, false))
+        assertThatThrownBy(() -> gameService.save(game, false, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(gameRepository, never()).save(any(Game.class));
@@ -187,7 +190,7 @@ class GameServiceTest {
         game.setDateCompleted(today);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.save(game, false);
+        Game result = gameService.save(game, false, "u1");
 
         assertThat(result).isSameAs(game);
         verify(gameRepository).save(game);
@@ -197,7 +200,7 @@ class GameServiceTest {
     void update_throwsNotFound_whenMissing() {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> gameService.update("nope", sampleGame(), false))
+        assertThatThrownBy(() -> gameService.update("nope", sampleGame(), false, "u1"))
                 .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("nope");
     }
@@ -218,7 +221,7 @@ class GameServiceTest {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Game result = gameService.update("g1", updates, false);
+        Game result = gameService.update("g1", updates, false, "u1");
 
         assertThat(result.getId()).isEqualTo("g1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
@@ -244,7 +247,7 @@ class GameServiceTest {
         Game updates = sampleGame();
         updates.setTitle("The Witcher 3");
 
-        Game result = gameService.update("g1", updates, true);
+        Game result = gameService.update("g1", updates, true, "u1");
 
         assertThat(result.getSteamAppId()).isEqualTo("570");
         verify(steamCatalogueClient).searchGameByName("The Witcher 3");
@@ -258,7 +261,7 @@ class GameServiceTest {
         updates.setDateAdded(LocalDate.now().plusDays(1));
         when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> gameService.update("g1", updates, false))
+        assertThatThrownBy(() -> gameService.update("g1", updates, false, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(gameRepository, never()).save(any(Game.class));
@@ -274,7 +277,7 @@ class GameServiceTest {
         updates.setDateCompleted(today.minusDays(1));
         when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> gameService.update("g1", updates, false))
+        assertThatThrownBy(() -> gameService.update("g1", updates, false, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(gameRepository, never()).save(any(Game.class));
@@ -289,7 +292,7 @@ class GameServiceTest {
 
         Game updates = sampleGame();
 
-        gameService.update("g1", updates, false);
+        gameService.update("g1", updates, false, "u1");
 
         verifyNoInteractions(steamCatalogueClient);
     }
@@ -305,7 +308,7 @@ class GameServiceTest {
         Game updates = sampleGame();
         updates.setSteamAppId("999");
 
-        Game result = gameService.update("g1", updates, true);
+        Game result = gameService.update("g1", updates, true, "u1");
 
         assertThat(result.getSteamAppId()).isEqualTo("999");
         verifyNoInteractions(steamCatalogueClient);
@@ -317,7 +320,7 @@ class GameServiceTest {
         game.setId("g1");
         when(gameRepository.findById("g1")).thenReturn(Optional.of(game));
 
-        gameService.delete("g1");
+        gameService.delete("g1", "u1");
 
         verify(gameRepository).deleteById("g1");
     }
@@ -326,7 +329,7 @@ class GameServiceTest {
     void delete_throwsNotFound_whenMissing() {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> gameService.delete("nope"))
+        assertThatThrownBy(() -> gameService.delete("nope", "u1"))
                 .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("nope");
     }

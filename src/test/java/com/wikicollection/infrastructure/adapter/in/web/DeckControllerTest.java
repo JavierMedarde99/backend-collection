@@ -57,6 +57,7 @@ class DeckControllerTest {
     private Deck sampleDeck() {
         return Deck.builder()
                 .id("d1")
+                .ownerId("u1")
                 .name("Mi Commander")
                 .commander("Atraxa, Praetors' Voice")
                 .commanderColors(List.of("W", "U", "B", "G"))

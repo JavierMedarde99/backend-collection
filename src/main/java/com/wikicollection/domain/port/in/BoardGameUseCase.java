@@ -12,9 +12,9 @@ public interface BoardGameUseCase {
 
     BoardGame findById(String id);
 
-    BoardGame save(BoardGame boardGame);
+    BoardGame save(BoardGame boardGame, String ownerId);
 
-    BoardGame update(String id, BoardGame updates);
+    BoardGame update(String id, BoardGame updates, String userId);
 
-    void delete(String id);
+    void delete(String id, String userId);
 }

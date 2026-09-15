@@ -15,15 +15,15 @@ public interface DeckUseCase {
 
     Deck findById(String id);
 
-    Deck save(Deck deck);
+    Deck save(Deck deck, String ownerId);
 
-    Deck update(String id, Deck updates);
+    Deck update(String id, Deck updates, String userId);
 
-    void delete(String id);
+    void delete(String id, String userId);
 
-    Deck addCard(String deckId, String scryfallId, int quantity);
+    Deck addCard(String deckId, String scryfallId, int quantity, String userId);
 
-    Deck removeCard(String deckId, String scryfallId);
+    Deck removeCard(String deckId, String scryfallId, String userId);
 
     DeckStatus getStatus(String deckId);
 

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -85,8 +86,8 @@ public class DeckController {
             @ApiResponse(responseCode = "201", description = "Mazo creado"),
             @ApiResponse(responseCode = "400", description = "Datos del mazo inválidos")
     })
-    public ResponseEntity<DeckResponse> create(@Valid @RequestBody DeckRequest request, UriComponentsBuilder ucb) {
-        var saved = deckUseCase.save(mapper.toDomain(request));
+    public ResponseEntity<DeckResponse> create(@Valid @RequestBody DeckRequest request, @CurrentUser String currentUserId, UriComponentsBuilder ucb) {
+        var saved = deckUseCase.save(mapper.toDomain(request), currentUserId);
         URI location = ucb.path("/api/v1/decks/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -100,8 +101,8 @@ public class DeckController {
     })
     public DeckResponse update(
             @Parameter(description = "Identificador del mazo") @PathVariable String id,
-            @Valid @RequestBody DeckRequest request) {
-        return mapper.toResponse(deckUseCase.update(id, mapper.toDomain(request)));
+            @Valid @RequestBody DeckRequest request, @CurrentUser String currentUserId) {
+        return mapper.toResponse(deckUseCase.update(id, mapper.toDomain(request), currentUserId));
     }
 
     @DeleteMapping("/{id}")
@@ -111,8 +112,8 @@ public class DeckController {
             @ApiResponse(responseCode = "404", description = "Mazo no encontrado")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador del mazo") @PathVariable String id) {
-        deckUseCase.delete(id);
+            @Parameter(description = "Identificador del mazo") @PathVariable String id, @CurrentUser String currentUserId) {
+        deckUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -125,8 +126,8 @@ public class DeckController {
     })
     public DeckResponse addCard(
             @Parameter(description = "Identificador del mazo") @PathVariable String id,
-            @Valid @RequestBody DeckCardRequest request) {
-        return mapper.toResponse(deckUseCase.addCard(id, request.scryfallId(), request.quantity()));
+            @Valid @RequestBody DeckCardRequest request, @CurrentUser String currentUserId) {
+        return mapper.toResponse(deckUseCase.addCard(id, request.scryfallId(), request.quantity(), currentUserId));
     }
 
     @DeleteMapping("/{id}/cards/{scryfallId}")
@@ -138,8 +139,9 @@ public class DeckController {
     })
     public DeckResponse removeCard(
             @Parameter(description = "Identificador del mazo") @PathVariable String id,
-            @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId) {
-        return mapper.toResponse(deckUseCase.removeCard(id, scryfallId));
+            @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId,
+            @CurrentUser String currentUserId) {
+        return mapper.toResponse(deckUseCase.removeCard(id, scryfallId, currentUserId));
     }
 
     @GetMapping("/{id}/status")

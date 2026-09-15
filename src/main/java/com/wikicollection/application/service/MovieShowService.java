@@ -20,11 +20,14 @@ public class MovieShowService implements MovieShowUseCase {
 
     private final MovieShowRepository movieShowRepository;
     private final DateRangeValidator dateRangeValidator;
+    private final OwnershipValidator ownershipValidator;
 
     public MovieShowService(MovieShowRepository movieShowRepository,
-                            DateRangeValidator dateRangeValidator) {
+                            DateRangeValidator dateRangeValidator,
+                            OwnershipValidator ownershipValidator) {
         this.movieShowRepository = movieShowRepository;
         this.dateRangeValidator = dateRangeValidator;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -40,7 +43,8 @@ public class MovieShowService implements MovieShowUseCase {
 
     @Override
     @Transactional
-    public MovieShow save(MovieShow movieShow) {
+    public MovieShow save(MovieShow movieShow, String ownerId) {
+        movieShow.setOwnerId(ownerId);
         dateRangeValidator.validate(movieShow.getDateAdded(), movieShow.getDateCompleted());
         assertNoDuplicate(movieShow.getExternalId(), null);
         return saveOrConflict(movieShow);
@@ -48,8 +52,9 @@ public class MovieShowService implements MovieShowUseCase {
 
     @Override
     @Transactional
-    public MovieShow update(String id, MovieShow updates) {
+    public MovieShow update(String id, MovieShow updates, String userId) {
         MovieShow existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         assertNoDuplicate(existing.getExternalId(), id);
@@ -66,8 +71,9 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        MovieShow existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         movieShowRepository.deleteById(id);
     }
 

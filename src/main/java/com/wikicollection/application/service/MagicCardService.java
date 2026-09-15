@@ -18,11 +18,14 @@ public class MagicCardService implements MagicCardUseCase {
 
     private final MagicCardRepository magicCardRepository;
     private final ExternalMagicCardCatalogClient catalogClient;
+    private final OwnershipValidator ownershipValidator;
 
     public MagicCardService(MagicCardRepository magicCardRepository,
-                            ExternalMagicCardCatalogClient catalogClient) {
+                            ExternalMagicCardCatalogClient catalogClient,
+                            OwnershipValidator ownershipValidator) {
         this.magicCardRepository = magicCardRepository;
         this.catalogClient = catalogClient;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -37,7 +40,7 @@ public class MagicCardService implements MagicCardUseCase {
     }
 
     @Override
-    public MagicCard addFromScryfall(String scryfallId, int quantity) {
+    public MagicCard addFromScryfall(String scryfallId, int quantity, String ownerId) {
         if (quantity < 1) {
             throw new IllegalArgumentException("La cantidad mínima es 1");
         }
@@ -51,12 +54,14 @@ public class MagicCardService implements MagicCardUseCase {
             throw e;
         }
         fetched.setQuantity(quantity);
+        fetched.setOwnerId(ownerId);
         return magicCardRepository.save(fetched);
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        MagicCard existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         magicCardRepository.deleteById(id);
     }
 }

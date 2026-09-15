@@ -34,6 +34,9 @@ class MagicCardServiceTest {
     @Mock
     private ExternalMagicCardCatalogClient catalogClient;
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     @InjectMocks
     private MagicCardService magicCardService;
 
@@ -102,7 +105,7 @@ class MagicCardServiceTest {
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
         when(magicCardRepository.save(fetched)).thenReturn(saved);
 
-        MagicCard result = magicCardService.addFromScryfall("sf-1", 1);
+        MagicCard result = magicCardService.addFromScryfall("sf-1", 1, "u1");
 
         assertThat(result).isSameAs(saved);
         assertThat(result.getColorIdentity()).containsExactly("R");
@@ -119,7 +122,7 @@ class MagicCardServiceTest {
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
         when(magicCardRepository.save(fetched)).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MagicCard result = magicCardService.addFromScryfall("sf-1", 4);
+        MagicCard result = magicCardService.addFromScryfall("sf-1", 4, "u1");
 
         assertThat(result.getQuantity()).isEqualTo(4);
         assertThat(fetched.getQuantity()).isEqualTo(4);
@@ -127,7 +130,7 @@ class MagicCardServiceTest {
 
     @Test
     void addFromScryfall_rejectsInvalidQuantity() {
-        assertThatThrownBy(() -> magicCardService.addFromScryfall("sf-1", 0))
+        assertThatThrownBy(() -> magicCardService.addFromScryfall("sf-1", 0, "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -136,7 +139,7 @@ class MagicCardServiceTest {
         when(catalogClient.findById("missing")).thenThrow(
                 new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> magicCardService.addFromScryfall("missing", 1))
+        assertThatThrownBy(() -> magicCardService.addFromScryfall("missing", 1, "u1"))
                 .isInstanceOf(MagicCardNotFoundException.class)
                 .hasMessageContaining("missing");
     }
@@ -146,7 +149,7 @@ class MagicCardServiceTest {
         MagicCard card = sampleCard("mc1", "Lightning Bolt");
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
 
-        magicCardService.delete("mc1");
+        magicCardService.delete("mc1", "u1");
 
         verify(magicCardRepository).deleteById("mc1");
     }
@@ -155,7 +158,7 @@ class MagicCardServiceTest {
     void delete_throwsNotFound_whenMissing() {
         when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> magicCardService.delete("nope"))
+        assertThatThrownBy(() -> magicCardService.delete("nope", "u1"))
                 .isInstanceOf(MagicCardNotFoundException.class)
                 .hasMessageContaining("nope");
     }

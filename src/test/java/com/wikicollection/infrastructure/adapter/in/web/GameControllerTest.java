@@ -68,6 +68,7 @@ class GameControllerTest {
     private Game sampleGame() {
         return Game.builder()
                 .id("g1")
+                .ownerId("u1")
                 .title("The Witcher 3")
                 .platform(GamePlatform.PC)
                 .status(GameStatus.PLAYING)

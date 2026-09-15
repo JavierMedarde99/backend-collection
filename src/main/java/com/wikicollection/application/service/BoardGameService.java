@@ -14,9 +14,12 @@ import org.springframework.stereotype.Service;
 public class BoardGameService implements BoardGameUseCase {
 
     private final BoardGameRepository boardGameRepository;
+    private final OwnershipValidator ownershipValidator;
 
-    public BoardGameService(BoardGameRepository boardGameRepository) {
+    public BoardGameService(BoardGameRepository boardGameRepository,
+                              OwnershipValidator ownershipValidator) {
         this.boardGameRepository = boardGameRepository;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -31,20 +34,23 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
-    public BoardGame save(BoardGame boardGame) {
+    public BoardGame save(BoardGame boardGame, String ownerId) {
+        boardGame.setOwnerId(ownerId);
         return boardGameRepository.save(boardGame);
     }
 
     @Override
-    public BoardGame update(String id, BoardGame updates) {
+    public BoardGame update(String id, BoardGame updates, String userId) {
         BoardGame existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         copyUpdatableFields(existing, updates);
         return boardGameRepository.save(existing);
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        BoardGame existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         boardGameRepository.deleteById(id);
     }
 

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -92,8 +93,8 @@ public class BookController {
             @ApiResponse(responseCode = "201", description = "Libro creado"),
             @ApiResponse(responseCode = "400", description = "Datos del libro inválidos")
     })
-    public ResponseEntity<BookResponse> create(@Valid @RequestBody BookRequest request, UriComponentsBuilder ucb) {
-        var saved = bookUseCase.save(mapper.toDomain(request));
+    public ResponseEntity<BookResponse> create(@Valid @RequestBody BookRequest request, @CurrentUser String currentUserId, UriComponentsBuilder ucb) {
+        var saved = bookUseCase.save(mapper.toDomain(request), currentUserId);
         URI location = ucb.path("/api/v1/books/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -107,8 +108,8 @@ public class BookController {
     })
     public BookResponse update(
             @Parameter(description = "Identificador del libro") @PathVariable String id,
-            @Valid @RequestBody BookRequest request) {
-        return mapper.toResponse(bookUseCase.update(id, mapper.toDomain(request)));
+            @Valid @RequestBody BookRequest request, @CurrentUser String currentUserId) {
+        return mapper.toResponse(bookUseCase.update(id, mapper.toDomain(request), currentUserId));
     }
 
     @DeleteMapping("/{id}")
@@ -118,8 +119,8 @@ public class BookController {
             @ApiResponse(responseCode = "404", description = "Libro no encontrado")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador del libro") @PathVariable String id) {
-        bookUseCase.delete(id);
+            @Parameter(description = "Identificador del libro") @PathVariable String id, @CurrentUser String currentUserId) {
+        bookUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 

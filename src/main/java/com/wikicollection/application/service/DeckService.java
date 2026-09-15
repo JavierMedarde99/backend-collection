@@ -31,15 +31,18 @@ public class DeckService implements DeckUseCase {
     private final ExternalMagicCardCatalogClient catalogClient;
     private final MagicCardRepository magicCardRepository;
     private final DeckValidator validator;
+    private final OwnershipValidator ownershipValidator;
 
     public DeckService(DeckRepository deckRepository,
                        ExternalMagicCardCatalogClient catalogClient,
                        MagicCardRepository magicCardRepository,
-                       DeckValidator validator) {
+                       DeckValidator validator,
+                       OwnershipValidator ownershipValidator) {
         this.deckRepository = deckRepository;
         this.catalogClient = catalogClient;
         this.magicCardRepository = magicCardRepository;
         this.validator = validator;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -59,7 +62,8 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
-    public Deck save(Deck deck) {
+    public Deck save(Deck deck, String ownerId) {
+        deck.setOwnerId(ownerId);
         requireName(deck);
         deck.setCreatedAt(deck.getCreatedAt() != null ? deck.getCreatedAt() : LocalDateTime.now());
         deck.setUpdatedAt(LocalDateTime.now());
@@ -67,8 +71,9 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
-    public Deck update(String id, Deck updates) {
+    public Deck update(String id, Deck updates, String userId) {
         Deck existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         existing.setName(updates.getName());
         existing.setDescription(updates.getDescription());
         existing.setCommander(updates.getCommander());
@@ -79,17 +84,19 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        Deck existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         deckRepository.deleteById(id);
     }
 
     @Override
-    public Deck addCard(String deckId, String scryfallId, int quantity) {
+    public Deck addCard(String deckId, String scryfallId, int quantity, String userId) {
         if (quantity < 1) {
             throw new IllegalArgumentException("La cantidad mínima es 1");
         }
         Deck deck = findById(deckId);
+        ownershipValidator.validateOwner(deck.getOwnerId(), userId);
         MagicCard fetched = fetchFromCatalog(scryfallId);
         boolean owned = !magicCardRepository
                 .search(new MagicCardSearchCriteria(fetched.getName()), PageRequest.of(0, 1))
@@ -117,8 +124,9 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
-    public Deck removeCard(String deckId, String scryfallId) {
+    public Deck removeCard(String deckId, String scryfallId, String userId) {
         Deck deck = findById(deckId);
+        ownershipValidator.validateOwner(deck.getOwnerId(), userId);
         List<DeckCard> cards = deck.getCards() == null ? new ArrayList<>() : new ArrayList<>(deck.getCards());
         boolean removed = cards.removeIf(card -> scryfallId.equals(card.getScryfallId()));
         if (!removed) {

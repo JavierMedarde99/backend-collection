@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -94,8 +95,9 @@ public class MagicCardController {
     public ResponseEntity<MagicCardResponse> addFromScryfall(
             @Parameter(description = "Identificador Scryfall de la carta") @PathVariable String scryfallId,
             @Parameter(description = "Cantidad de copias (por defecto 1, permite repetidas)") @RequestParam(defaultValue = "1") @Min(1) int quantity,
+            @CurrentUser String currentUserId,
             UriComponentsBuilder ucb) {
-        var saved = magicCardUseCase.addFromScryfall(scryfallId, quantity);
+        var saved = magicCardUseCase.addFromScryfall(scryfallId, quantity, currentUserId);
         URI location = ucb.path("/api/v1/magic/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -107,8 +109,8 @@ public class MagicCardController {
             @ApiResponse(responseCode = "404", description = "Carta no encontrada")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador de la carta") @PathVariable String id) {
-        magicCardUseCase.delete(id);
+            @Parameter(description = "Identificador de la carta") @PathVariable String id, @CurrentUser String currentUserId) {
+        magicCardUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 
