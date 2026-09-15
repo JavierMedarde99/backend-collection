@@ -21,6 +21,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "passwordHash")
+@Document(collection = "users")
 public class UserEntity {
 
     @Id
