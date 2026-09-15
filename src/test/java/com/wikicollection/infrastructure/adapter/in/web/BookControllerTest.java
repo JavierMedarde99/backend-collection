@@ -35,6 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
@@ -136,7 +137,7 @@ class BookControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años de soledad","author":"Gabriel García Márquez","state":"TO_READ","type":"NOVEL"}
@@ -149,7 +150,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenInvalid() throws Exception {
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","author":"","state":"TO_READ","type":"NOVEL"}
@@ -163,7 +164,7 @@ class BookControllerTest {
         existing.setExternalId("gb123");
         when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.of(existing));
 
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años de soledad","author":"Gabriel","externalId":"gb123","state":"TO_READ","type":"NOVEL"}
@@ -173,7 +174,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartOutOfRange() throws Exception {
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","start":9}
@@ -183,7 +184,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartDateIsFuture() throws Exception {
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2099-01-01"}
@@ -194,7 +195,7 @@ class BookControllerTest {
 
     @Test
     void createBook_returns400_whenStartAfterEnd() throws Exception {
-        mockMvc.perform(post("/api/v1/books")
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Cien años","author":"G.G.M.","state":"TO_READ","type":"NOVEL","startDate":"2024-06-01","endDate":"2024-01-01"}
@@ -207,7 +208,7 @@ class BookControllerTest {
     void updateBook_returns400_whenEndDateIsFuture() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
-        mockMvc.perform(put("/api/v1/books/b1")
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","endDate":"2099-01-01"}
@@ -221,7 +222,7 @@ class BookControllerTest {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/v1/books/b1")
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","author":"Autor Actualizado","state":"COMPLETED","type":"NOVEL","pages":300}
@@ -237,7 +238,7 @@ class BookControllerTest {
     void deleteBook_returns204_whenExists() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
-        mockMvc.perform(delete("/api/v1/books/b1"))
+        mockMvc.perform(delete("/api/v1/books/b1").with(user("u1")))
                 .andExpect(status().isNoContent());
 
         verify(bookRepository).deleteById("b1");
@@ -247,7 +248,7 @@ class BookControllerTest {
     void deleteBook_returns404_whenMissing() throws Exception {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/v1/books/nope"))
+        mockMvc.perform(delete("/api/v1/books/nope").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 

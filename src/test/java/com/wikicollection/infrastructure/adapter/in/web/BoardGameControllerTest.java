@@ -32,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})
@@ -99,7 +100,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_rejectsLegacyStatus() throws Exception {
-        mockMvc.perform(post("/api/v1/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"FOR_TRADE"}
@@ -134,7 +135,7 @@ class BoardGameControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED"}
@@ -147,7 +148,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_returns400_whenBlankTitle() throws Exception {
-        mockMvc.perform(post("/api/v1/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","status":"OWNED"}
@@ -157,7 +158,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_returns400_whenMissingStatus() throws Exception {
-        mockMvc.perform(post("/api/v1/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan"}
@@ -167,7 +168,7 @@ class BoardGameControllerTest {
 
     @Test
     void createBoardGame_returns400_whenMinPlayersOutOfRange() throws Exception {
-        mockMvc.perform(post("/api/v1/boardgames")
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED","minPlayers":0}
@@ -180,7 +181,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/v1/boardgames/bg1")
+        mockMvc.perform(put("/api/v1/boardgames/bg1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Nuevo título","status":"WISHLIST","notes":"Quiero jugarlo"}
@@ -195,7 +196,7 @@ class BoardGameControllerTest {
     void updateBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/v1/boardgames/nope")
+        mockMvc.perform(put("/api/v1/boardgames/nope").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"Catan","status":"OWNED"}
@@ -207,7 +208,7 @@ class BoardGameControllerTest {
     void deleteBoardGame_returns204_whenExists() throws Exception {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
 
-        mockMvc.perform(delete("/api/v1/boardgames/bg1"))
+        mockMvc.perform(delete("/api/v1/boardgames/bg1").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("u1")))
                 .andExpect(status().isNoContent());
 
         verify(boardGameRepository).deleteById("bg1");
@@ -217,7 +218,7 @@ class BoardGameControllerTest {
     void deleteBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/v1/boardgames/nope"))
+        mockMvc.perform(delete("/api/v1/boardgames/nope").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 

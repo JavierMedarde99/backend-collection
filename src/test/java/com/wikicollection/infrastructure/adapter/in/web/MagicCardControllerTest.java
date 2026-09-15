@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -131,7 +132,7 @@ class MagicCardControllerTest {
     void deleteCard_returns204_whenExists() throws Exception {
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(sampleCard()));
 
-        mockMvc.perform(delete("/api/v1/magic/mc1"))
+        mockMvc.perform(delete("/api/v1/magic/mc1").with(user("u1")))
                 .andExpect(status().isNoContent());
 
         verify(magicCardRepository).deleteById("mc1");
@@ -141,7 +142,7 @@ class MagicCardControllerTest {
     void deleteCard_returns404_whenMissing() throws Exception {
         when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/v1/magic/nope"))
+        mockMvc.perform(delete("/api/v1/magic/nope").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 
@@ -160,7 +161,7 @@ class MagicCardControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").with(user("u1")))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", Matchers.containsString("/api/v1/magic/mc1")))
                 .andExpect(jsonPath("$.id").value("mc1"))
@@ -181,14 +182,14 @@ class MagicCardControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").param("quantity", "4"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").with(user("u1")).param("quantity", "4"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.quantity").value(4));
     }
 
     @Test
     void addFromScryfall_returns400_whenQuantityInvalid() throws Exception {
-        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").param("quantity", "0"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/sf-1").with(user("u1")).param("quantity", "0"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -197,7 +198,7 @@ class MagicCardControllerTest {
         when(scryfallClient.findById("missing")).thenThrow(
                 new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        mockMvc.perform(post("/api/v1/magic/scryfall/missing"))
+        mockMvc.perform(post("/api/v1/magic/scryfall/missing").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 
