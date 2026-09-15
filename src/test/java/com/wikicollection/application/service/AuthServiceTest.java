@@ -12,7 +12,7 @@ import java.util.Optional;
 import com.wikicollection.application.exception.EmailAlreadyExistsException;
 import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.application.exception.UserNotFoundException;
-import com.wikicollection.domain.model.AuthTokens;
+import com.wikicollection.domain.model.AuthSession;
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.out.UserRepository;
 
@@ -56,10 +56,11 @@ class AuthServiceTest {
             return saved;
         });
 
-        AuthTokens tokens = authService.register("javi", "javi@local.dev", "pass123", "Javi");
+        AuthSession session = authService.register("javi", "javi@local.dev", "pass123", "Javi");
 
-        assertThat(tokens.accessToken()).isNotBlank();
-        assertThat(tokens.refreshToken()).isNotBlank();
+        assertThat(session.tokens().accessToken()).isNotBlank();
+        assertThat(session.tokens().refreshToken()).isNotBlank();
+        assertThat(session.user().getUsername()).isEqualTo("javi");
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getPassword()).isEqualTo("hash");
@@ -88,9 +89,9 @@ class AuthServiceTest {
         User user = User.builder().id("u1").username("javi").build();
         when(userRepository.findByUsername("javi")).thenReturn(Optional.of(user));
 
-        AuthTokens tokens = authService.login("javi", "pass123");
+        AuthSession session = authService.login("javi", "pass123");
 
-        assertThat(tokens.accessToken()).isNotBlank();
+        assertThat(session.tokens().accessToken()).isNotBlank();
         verify(authenticationManager).authenticate(any());
     }
 
@@ -108,10 +109,10 @@ class AuthServiceTest {
         String refresh = jwtService.generateRefreshToken(user);
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));
 
-        AuthTokens tokens = authService.refresh(refresh);
+        AuthSession session = authService.refresh(refresh);
 
-        assertThat(tokens.accessToken()).isNotBlank();
-        assertThat(jwtService.extractUserId(tokens.accessToken())).isEqualTo("u1");
+        assertThat(session.tokens().accessToken()).isNotBlank();
+        assertThat(session.user().getId()).isEqualTo("u1");
     }
 
     @Test
