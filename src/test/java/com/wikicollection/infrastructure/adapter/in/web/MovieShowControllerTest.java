@@ -34,6 +34,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})
@@ -133,7 +134,7 @@ class MovieShowControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/movieshows")
+        mockMvc.perform(post("/api/v1/movieshows").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Fight Club","mediaType":"MOVIE","status":"WATCHED"}
@@ -146,7 +147,7 @@ class MovieShowControllerTest {
 
     @Test
     void createShow_returns400_whenBlankTitle() throws Exception {
-        mockMvc.perform(post("/api/v1/movieshows")
+        mockMvc.perform(post("/api/v1/movieshows").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":""}
@@ -160,7 +161,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(sampleShow()));
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/v1/movieshows/m1")
+        mockMvc.perform(put("/api/v1/movieshows/m1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Se7en","mediaType":"MOVIE","status":"WATCHED"}
@@ -173,7 +174,7 @@ class MovieShowControllerTest {
     void updateShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/v1/movieshows/nope")
+        mockMvc.perform(put("/api/v1/movieshows/nope").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"externalId":"550","title":"Se7en"}
@@ -185,7 +186,7 @@ class MovieShowControllerTest {
     void deleteShow_returns204_whenExists() throws Exception {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
 
-        mockMvc.perform(delete("/api/v1/movieshows/m1"))
+        mockMvc.perform(delete("/api/v1/movieshows/m1").with(user("u1")))
                 .andExpect(status().isNoContent());
 
         verify(movieShowRepository).deleteById("m1");
@@ -195,7 +196,7 @@ class MovieShowControllerTest {
     void deleteShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/v1/movieshows/nope"))
+        mockMvc.perform(delete("/api/v1/movieshows/nope").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 

@@ -34,6 +34,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -151,7 +152,7 @@ class DeckControllerTest {
             return saved;
         });
 
-        mockMvc.perform(post("/api/v1/decks")
+        mockMvc.perform(post("/api/v1/decks").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Nuevo","commander":"Atraxa, Praetors' Voice"}
@@ -163,7 +164,7 @@ class DeckControllerTest {
 
     @Test
     void createDeck_returns400_whenBlankName() throws Exception {
-        mockMvc.perform(post("/api/v1/decks")
+        mockMvc.perform(post("/api/v1/decks").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":""}
@@ -176,7 +177,7 @@ class DeckControllerTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(put("/api/v1/decks/d1")
+        mockMvc.perform(put("/api/v1/decks/d1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Renombrado"}
@@ -189,7 +190,7 @@ class DeckControllerTest {
     void updateDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/v1/decks/nope")
+        mockMvc.perform(put("/api/v1/decks/nope").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Renombrado"}
@@ -201,7 +202,7 @@ class DeckControllerTest {
     void deleteDeck_returns204_whenExists() throws Exception {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        mockMvc.perform(delete("/api/v1/decks/d1"))
+        mockMvc.perform(delete("/api/v1/decks/d1").with(user("u1")))
                 .andExpect(status().isNoContent());
 
         verify(deckRepository).deleteById("d1");
@@ -211,7 +212,7 @@ class DeckControllerTest {
     void deleteDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/api/v1/decks/nope"))
+        mockMvc.perform(delete("/api/v1/decks/nope").with(user("u1")))
                 .andExpect(status().isNotFound());
     }
 
@@ -226,7 +227,7 @@ class DeckControllerTest {
                 .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(post("/api/v1/decks/d1/cards")
+        mockMvc.perform(post("/api/v1/decks/d1/cards").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scryfallId":"sf-1","quantity":1}
@@ -242,7 +243,7 @@ class DeckControllerTest {
         when(scryfallClient.findById("missing"))
                 .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        mockMvc.perform(post("/api/v1/decks/d1/cards")
+        mockMvc.perform(post("/api/v1/decks/d1/cards").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scryfallId":"missing","quantity":1}
@@ -259,7 +260,7 @@ class DeckControllerTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        mockMvc.perform(delete("/api/v1/decks/d1/cards/sf-1"))
+        mockMvc.perform(delete("/api/v1/decks/d1/cards/sf-1").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cards").isEmpty());
     }
