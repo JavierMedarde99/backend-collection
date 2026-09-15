@@ -38,6 +38,9 @@ class MovieShowServiceTest {
     @Spy
     private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     @InjectMocks
     private MovieShowService movieShowService;
 
@@ -86,7 +89,7 @@ class MovieShowServiceTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MovieShow result = movieShowService.save(show);
+        MovieShow result = movieShowService.save(show, "u1");
 
         assertThat(result).isSameAs(show);
     }
@@ -97,7 +100,7 @@ class MovieShowServiceTest {
         show.setId(null);
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(sampleShow()));
 
-        assertThatThrownBy(() -> movieShowService.save(show))
+        assertThatThrownBy(() -> movieShowService.save(show, "u1"))
                 .isInstanceOf(MovieShowConflictException.class)
                 .hasMessageContaining("550");
     }
@@ -109,16 +112,16 @@ class MovieShowServiceTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
         when(movieShowRepository.save(any(MovieShow.class))).thenThrow(new DuplicateKeyException("dup"));
 
-        assertThatThrownBy(() -> movieShowService.save(show))
+        assertThatThrownBy(() -> movieShowService.save(show, "u1"))
                 .isInstanceOf(MovieShowConflictException.class)
                 .hasMessageContaining("550");
     }
 
     @Test
     void saveAndUpdate_areTransactional() throws Exception {
-        assertThat(MovieShowService.class.getMethod("save", MovieShow.class)
-                .isAnnotationPresent(Transactional.class)).isTrue();
-        assertThat(MovieShowService.class.getMethod("update", String.class, MovieShow.class)
+        assertThat(MovieShowService.class.getMethod("save", MovieShow.class, String.class).isAnnotationPresent(Transactional.class))
+                .isTrue();
+        assertThat(MovieShowService.class.getMethod("update", String.class, MovieShow.class, String.class)
                 .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
@@ -131,7 +134,7 @@ class MovieShowServiceTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(existingWithoutId));
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MovieShow result = movieShowService.save(show);
+        MovieShow result = movieShowService.save(show, "u1");
 
         assertThat(result).isSameAs(show);
     }
@@ -143,7 +146,7 @@ class MovieShowServiceTest {
         show.setExternalId("  ");
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MovieShow result = movieShowService.save(show);
+        MovieShow result = movieShowService.save(show, "u1");
 
         assertThat(result).isSameAs(show);
         verify(movieShowRepository, org.mockito.Mockito.never()).findByExternalId(any());
@@ -154,7 +157,7 @@ class MovieShowServiceTest {
         MovieShow show = sampleShow();
         show.setDateAdded(LocalDate.now().plusDays(1));
 
-        assertThatThrownBy(() -> movieShowService.save(show))
+        assertThatThrownBy(() -> movieShowService.save(show, "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -168,7 +171,7 @@ class MovieShowServiceTest {
         when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.of(existing));
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MovieShow result = movieShowService.update("m1", updates);
+        MovieShow result = movieShowService.update("m1", updates, "u1");
 
         assertThat(result.getId()).isEqualTo("m1");
         assertThat(result.getTitle()).isEqualTo("Se7en");
@@ -179,7 +182,7 @@ class MovieShowServiceTest {
     void update_throwsNotFound_whenMissing() {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> movieShowService.update("nope", sampleShow()))
+        assertThatThrownBy(() -> movieShowService.update("nope", sampleShow(), "u1"))
                 .isInstanceOf(MovieShowNotFoundException.class);
     }
 
@@ -187,7 +190,7 @@ class MovieShowServiceTest {
     void delete_deletesShow_whenExists() {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
 
-        movieShowService.delete("m1");
+        movieShowService.delete("m1", "u1");
 
         verify(movieShowRepository).deleteById("m1");
     }
@@ -196,7 +199,7 @@ class MovieShowServiceTest {
     void delete_throwsNotFound_whenMissing() {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> movieShowService.delete("nope"))
+        assertThatThrownBy(() -> movieShowService.delete("nope", "u1"))
                 .isInstanceOf(MovieShowNotFoundException.class);
     }
 }

@@ -45,8 +45,11 @@ class DeckServiceTest {
 
     private final DeckValidator validator = new DeckValidator();
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     private DeckService deckService() {
-        return new DeckService(deckRepository, catalogClient, magicCardRepository, validator);
+        return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator);
     }
 
     private Deck sampleDeck() {
@@ -81,7 +84,7 @@ class DeckServiceTest {
         Deck deck = Deck.builder().name("Nuevo").build();
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Deck result = deckService().save(deck);
+        Deck result = deckService().save(deck, "u1");
 
         assertThat(result.getCreatedAt()).isNotNull();
         assertThat(result.getUpdatedAt()).isNotNull();
@@ -89,7 +92,7 @@ class DeckServiceTest {
 
     @Test
     void save_rejectsBlankName() {
-        assertThatThrownBy(() -> deckService().save(Deck.builder().name(" ").build()))
+        assertThatThrownBy(() -> deckService().save(Deck.builder().name(" ").build(), "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -100,7 +103,7 @@ class DeckServiceTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(existing));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Deck result = deckService().update("d1", updates);
+        Deck result = deckService().update("d1", updates, "u1");
 
         assertThat(result.getId()).isEqualTo("d1");
         assertThat(result.getName()).isEqualTo("Renombrado");
@@ -111,7 +114,7 @@ class DeckServiceTest {
     void delete_deletesDeck_whenExists() {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        deckService().delete("d1");
+        deckService().delete("d1", "u1");
 
         verify(deckRepository).deleteById("d1");
     }
@@ -129,7 +132,7 @@ class DeckServiceTest {
                 .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Deck result = deckService().addCard("d1", "sf-1", 1);
+        Deck result = deckService().addCard("d1", "sf-1", 1, "u1");
 
         assertThat(result.getCards()).hasSize(1);
         DeckCard added = result.getCards().get(0);
@@ -152,7 +155,7 @@ class DeckServiceTest {
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(owned)));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Deck result = deckService().addCard("d1", "sf-1", 1);
+        Deck result = deckService().addCard("d1", "sf-1", 1, "u1");
 
         assertThat(result.getCards().get(0).getInCollection()).isTrue();
         assertThat(result.getCards().get(0).getIsProxy()).isFalse();
@@ -160,7 +163,7 @@ class DeckServiceTest {
 
     @Test
     void addCard_rejectsInvalidQuantity() {
-        assertThatThrownBy(() -> deckService().addCard("d1", "sf-1", 0))
+        assertThatThrownBy(() -> deckService().addCard("d1", "sf-1", 0, "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -170,7 +173,7 @@ class DeckServiceTest {
         when(catalogClient.findById("missing"))
                 .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> deckService().addCard("d1", "missing", 1))
+        assertThatThrownBy(() -> deckService().addCard("d1", "missing", 1, "u1"))
                 .isInstanceOf(MagicCardNotFoundException.class);
     }
 
@@ -182,7 +185,7 @@ class DeckServiceTest {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Deck result = deckService().removeCard("d1", "sf-1");
+        Deck result = deckService().removeCard("d1", "sf-1", "u1");
 
         assertThat(result.getCards()).isEmpty();
     }
@@ -191,7 +194,7 @@ class DeckServiceTest {
     void removeCard_throwsBadRequest_whenAbsent() {
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
 
-        assertThatThrownBy(() -> deckService().removeCard("d1", "sf-x"))
+        assertThatThrownBy(() -> deckService().removeCard("d1", "sf-x", "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -245,7 +248,7 @@ class DeckServiceTest {
                 .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        deckService().addCard("d1", "sf-1", 1);
+        deckService().addCard("d1", "sf-1", 1, "u1");
 
         ArgumentCaptor<Deck> captor = ArgumentCaptor.forClass(Deck.class);
         verify(deckRepository).save(captor.capture());

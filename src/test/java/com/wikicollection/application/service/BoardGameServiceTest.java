@@ -32,6 +32,9 @@ class BoardGameServiceTest {
     @Mock
     private BoardGameRepository boardGameRepository;
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     @InjectMocks
     private BoardGameService boardGameService;
 
@@ -85,7 +88,7 @@ class BoardGameServiceTest {
         BoardGame game = sampleGame();
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BoardGame result = boardGameService.save(game);
+        BoardGame result = boardGameService.save(game, "u1");
 
         assertThat(result).isSameAs(game);
         verify(boardGameRepository).save(game);
@@ -95,7 +98,7 @@ class BoardGameServiceTest {
     void update_throwsNotFound_whenMissing() {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardGameService.update("nope", sampleGame()))
+        assertThatThrownBy(() -> boardGameService.update("nope", sampleGame(), "u1"))
                 .isInstanceOf(BoardGameNotFoundException.class)
                 .hasMessageContaining("nope");
     }
@@ -128,7 +131,7 @@ class BoardGameServiceTest {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(existing));
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BoardGame result = boardGameService.update("bg1", updates);
+        BoardGame result = boardGameService.update("bg1", updates, "u1");
 
         assertThat(result.getId()).isEqualTo("bg1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
@@ -161,7 +164,7 @@ class BoardGameServiceTest {
         BoardGame game = sampleGame("bg1", "Catan");
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
 
-        boardGameService.delete("bg1");
+        boardGameService.delete("bg1", "u1");
 
         verify(boardGameRepository).deleteById("bg1");
     }
@@ -170,7 +173,7 @@ class BoardGameServiceTest {
     void delete_throwsNotFound_whenMissing() {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardGameService.delete("nope"))
+        assertThatThrownBy(() -> boardGameService.delete("nope", "u1"))
                 .isInstanceOf(BoardGameNotFoundException.class)
                 .hasMessageContaining("nope");
     }

@@ -12,9 +12,9 @@ public interface GameUseCase {
 
     Game findById(String id);
 
-    Game save(Game game, boolean obtainPlatinum);
+    Game save(Game game, boolean obtainPlatinum, String ownerId);
 
-    Game update(String id, Game updates, boolean obtainPlatinum);
+    Game update(String id, Game updates, boolean obtainPlatinum, String userId);
 
-    void delete(String id);
+    void delete(String id, String userId);
 }

@@ -50,6 +50,7 @@ class MagicCardControllerTest {
     private MagicCard sampleCard() {
         return MagicCard.builder()
                 .id("mc1")
+                .ownerId("u1")
                 .name("Lightning Bolt")
                 .rarity("uncommon")
                 .quantity(1)

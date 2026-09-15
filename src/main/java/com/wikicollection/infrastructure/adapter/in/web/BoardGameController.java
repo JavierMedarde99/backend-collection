@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -90,8 +91,8 @@ public class BoardGameController {
             @ApiResponse(responseCode = "201", description = "Juego de mesa creado"),
             @ApiResponse(responseCode = "400", description = "Datos del juego de mesa inválidos")
     })
-    public ResponseEntity<BoardGameResponse> create(@Valid @RequestBody BoardGameRequest request, UriComponentsBuilder ucb) {
-        var saved = boardGameUseCase.save(mapper.toDomain(request));
+    public ResponseEntity<BoardGameResponse> create(@Valid @RequestBody BoardGameRequest request, @CurrentUser String currentUserId, UriComponentsBuilder ucb) {
+        var saved = boardGameUseCase.save(mapper.toDomain(request), currentUserId);
         URI location = ucb.path("/api/v1/boardgames/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -105,8 +106,8 @@ public class BoardGameController {
     })
     public BoardGameResponse update(
             @Parameter(description = "Identificador del juego de mesa") @PathVariable String id,
-            @Valid @RequestBody BoardGameRequest request) {
-        return mapper.toResponse(boardGameUseCase.update(id, mapper.toDomain(request)));
+            @Valid @RequestBody BoardGameRequest request, @CurrentUser String currentUserId) {
+        return mapper.toResponse(boardGameUseCase.update(id, mapper.toDomain(request), currentUserId));
     }
 
     @DeleteMapping("/{id}")
@@ -116,8 +117,8 @@ public class BoardGameController {
             @ApiResponse(responseCode = "404", description = "Juego de mesa no encontrado")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador del juego de mesa") @PathVariable String id) {
-        boardGameUseCase.delete(id);
+            @Parameter(description = "Identificador del juego de mesa") @PathVariable String id, @CurrentUser String currentUserId) {
+        boardGameUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 

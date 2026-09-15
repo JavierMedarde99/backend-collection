@@ -51,6 +51,7 @@ class BoardGameControllerTest {
     private BoardGame sampleGame() {
         return BoardGame.builder()
                 .id("bg1")
+                .ownerId("u1")
                 .title("Catan")
                 .status(BoardGameStatus.OWNED)
                 .build();

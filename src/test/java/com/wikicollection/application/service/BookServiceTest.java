@@ -39,6 +39,9 @@ class BookServiceTest {
     @Spy
     private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
+    @Mock
+    private OwnershipValidator ownershipValidator;
+
     @InjectMocks
     private BookService bookService;
 
@@ -87,7 +90,7 @@ class BookServiceTest {
         Book book = sampleBook();
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.save(book);
+        Book result = bookService.save(book, "u1");
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
@@ -100,16 +103,16 @@ class BookServiceTest {
         when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.empty());
         when(bookRepository.save(any(Book.class))).thenThrow(new DuplicateKeyException("dup"));
 
-        assertThatThrownBy(() -> bookService.save(book))
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(BookConflictException.class)
                 .hasMessageContaining("gb123");
     }
 
     @Test
     void saveAndUpdate_areTransactional() throws Exception {
-        assertThat(BookService.class.getMethod("save", Book.class).isAnnotationPresent(Transactional.class))
+        assertThat(BookService.class.getMethod("save", Book.class, String.class).isAnnotationPresent(Transactional.class))
                 .isTrue();
-        assertThat(BookService.class.getMethod("update", String.class, Book.class)
+        assertThat(BookService.class.getMethod("update", String.class, Book.class, String.class)
                 .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
@@ -119,7 +122,7 @@ class BookServiceTest {
         book.setExternalId("gb123");
         when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.of(sampleBook()));
 
-        assertThatThrownBy(() -> bookService.save(book))
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(BookConflictException.class)
                 .hasMessageContaining("gb123");
         verify(bookRepository, never()).save(any(Book.class));
@@ -132,7 +135,7 @@ class BookServiceTest {
         when(bookRepository.findByExternalId("gb123")).thenReturn(Optional.empty());
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.save(book);
+        Book result = bookService.save(book, "u1");
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
@@ -143,7 +146,7 @@ class BookServiceTest {
         Book book = sampleBook();
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.save(book);
+        Book result = bookService.save(book, "u1");
 
         assertThat(result).isSameAs(book);
         verify(bookRepository, never()).findByExternalId(any());
@@ -154,7 +157,7 @@ class BookServiceTest {
         Book book = sampleBook();
         book.setStartDate(LocalDate.now().plusDays(1));
 
-        assertThatThrownBy(() -> bookService.save(book))
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(bookRepository, never()).save(any(Book.class));
@@ -165,7 +168,7 @@ class BookServiceTest {
         Book book = sampleBook();
         book.setEndDate(LocalDate.now().plusDays(1));
 
-        assertThatThrownBy(() -> bookService.save(book))
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(bookRepository, never()).save(any(Book.class));
@@ -178,7 +181,7 @@ class BookServiceTest {
         book.setStartDate(today);
         book.setEndDate(today.minusDays(1));
 
-        assertThatThrownBy(() -> bookService.save(book))
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(bookRepository, never()).save(any(Book.class));
@@ -192,7 +195,7 @@ class BookServiceTest {
         book.setEndDate(today);
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.save(book);
+        Book result = bookService.save(book, "u1");
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
@@ -206,7 +209,7 @@ class BookServiceTest {
         updates.setStartDate(LocalDate.now().plusDays(1));
         when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> bookService.update("b1", updates))
+        assertThatThrownBy(() -> bookService.update("b1", updates, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(bookRepository, never()).save(any(Book.class));
@@ -222,7 +225,7 @@ class BookServiceTest {
         updates.setEndDate(today.minusDays(1));
         when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> bookService.update("b1", updates))
+        assertThatThrownBy(() -> bookService.update("b1", updates, "u1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Fechas mal formadas");
         verify(bookRepository, never()).save(any(Book.class));
@@ -239,7 +242,7 @@ class BookServiceTest {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
         when(bookRepository.findByExternalId("gb999")).thenReturn(Optional.of(other));
 
-        assertThatThrownBy(() -> bookService.update("b1", updates))
+        assertThatThrownBy(() -> bookService.update("b1", updates, "u1"))
                 .isInstanceOf(BookConflictException.class)
                 .hasMessageContaining("gb999");
         verify(bookRepository, never()).save(any(Book.class));
@@ -255,7 +258,7 @@ class BookServiceTest {
         when(bookRepository.findByExternalId("gb999")).thenReturn(Optional.of(existing));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.update("b1", updates);
+        Book result = bookService.update("b1", updates, "u1");
 
         assertThat(result.getExternalId()).isEqualTo("gb999");
     }
@@ -264,7 +267,7 @@ class BookServiceTest {
     void update_throwsNotFound_whenMissing() {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> bookService.update("nope", sampleBook()))
+        assertThatThrownBy(() -> bookService.update("nope", sampleBook(), "u1"))
                 .isInstanceOf(BookNotFoundException.class)
                 .hasMessageContaining("nope");
     }
@@ -281,7 +284,7 @@ class BookServiceTest {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Book result = bookService.update("b1", updates);
+        Book result = bookService.update("b1", updates, "u1");
 
         assertThat(result.getId()).isEqualTo("b1");
         assertThat(result.getTitle()).isEqualTo("Nuevo título");
@@ -301,7 +304,7 @@ class BookServiceTest {
         book.setId("b1");
         when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
 
-        bookService.delete("b1");
+        bookService.delete("b1", "u1");
 
         verify(bookRepository).deleteById("b1");
     }
@@ -310,7 +313,7 @@ class BookServiceTest {
     void delete_throwsNotFound_whenMissing() {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> bookService.delete("nope"))
+        assertThatThrownBy(() -> bookService.delete("nope", "u1"))
                 .isInstanceOf(BookNotFoundException.class)
                 .hasMessageContaining("nope");
     }

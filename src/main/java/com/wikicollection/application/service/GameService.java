@@ -17,11 +17,14 @@ public class GameService implements GameUseCase {
     private final GameRepository gameRepository;
     private final SteamCatalogueClient steamCatalogueClient;
     private final DateRangeValidator dateRangeValidator;
+    private final OwnershipValidator ownershipValidator;
 
-    public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator) {
+    public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator,
+                       OwnershipValidator ownershipValidator) {
         this.gameRepository = gameRepository;
         this.steamCatalogueClient = steamCatalogueClient;
         this.dateRangeValidator = dateRangeValidator;
+        this.ownershipValidator = ownershipValidator;
     }
 
     @Override
@@ -36,15 +39,17 @@ public class GameService implements GameUseCase {
     }
 
     @Override
-    public Game save(Game game, boolean obtainPlatinum) {
+    public Game save(Game game, boolean obtainPlatinum, String ownerId) {
+        game.setOwnerId(ownerId);
         dateRangeValidator.validate(game.getDateAdded(), game.getDateCompleted());
         resolveSteamAppId(game, obtainPlatinum);
         return gameRepository.save(game);
     }
 
     @Override
-    public Game update(String id, Game updates, boolean obtainPlatinum) {
+    public Game update(String id, Game updates, boolean obtainPlatinum, String userId) {
         Game existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         resolveSteamAppId(existing, obtainPlatinum);
@@ -52,8 +57,9 @@ public class GameService implements GameUseCase {
     }
 
     @Override
-    public void delete(String id) {
-        findById(id);
+    public void delete(String id, String userId) {
+        Game existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         gameRepository.deleteById(id);
     }
 

@@ -56,6 +56,7 @@ class BookControllerTest {
     private Book sampleBook() {
         return Book.builder()
                 .id("b1")
+                .ownerId("u1")
                 .title("Cien años de soledad")
                 .author("Gabriel García Márquez")
                 .state(BookState.TO_READ)

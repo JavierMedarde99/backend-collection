@@ -8,6 +8,7 @@ import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.application.exception.ForbiddenException;
 import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.application.exception.EmailAlreadyExistsException;
 import com.wikicollection.application.exception.UserNotFoundException;
@@ -99,6 +100,11 @@ public class GlobalExceptionHandler {
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("Validación fallida");
         return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalStateException.class)

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.wikicollection.infrastructure.config.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -94,8 +95,8 @@ public class MovieShowController {
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
             @ApiResponse(responseCode = "409", description = "Ya existe con ese externalId")
     })
-    public ResponseEntity<MovieShowResponse> create(@Valid @RequestBody MovieShowRequest request, UriComponentsBuilder ucb) {
-        var saved = movieShowUseCase.save(mapper.toDomain(request));
+    public ResponseEntity<MovieShowResponse> create(@Valid @RequestBody MovieShowRequest request, @CurrentUser String currentUserId, UriComponentsBuilder ucb) {
+        var saved = movieShowUseCase.save(mapper.toDomain(request), currentUserId);
         URI location = ucb.path("/api/v1/movieshows/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
@@ -110,8 +111,8 @@ public class MovieShowController {
     })
     public MovieShowResponse update(
             @Parameter(description = "Identificador") @PathVariable String id,
-            @Valid @RequestBody MovieShowRequest request) {
-        return mapper.toResponse(movieShowUseCase.update(id, mapper.toDomain(request)));
+            @Valid @RequestBody MovieShowRequest request, @CurrentUser String currentUserId) {
+        return mapper.toResponse(movieShowUseCase.update(id, mapper.toDomain(request), currentUserId));
     }
 
     @DeleteMapping("/{id}")
@@ -121,8 +122,8 @@ public class MovieShowController {
             @ApiResponse(responseCode = "404", description = "No encontrada")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identificador") @PathVariable String id) {
-        movieShowUseCase.delete(id);
+            @Parameter(description = "Identificador") @PathVariable String id, @CurrentUser String currentUserId) {
+        movieShowUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 
