@@ -29,6 +29,7 @@ class UserDetailsServiceImplTest {
     @Test
     void loadUser_returnsDetailsWithUserIdAsUsername() {
         User user = User.builder().id("u1").username("javi").password("hash").build();
+        when(userRepository.findByUsername("u1")).thenReturn(Optional.empty());
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));
 
         UserDetails details = userDetailsService.loadUserByUsername("u1");
@@ -39,7 +40,19 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
+    void loadUser_byUsername_returnsDetailsWithUserIdAsUsername() {
+        User user = User.builder().id("u1").username("javi").password("hash").build();
+        when(userRepository.findByUsername("javi")).thenReturn(Optional.of(user));
+
+        UserDetails details = userDetailsService.loadUserByUsername("javi");
+
+        assertThat(details.getUsername()).isEqualTo("u1");
+        assertThat(details.getPassword()).isEqualTo("hash");
+    }
+
+    @Test
     void loadUser_throwsNotFound_whenMissing() {
+        when(userRepository.findByUsername("nope")).thenReturn(Optional.empty());
         when(userRepository.findById("nope")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userDetailsService.loadUserByUsername("nope"))
