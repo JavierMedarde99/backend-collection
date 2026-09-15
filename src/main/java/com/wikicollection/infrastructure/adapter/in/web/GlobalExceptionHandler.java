@@ -8,6 +8,9 @@ import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
+import com.wikicollection.application.exception.UserAlreadyExistsException;
+import com.wikicollection.application.exception.EmailAlreadyExistsException;
+import com.wikicollection.application.exception.UserNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
@@ -57,6 +60,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MovieShowNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleMovieShowNotFound(MovieShowNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({UserAlreadyExistsException.class, EmailAlreadyExistsException.class})
+    public ResponseEntity<ErrorResponse> handleUserConflict(RuntimeException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(org.springframework.security.core.AuthenticationException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", request);
     }
 
     @ExceptionHandler(MovieShowConflictException.class)
