@@ -8,7 +8,9 @@ import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.domain.model.AuthSession;
 import com.wikicollection.domain.model.AuthTokens;
 import com.wikicollection.domain.model.User;
+import com.wikicollection.domain.model.UserPreferences;
 import com.wikicollection.domain.port.in.UserUseCase;
+import com.wikicollection.domain.port.out.UserPreferencesRepository;
 import com.wikicollection.domain.port.out.UserRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,15 +25,18 @@ public class AuthService implements UserUseCase {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final UserPreferencesRepository preferencesRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       AuthenticationManager authenticationManager) {
+                       AuthenticationManager authenticationManager,
+                       UserPreferencesRepository preferencesRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.preferencesRepository = preferencesRepository;
     }
 
     @Override
@@ -51,6 +56,9 @@ public class AuthService implements UserUseCase {
                 .updatedAt(LocalDateTime.now())
                 .build();
         User saved = userRepository.save(user);
+        if (!preferencesRepository.existsByUserId(saved.getId())) {
+            preferencesRepository.save(UserPreferences.defaults(saved.getId()));
+        }
         return new AuthSession(saved, tokens(saved));
     }
 
