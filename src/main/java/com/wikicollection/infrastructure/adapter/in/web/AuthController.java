@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v1/auth")
 @Validated
-@Tag(name = "Autenticación", description = "Registro, login y tokens")
+@Tag(name = "Autenticación", description = "Registro, login y tokens. Sin endpoint de logout: es client-side (descartar tokens).")
 public class AuthController {
 
     private final UserUseCase userUseCase;
