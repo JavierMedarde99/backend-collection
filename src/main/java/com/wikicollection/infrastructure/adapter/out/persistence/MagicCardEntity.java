@@ -8,6 +8,7 @@ import com.wikicollection.domain.model.MagicCardCondition;
 import com.wikicollection.domain.model.MagicCardLanguage;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -28,6 +29,7 @@ public class MagicCardEntity {
 
     @Id
     private String id;
+    @Indexed
     private String ownerId;
 
     private String scryfallId;

@@ -27,6 +27,7 @@ public class BookEntity {
 
     @Id
     private String id;
+    @Indexed
     private String ownerId;
 
     private String externalId;

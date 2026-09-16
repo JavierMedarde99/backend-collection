@@ -30,6 +30,7 @@ public class MovieShowEntity {
 
     @Id
     private String id;
+    @Indexed
     private String ownerId;
     
     private String externalId;
