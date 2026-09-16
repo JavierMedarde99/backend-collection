@@ -55,7 +55,7 @@ class BoardGameServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria("catan", BoardGameStatus.OWNED);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria("catan", BoardGameStatus.OWNED, null, null);
         when(boardGameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<BoardGame> result = boardGameService.search(criteria, pageable);

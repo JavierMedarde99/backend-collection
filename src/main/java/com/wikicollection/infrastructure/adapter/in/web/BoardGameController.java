@@ -74,7 +74,7 @@ public class BoardGameController {
             @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) BoardGameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status, null, null);
         return boardGameUseCase.search(criteria, pageable).map(boardGame -> {
             var response = mapper.toResponse(boardGame);
             return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();

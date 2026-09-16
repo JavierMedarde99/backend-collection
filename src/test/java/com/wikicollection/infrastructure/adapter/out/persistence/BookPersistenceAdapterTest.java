@@ -114,7 +114,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<Book> result = adapter.search(new BookSearchCriteria(null, null, null, null), pageable);
+        Page<Book> result = adapter.search(new BookSearchCriteria(null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -125,7 +125,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria("gar", null, null, null), pageable);
+        adapter.search(new BookSearchCriteria("gar", null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
@@ -141,7 +141,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria(null, "garcía", null, null), pageable);
+        adapter.search(new BookSearchCriteria(null, "garcía", null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
@@ -157,7 +157,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria(null, null, BookType.NOVEL, BookState.READING), pageable);
+        adapter.search(new BookSearchCriteria(null, null, BookType.NOVEL, BookState.READING, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));

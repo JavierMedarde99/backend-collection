@@ -50,6 +50,12 @@ public class BoardGamePersistenceAdapter implements BoardGameRepository {
         if (criteria.status() != null) {
             query.addCriteria(Criteria.where("status").is(criteria.status()));
         }
+        if (criteria.hasOwnerId()) {
+            query.addCriteria(Criteria.where("ownerId").is(criteria.ownerId()));
+        }
+        if (criteria.hasExcludeOwnerIds()) {
+            query.addCriteria(Criteria.where("ownerId").nin(criteria.excludeOwnerIds()));
+        }
         return query;
     }
 

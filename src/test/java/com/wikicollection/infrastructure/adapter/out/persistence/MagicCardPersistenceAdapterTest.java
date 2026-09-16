@@ -59,7 +59,7 @@ class MagicCardPersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(MagicCardEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<MagicCard> result = adapter.search(new MagicCardSearchCriteria(null, null, null, null), pageable);
+        Page<MagicCard> result = adapter.search(new MagicCardSearchCriteria(null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -70,7 +70,7 @@ class MagicCardPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(MagicCardEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(MagicCardEntity.class))).thenReturn(0L);
 
-        adapter.search(new MagicCardSearchCriteria("lightning", null, null, null), pageable);
+        adapter.search(new MagicCardSearchCriteria("lightning", null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(MagicCardEntity.class));
@@ -86,7 +86,7 @@ class MagicCardPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(MagicCardEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(MagicCardEntity.class))).thenReturn(0L);
 
-        adapter.search(new MagicCardSearchCriteria("bolt", "rare", "R", "Instant"), pageable);
+        adapter.search(new MagicCardSearchCriteria("bolt", "rare", "R", "Instant", null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(MagicCardEntity.class));

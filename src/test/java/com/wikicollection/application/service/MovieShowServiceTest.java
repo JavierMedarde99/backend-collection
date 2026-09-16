@@ -58,7 +58,7 @@ class MovieShowServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        MovieSearchCriteria criteria = new MovieSearchCriteria("fight", MovieStatus.WATCHED, null);
+        MovieSearchCriteria criteria = new MovieSearchCriteria("fight", MovieStatus.WATCHED, null, null, null);
         when(movieShowRepository.findByCriteria(criteria, pageable)).thenReturn(Page.empty());
 
         assertThat(movieShowService.search(criteria, pageable)).isEmpty();

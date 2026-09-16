@@ -2,6 +2,8 @@ package com.wikicollection.domain.port.out;
 
 import java.util.Optional;
 
+import java.util.Collection;
+
 import com.wikicollection.domain.model.Deck;
 
 import org.springframework.data.domain.Page;
@@ -18,4 +20,8 @@ public interface DeckRepository {
     Page<Deck> findAll(Pageable pageable);
 
     Page<Deck> findByName(String name, Pageable pageable);
+
+    Page<Deck> findByOwnerId(String ownerId, Pageable pageable);
+
+    Page<Deck> findByOwnerIdNotIn(Collection<String> ownerIds, Pageable pageable);
 }

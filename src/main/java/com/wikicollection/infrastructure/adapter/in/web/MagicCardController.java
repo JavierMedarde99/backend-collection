@@ -75,7 +75,7 @@ public class MagicCardController {
             @Parameter(description = "Filtro por color") @RequestParam(required = false) String color,
             @Parameter(description = "Filtro por tipo (p. ej. Artifact, Creature)") @RequestParam(required = false) String type) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type);
+        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type, null, null);
         return magicCardUseCase.search(criteria, pageable).map(card -> {
             var response = mapper.toResponse(card);
             return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();

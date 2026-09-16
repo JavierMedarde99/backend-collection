@@ -56,7 +56,7 @@ class BookServiceTest {
     @Test
     void findAll_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        BookSearchCriteria criteria = new BookSearchCriteria(null, null, null, null);
+        BookSearchCriteria criteria = new BookSearchCriteria(null, null, null, null, null, null);
         when(bookRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<Book> result = bookService.search(criteria, pageable);

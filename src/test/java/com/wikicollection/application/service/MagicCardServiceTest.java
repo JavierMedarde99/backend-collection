@@ -59,7 +59,7 @@ class MagicCardServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria("lightning");
+        MagicCardSearchCriteria criteria = new MagicCardSearchCriteria("lightning", null, null, null, null, null);
         when(magicCardRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<MagicCard> result = magicCardService.search(criteria, pageable);
