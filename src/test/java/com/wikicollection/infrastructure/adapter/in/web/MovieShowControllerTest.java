@@ -119,6 +119,16 @@ class MovieShowControllerTest {
     }
 
     @Test
+    void getShow_hidesPrivateFields_whenNotOwner() throws Exception {
+        MovieShow show = sampleShow();
+        show.setComment("privado");
+        when(movieShowRepository.findById("m1")).thenReturn(Optional.of(show));
+        mockMvc.perform(get("/api/v1/movieshows/m1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getShow_returns404_whenMissing() throws Exception {
         when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
 

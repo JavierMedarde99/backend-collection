@@ -123,6 +123,55 @@ class BookControllerTest {
     }
 
     @Test
+    void getBook_hidesPrivateFields_whenNotOwner() throws Exception {
+        Book book = sampleBook();
+        book.setComment("muy personal");
+        book.setStart(5);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+
+        mockMvc.perform(get("/api/v1/books/b1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Cien años de soledad"))
+                .andExpect(jsonPath("$.comment").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.start").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void getBook_showsPrivateFields_whenOwner() throws Exception {
+        Book book = sampleBook();
+        book.setComment("muy personal");
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+
+        mockMvc.perform(get("/api/v1/books/b1").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value("muy personal"));
+    }
+
+    @Test
+    void getBook_showsPrivateFields_whenAdmin() throws Exception {
+        Book book = sampleBook();
+        book.setComment("muy personal");
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+
+        mockMvc.perform(get("/api/v1/books/b1").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value("muy personal"));
+    }
+
+    @Test
+    void listBooks_hidesPrivateFields_whenNotOwner() throws Exception {
+        Book book = sampleBook();
+        book.setOwnerId("someone-else");
+        book.setComment("muy personal");
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(book)));
+
+        mockMvc.perform(get("/api/v1/books"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].comment").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getBook_returns404_whenMissing() throws Exception {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 

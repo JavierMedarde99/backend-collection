@@ -19,4 +19,10 @@ public record BookResponse(
         LocalDate startDate,
         LocalDate endDate,
         String frontpage) {
+
+
+    public BookResponse withoutPrivate() {
+        return new BookResponse(id, externalId, title, descripcion, author, pages, type, state,
+                null, null, null, null, frontpage);
+    }
 }

@@ -42,4 +42,13 @@ public record MagicCardResponse(
         Integer quantity,
         String notes,
         LocalDateTime dateAdded) {
+
+
+    public MagicCardResponse withoutPrivate() {
+        return new MagicCardResponse(id, scryfallId, oracleId, name, language, releaseDate, manaCost,
+                convertedManaCost, type, text, power, toughness, loyalty, colors, colorIdentity,
+                keywords, rarity, setCode, setName, artist, frame, borderColor, layout, legalities,
+                priceUsd, priceEur, imageUrl, imageLargeUrl, artCropUrl, condition, isFoil, quantity,
+                null, dateAdded);
+    }
 }

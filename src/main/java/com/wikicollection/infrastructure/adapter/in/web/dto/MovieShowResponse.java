@@ -21,4 +21,11 @@ public record MovieShowResponse(
         LocalDate dateAdded,
         LocalDate dateCompleted,
         String externalSource) {
+
+
+    public MovieShowResponse withoutPrivate() {
+        return new MovieShowResponse(id, externalId, title, overview, releaseDate, posterUrl,
+                backdropUrl, voteAverage, mediaType, status, null, null, dateAdded, dateCompleted,
+                externalSource);
+    }
 }

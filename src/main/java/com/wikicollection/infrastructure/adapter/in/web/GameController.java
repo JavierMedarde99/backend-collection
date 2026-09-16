@@ -57,13 +57,17 @@ public class GameController {
     private final GameDtoMapper mapper;
     private final GameAchievementMapper achievementMapper;
 
+    private final ResponseVisibility visibility;
+
     public GameController(GameUseCase gameUseCase, GameSearchUseCase gameSearchUseCase,
             GameAchievementsUseCase gameAchievementsUseCase, GameDtoMapper mapper,
-            GameAchievementMapper achievementMapper) {
+            GameAchievementMapper achievementMapper,
+                               ResponseVisibility visibility) {
         this.gameUseCase = gameUseCase;
         this.gameSearchUseCase = gameSearchUseCase;
         this.gameAchievementsUseCase = gameAchievementsUseCase;
         this.mapper = mapper;
+        this.visibility = visibility;
         this.achievementMapper = achievementMapper;
     }
 
@@ -82,7 +86,10 @@ public class GameController {
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status);
-        return gameUseCase.search(criteria, pageable).map(mapper::toResponse);
+        return gameUseCase.search(criteria, pageable).map(game -> {
+            var response = mapper.toResponse(game);
+            return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
+        });
     }
 
     @GetMapping("/{id}")
@@ -93,7 +100,9 @@ public class GameController {
     })
     public GameResponse getById(
             @Parameter(description = "Identificador del juego") @PathVariable String id) {
-        return mapper.toResponse(gameUseCase.findById(id));
+        var game = gameUseCase.findById(id);
+        var response = mapper.toResponse(game);
+        return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
     }
 
     @PostMapping

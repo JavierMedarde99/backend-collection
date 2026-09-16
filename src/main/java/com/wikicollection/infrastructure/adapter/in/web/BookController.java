@@ -51,10 +51,14 @@ public class BookController {
     private final BookSearchUseCase bookSearchUseCase;
     private final BookDtoMapper mapper;
 
-    public BookController(BookUseCase bookUseCase, BookSearchUseCase bookSearchUseCase, BookDtoMapper mapper) {
+    private final ResponseVisibility visibility;
+
+    public BookController(BookUseCase bookUseCase, BookSearchUseCase bookSearchUseCase, BookDtoMapper mapper,
+                               ResponseVisibility visibility) {
         this.bookUseCase = bookUseCase;
         this.bookSearchUseCase = bookSearchUseCase;
         this.mapper = mapper;
+        this.visibility = visibility;
     }
 
     @GetMapping
@@ -73,7 +77,10 @@ public class BookController {
             @Parameter(description = "Filtro por estado de lectura") @RequestParam(required = false) BookState state) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state);
-        return bookUseCase.search(criteria, pageable).map(mapper::toResponse);
+        return bookUseCase.search(criteria, pageable).map(book -> {
+            var response = mapper.toResponse(book);
+            return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
+        });
     }
 
     @GetMapping("/{id}")
@@ -84,7 +91,9 @@ public class BookController {
     })
     public BookResponse getById(
             @Parameter(description = "Identificador del libro") @PathVariable String id) {
-        return mapper.toResponse(bookUseCase.findById(id));
+        var book = bookUseCase.findById(id);
+        var response = mapper.toResponse(book);
+        return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
     }
 
     @PostMapping

@@ -46,14 +46,18 @@ public class MagicCardController {
     private final DeckSearchUseCase deckSearchUseCase;
     private final MagicCardDtoMapper mapper;
 
+    private final ResponseVisibility visibility;
+
     public MagicCardController(MagicCardUseCase magicCardUseCase,
                                MagicCardSearchUseCase magicCardSearchUseCase,
                                DeckSearchUseCase deckSearchUseCase,
-                               MagicCardDtoMapper mapper) {
+                               MagicCardDtoMapper mapper,
+                               ResponseVisibility visibility) {
         this.magicCardUseCase = magicCardUseCase;
         this.magicCardSearchUseCase = magicCardSearchUseCase;
         this.deckSearchUseCase = deckSearchUseCase;
         this.mapper = mapper;
+        this.visibility = visibility;
     }
 
     @GetMapping
@@ -72,7 +76,10 @@ public class MagicCardController {
             @Parameter(description = "Filtro por tipo (p. ej. Artifact, Creature)") @RequestParam(required = false) String type) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type);
-        return magicCardUseCase.search(criteria, pageable).map(mapper::toResponse);
+        return magicCardUseCase.search(criteria, pageable).map(card -> {
+            var response = mapper.toResponse(card);
+            return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
+        });
     }
 
     @GetMapping("/{id}")
@@ -83,7 +90,9 @@ public class MagicCardController {
     })
     public MagicCardResponse getById(
             @Parameter(description = "Identificador de la carta") @PathVariable String id) {
-        return mapper.toResponse(magicCardUseCase.findById(id));
+        var card = magicCardUseCase.findById(id);
+        var response = mapper.toResponse(card);
+        return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
     }
 
     @PostMapping("/scryfall/{scryfallId}")
