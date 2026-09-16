@@ -21,14 +21,17 @@ public class JwtService {
     private final SecretKey key;
     private final long accessExpirationMillis;
     private final long refreshExpirationMillis;
+    private final String adminUsername;
 
     public JwtService(
             @Value("${app.jwt.secret:clave-cambiar-en-produccion-min-256-bits}") String secret,
             @Value("${app.jwt.access-token-expiration:900000}") long accessExpirationMillis,
-            @Value("${app.jwt.refresh-token-expiration:604800000}") long refreshExpirationMillis) {
+            @Value("${app.jwt.refresh-token-expiration:604800000}") long refreshExpirationMillis,
+            @Value("${app.admin.username:admin}") String adminUsername) {
         this.key = toKey(secret);
         this.accessExpirationMillis = accessExpirationMillis;
         this.refreshExpirationMillis = refreshExpirationMillis;
+        this.adminUsername = adminUsername;
     }
 
     public String generateAccessToken(User user) {
@@ -47,6 +50,11 @@ public class JwtService {
         return "refresh".equals(parse(token).get("type", String.class));
     }
 
+    public String extractRole(String token) {
+        String role = parse(token).get("role", String.class);
+        return role != null ? role : "USER";
+    }
+
     public boolean isTokenValid(String token) {
         try {
             parse(token);
@@ -61,11 +69,16 @@ public class JwtService {
         return Jwts.builder()
                 .subject(user.getId())
                 .claim("username", user.getUsername())
+                .claim("role", roleFor(user))
                 .claim("type", type)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMillis))
                 .signWith(key)
                 .compact();
+    }
+
+    private String roleFor(User user) {
+        return adminUsername != null && adminUsername.equals(user.getUsername()) ? "ADMIN" : "USER";
     }
 
     private io.jsonwebtoken.Claims parse(String token) {

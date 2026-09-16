@@ -40,7 +40,7 @@ class AuthServiceTest {
             .encodeToString("0123456789abcdef0123456789abcdef".getBytes());
 
     @Spy
-    private JwtService jwtService = new JwtService(secret, 900000, 604800000);
+    private JwtService jwtService = new JwtService(secret, 900000, 604800000, "admin");
 
     @InjectMocks
     private AuthService authService;
