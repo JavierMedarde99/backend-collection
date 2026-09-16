@@ -24,4 +24,8 @@ public interface DeckRepository {
     Page<Deck> findByOwnerId(String ownerId, Pageable pageable);
 
     Page<Deck> findByOwnerIdNotIn(Collection<String> ownerIds, Pageable pageable);
+
+    Page<Deck> findByNameAndOwnerId(String name, String ownerId, Pageable pageable);
+
+    Page<Deck> findByNameAndOwnerIdNotIn(String name, Collection<String> ownerIds, Pageable pageable);
 }

@@ -75,10 +75,12 @@ public class MovieShowController {
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
             @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) MovieStatus status,
-            @Parameter(description = "Filtro por tipo") @RequestParam(required = false) MovieMediaType mediaType) {
+            @Parameter(description = "Filtro por tipo") @RequestParam(required = false) MovieMediaType mediaType,
+            @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         MovieSearchCriteria criteria = new MovieSearchCriteria(name, status, mediaType, null, null);
-        return movieShowUseCase.search(criteria, pageable).map(movieShow -> {
+        return movieShowUseCase.search(criteria, pageable, owner, viewerId).map(movieShow -> {
             var response = mapper.toResponse(movieShow);
             return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
         });

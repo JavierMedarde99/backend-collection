@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
@@ -32,17 +33,20 @@ public class DeckService implements DeckUseCase {
     private final MagicCardRepository magicCardRepository;
     private final DeckValidator validator;
     private final OwnershipValidator ownershipValidator;
+    private final OwnerScopeResolver ownerScopeResolver;
 
     public DeckService(DeckRepository deckRepository,
                        ExternalMagicCardCatalogClient catalogClient,
                        MagicCardRepository magicCardRepository,
                        DeckValidator validator,
-                       OwnershipValidator ownershipValidator) {
+                       OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.deckRepository = deckRepository;
         this.catalogClient = catalogClient;
         this.magicCardRepository = magicCardRepository;
         this.validator = validator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
@@ -51,8 +55,26 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    public Page<Deck> findAll(Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
+        if (scope.ownerId() != null) {
+            return deckRepository.findByOwnerId(scope.ownerId(), pageable);
+        }
+        return deckRepository.findByOwnerIdNotIn(scope.excludeOwnerIds(), pageable);
+    }
+
+    @Override
     public Page<Deck> findByName(String name, Pageable pageable) {
         return deckRepository.findByName(name, pageable);
+    }
+
+    @Override
+    public Page<Deck> findByName(String name, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
+        if (scope.ownerId() != null) {
+            return deckRepository.findByNameAndOwnerId(name, scope.ownerId(), pageable);
+        }
+        return deckRepository.findByNameAndOwnerIdNotIn(name, scope.excludeOwnerIds(), pageable);
     }
 
     @Override

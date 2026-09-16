@@ -15,6 +15,7 @@ import com.wikicollection.application.exception.UserNotFoundException;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
+import com.wikicollection.application.exception.UnauthenticatedException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
 
 import org.springframework.http.HttpStatus;
@@ -105,6 +106,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthenticated(UnauthenticatedException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalStateException.class)

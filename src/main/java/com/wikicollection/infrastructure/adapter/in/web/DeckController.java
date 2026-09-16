@@ -61,11 +61,13 @@ public class DeckController {
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "name,asc") String sort,
-            @Parameter(description = "Filtro por nombre exacto") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name) {
+            @Parameter(description = "Filtro por nombre exacto") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         var decks = (name == null || name.isBlank())
-                ? deckUseCase.findAll(pageable)
-                : deckUseCase.findByName(name, pageable);
+                ? deckUseCase.findAll(pageable, owner, viewerId)
+                : deckUseCase.findByName(name, pageable, owner, viewerId);
         return decks.map(mapper::toResponse);
     }
 

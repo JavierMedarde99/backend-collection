@@ -10,6 +10,8 @@ public interface GameUseCase {
 
     Page<Game> search(GameSearchCriteria criteria, Pageable pageable);
 
+    Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
+
     Game findById(String id);
 
     Game save(Game game, boolean obtainPlatinum, String ownerId);

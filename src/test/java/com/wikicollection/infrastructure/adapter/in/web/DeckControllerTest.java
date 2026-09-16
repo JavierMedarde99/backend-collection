@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -75,11 +76,11 @@ class DeckControllerTest {
     @Test
     void listDecks_returnsPage_whenNoName() throws Exception {
         Deck deck = sampleDeck();
-        when(deckRepository.findAll(any(Pageable.class)))
+        when(deckRepository.findByOwnerId(eq("u1"), any(Pageable.class)))
                 .thenAnswer(invocation -> new PageImpl<>(
-                        List.of(deck), invocation.getArgument(0), 1));
+                        List.of(deck), invocation.getArgument(1), 1));
 
-        mockMvc.perform(get("/api/v1/decks"))
+        mockMvc.perform(get("/api/v1/decks").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value("d1"))
                 .andExpect(jsonPath("$.content[0].name").value("Mi Commander"))
@@ -89,14 +90,14 @@ class DeckControllerTest {
 
     @Test
     void listDecks_supportsPaginationAndSort() throws Exception {
-        when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(deckRepository.findByOwnerId(eq("u1"), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/decks").param("page", "1").param("size", "5").param("sort", "name,desc"))
+        mockMvc.perform(get("/api/v1/decks").with(user("u1")).param("page", "1").param("size", "5").param("sort", "name,desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(deckRepository).findAll(captor.capture());
+        verify(deckRepository).findByOwnerId(eq("u1"), captor.capture());
         Pageable pageable = captor.getValue();
         org.assertj.core.api.Assertions.assertThat(pageable.getPageNumber()).isEqualTo(1);
         org.assertj.core.api.Assertions.assertThat(pageable.getPageSize()).isEqualTo(5);
@@ -106,9 +107,9 @@ class DeckControllerTest {
 
     @Test
     void listDecks_returnsEmptyPage_whenNoDecks() throws Exception {
-        when(deckRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(deckRepository.findByOwnerId(eq("u1"), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/decks"))
+        mockMvc.perform(get("/api/v1/decks").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
@@ -117,15 +118,15 @@ class DeckControllerTest {
     @Test
     void listDecks_filtersByName() throws Exception {
         Deck deck = sampleDeck();
-        when(deckRepository.findByName(eq("Mi Commander"), any(Pageable.class)))
+        when(deckRepository.findByNameAndOwnerId(eq("Mi Commander"), eq("u1"), any(Pageable.class)))
                 .thenAnswer(invocation -> new PageImpl<>(
-                        List.of(deck), invocation.getArgument(1), 1));
+                        List.of(deck), invocation.getArgument(2), 1));
 
-        mockMvc.perform(get("/api/v1/decks").param("name", "Mi Commander"))
+        mockMvc.perform(get("/api/v1/decks").with(user("u1")).param("name", "Mi Commander"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value("d1"));
 
-        verify(deckRepository).findByName(eq("Mi Commander"), any(Pageable.class));
+        verify(deckRepository).findByNameAndOwnerId(eq("Mi Commander"), eq("u1"), any(Pageable.class));
     }
 
     @Test

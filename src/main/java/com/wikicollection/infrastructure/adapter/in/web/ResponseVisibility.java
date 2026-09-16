@@ -27,7 +27,8 @@ public class ResponseVisibility {
 
     private static String currentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
             return null;
         }
         Object principal = authentication.getPrincipal();

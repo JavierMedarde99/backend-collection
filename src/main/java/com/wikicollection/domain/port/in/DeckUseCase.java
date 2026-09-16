@@ -11,7 +11,11 @@ public interface DeckUseCase {
 
     Page<Deck> findAll(Pageable pageable);
 
+    Page<Deck> findAll(Pageable pageable, String owner, String viewerId);
+
     Page<Deck> findByName(String name, Pageable pageable);
+
+    Page<Deck> findByName(String name, Pageable pageable, String owner, String viewerId);
 
     Deck findById(String id);
 

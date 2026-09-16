@@ -6,6 +6,7 @@ import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.port.in.BoardGameUseCase;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
+import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,15 +17,25 @@ public class BoardGameService implements BoardGameUseCase {
     private final BoardGameRepository boardGameRepository;
     private final OwnershipValidator ownershipValidator;
 
+    private final OwnerScopeResolver ownerScopeResolver;
+
     public BoardGameService(BoardGameRepository boardGameRepository,
-                              OwnershipValidator ownershipValidator) {
+                              OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.boardGameRepository = boardGameRepository;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable) {
         return boardGameRepository.search(criteria, pageable);
+    }
+
+    @Override
+    public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
+        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

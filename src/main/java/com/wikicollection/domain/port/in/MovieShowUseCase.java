@@ -10,6 +10,8 @@ public interface MovieShowUseCase {
 
     Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable);
 
+    Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
+
     MovieShow findById(String id);
 
     MovieShow save(MovieShow movieShow, String ownerId);

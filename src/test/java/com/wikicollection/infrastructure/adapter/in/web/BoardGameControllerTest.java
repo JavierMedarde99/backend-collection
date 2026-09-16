@@ -62,7 +62,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/boardgames"))
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -70,7 +70,7 @@ class BoardGameControllerTest {
 
     @Test
     void listBoardGames_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/v1/boardgames").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -80,7 +80,7 @@ class BoardGameControllerTest {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/boardgames")
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1"))
                         .param("name", "catan")
                         .param("status", "WISHLIST"))
                 .andExpect(status().isOk());
@@ -94,7 +94,7 @@ class BoardGameControllerTest {
 
     @Test
     void listGames_rejectsLegacyStatus() throws Exception {
-        mockMvc.perform(get("/api/v1/boardgames")
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1"))
                         .param("status", "PREVIOUSLY_OWNED"))
                 .andExpect(status().isBadRequest());
     }
