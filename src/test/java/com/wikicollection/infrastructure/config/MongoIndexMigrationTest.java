@@ -34,7 +34,7 @@ class MongoIndexMigrationTest {
         verify(ops, atLeastOnce()).ensureIndex(captor.capture());
         assertThat(captor.getAllValues())
                 .filteredOn(index -> Boolean.TRUE.equals(index.getIndexOptions().get("unique")))
-                .hasSize(2);
+                .hasSize(3);
     }
 
     @Test
