@@ -7,6 +7,7 @@ import com.wikicollection.domain.port.in.MagicCardUseCase;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
+import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -20,17 +21,27 @@ public class MagicCardService implements MagicCardUseCase {
     private final ExternalMagicCardCatalogClient catalogClient;
     private final OwnershipValidator ownershipValidator;
 
+    private final OwnerScopeResolver ownerScopeResolver;
+
     public MagicCardService(MagicCardRepository magicCardRepository,
                             ExternalMagicCardCatalogClient catalogClient,
-                            OwnershipValidator ownershipValidator) {
+                            OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.magicCardRepository = magicCardRepository;
         this.catalogClient = catalogClient;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
     public Page<MagicCard> search(MagicCardSearchCriteria criteria, Pageable pageable) {
         return magicCardRepository.search(criteria, pageable);
+    }
+
+    @Override
+    public Page<MagicCard> search(MagicCardSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MAGIC, owner, viewerId);
+        return magicCardRepository.search(new MagicCardSearchCriteria(criteria.name(), criteria.rarity(), criteria.color(), criteria.type(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

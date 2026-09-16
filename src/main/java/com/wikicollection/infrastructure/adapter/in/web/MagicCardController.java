@@ -73,10 +73,12 @@ public class MagicCardController {
             @Parameter(description = "Filtro por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por rareza") @RequestParam(required = false) String rarity,
             @Parameter(description = "Filtro por color") @RequestParam(required = false) String color,
-            @Parameter(description = "Filtro por tipo (p. ej. Artifact, Creature)") @RequestParam(required = false) String type) {
+            @Parameter(description = "Filtro por tipo (p. ej. Artifact, Creature)") @RequestParam(required = false) String type,
+            @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type, null, null);
-        return magicCardUseCase.search(criteria, pageable).map(card -> {
+        return magicCardUseCase.search(criteria, pageable, owner, viewerId).map(card -> {
             var response = mapper.toResponse(card);
             return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
         });

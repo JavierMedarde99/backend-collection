@@ -63,7 +63,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/magic"))
+        mockMvc.perform(get("/api/v1/magic").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -71,7 +71,7 @@ class MagicCardControllerTest {
 
     @Test
     void listCards_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/v1/magic").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/magic").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -81,7 +81,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/magic").param("name", "lightning"))
+        mockMvc.perform(get("/api/v1/magic").with(user("u1")).param("name", "lightning"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<MagicCardSearchCriteria> captor = ArgumentCaptor.forClass(MagicCardSearchCriteria.class);
@@ -94,7 +94,7 @@ class MagicCardControllerTest {
         when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/magic")
+        mockMvc.perform(get("/api/v1/magic").with(user("u1"))
                         .param("name", "bolt")
                         .param("rarity", "rare")
                         .param("color", "R")

@@ -79,7 +79,7 @@ class GameControllerTest {
     void listGames_returnsEmptyPage_whenNoGames() throws Exception {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/games"))
+        mockMvc.perform(get("/api/v1/games").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -87,7 +87,7 @@ class GameControllerTest {
 
     @Test
     void listGames_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/v1/games").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -96,7 +96,7 @@ class GameControllerTest {
     void listGames_filtersByNamePlatformAndStatus() throws Exception {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/games")
+        mockMvc.perform(get("/api/v1/games").with(user("u1"))
                         .param("name", "witc")
                         .param("platform", "PC")
                         .param("status", "PLAYING"))

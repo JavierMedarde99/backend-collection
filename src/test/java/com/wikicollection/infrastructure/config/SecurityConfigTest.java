@@ -27,11 +27,16 @@ class SecurityConfigTest {
     @MockitoBean
     private BookRepository bookRepository;
 
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
+
     @Test
     void anonymousGet_isPermitted() throws Exception {
         when(bookRepository.search(any(), any())).thenReturn(Page.empty());
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(any()))
+                .thenReturn(java.util.List.of());
 
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v1/books").param("owner", "other"))
                 .andExpect(status().isOk());
     }
 

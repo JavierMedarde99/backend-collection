@@ -10,6 +10,7 @@ import com.wikicollection.domain.port.in.MovieShowUseCase;
 import com.wikicollection.domain.port.out.MovieShowRepository;
 
 import org.springframework.dao.DuplicateKeyException;
+import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,17 +23,27 @@ public class MovieShowService implements MovieShowUseCase {
     private final DateRangeValidator dateRangeValidator;
     private final OwnershipValidator ownershipValidator;
 
+    private final OwnerScopeResolver ownerScopeResolver;
+
     public MovieShowService(MovieShowRepository movieShowRepository,
                             DateRangeValidator dateRangeValidator,
-                            OwnershipValidator ownershipValidator) {
+                            OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.movieShowRepository = movieShowRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
     public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable) {
         return movieShowRepository.findByCriteria(criteria, pageable);
+    }
+
+    @Override
+    public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MOVIESHOWS, owner, viewerId);
+        return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

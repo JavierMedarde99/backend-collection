@@ -10,6 +10,8 @@ public interface MagicCardUseCase {
 
     Page<MagicCard> search(MagicCardSearchCriteria criteria, Pageable pageable);
 
+    Page<MagicCard> search(MagicCardSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
+
     MagicCard findById(String id);
 
     MagicCard addFromScryfall(String scryfallId, int quantity, String ownerId);

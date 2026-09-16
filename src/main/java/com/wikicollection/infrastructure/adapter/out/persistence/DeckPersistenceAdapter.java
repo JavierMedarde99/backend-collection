@@ -57,4 +57,14 @@ public class DeckPersistenceAdapter implements DeckRepository {
     public Page<Deck> findByOwnerIdNotIn(Collection<String> ownerIds, Pageable pageable) {
         return springDataDeckRepository.findByOwnerIdNotIn(ownerIds, pageable).map(mapper::toDomain);
     }
+
+    @Override
+    public Page<Deck> findByNameAndOwnerId(String name, String ownerId, Pageable pageable) {
+        return springDataDeckRepository.findByNameAndOwnerId(name, ownerId, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Deck> findByNameAndOwnerIdNotIn(String name, Collection<String> ownerIds, Pageable pageable) {
+        return springDataDeckRepository.findByNameAndOwnerIdNotIn(name, ownerIds, pageable).map(mapper::toDomain);
+    }
 }

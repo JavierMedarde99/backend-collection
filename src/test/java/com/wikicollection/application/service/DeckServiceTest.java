@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,7 @@ import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.model.DeckStatusReport;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
+import com.wikicollection.domain.port.in.UserPreferencesUseCase;
 import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
@@ -49,7 +51,8 @@ class DeckServiceTest {
     private OwnershipValidator ownershipValidator;
 
     private DeckService deckService() {
-        return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator);
+        return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator,
+                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)));
     }
 
     private Deck sampleDeck() {

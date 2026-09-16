@@ -14,4 +14,8 @@ public interface SpringDataDeckRepository extends MongoRepository<DeckEntity, St
     Page<DeckEntity> findByOwnerId(String ownerId, Pageable pageable);
 
     Page<DeckEntity> findByOwnerIdNotIn(Collection<String> ownerIds, Pageable pageable);
+
+    Page<DeckEntity> findByNameAndOwnerId(String name, String ownerId, Pageable pageable);
+
+    Page<DeckEntity> findByNameAndOwnerIdNotIn(String name, Collection<String> ownerIds, Pageable pageable);
 }

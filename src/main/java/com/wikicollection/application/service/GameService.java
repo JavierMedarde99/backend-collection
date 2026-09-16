@@ -7,6 +7,7 @@ import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.SteamCatalogueClient;
 
+import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,27 @@ public class GameService implements GameUseCase {
     private final DateRangeValidator dateRangeValidator;
     private final OwnershipValidator ownershipValidator;
 
+    private final OwnerScopeResolver ownerScopeResolver;
+
     public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator,
-                       OwnershipValidator ownershipValidator) {
+                       OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.gameRepository = gameRepository;
         this.steamCatalogueClient = steamCatalogueClient;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable) {
         return gameRepository.search(criteria, pageable);
+    }
+
+    @Override
+    public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
+        return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

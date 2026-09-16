@@ -64,7 +64,7 @@ class MovieShowControllerTest {
 
     @Test
     void listShows_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/v1/movieshows").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/movieshows").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -74,7 +74,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/movieshows"))
+        mockMvc.perform(get("/api/v1/movieshows").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -82,7 +82,7 @@ class MovieShowControllerTest {
 
     @Test
     void listShows_returns400_whenStatusInvalid() throws Exception {
-        mockMvc.perform(get("/api/v1/movieshows")
+        mockMvc.perform(get("/api/v1/movieshows").with(user("u1"))
                         .param("status", "NO_EXISTE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -94,7 +94,7 @@ class MovieShowControllerTest {
         when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/movieshows")
+        mockMvc.perform(get("/api/v1/movieshows").with(user("u1"))
                         .param("name", "fight")
                         .param("status", "watched")
                         .param("mediaType", "movie"))

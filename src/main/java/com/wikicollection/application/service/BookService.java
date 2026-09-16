@@ -8,6 +8,7 @@ import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.domain.port.out.BookRepository;
 
 import org.springframework.dao.DuplicateKeyException;
+import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,16 +21,26 @@ public class BookService implements BookUseCase {
     private final DateRangeValidator dateRangeValidator;
     private final OwnershipValidator ownershipValidator;
 
+    private final OwnerScopeResolver ownerScopeResolver;
+
     public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator,
-                       OwnershipValidator ownershipValidator) {
+                       OwnershipValidator ownershipValidator,
+                       OwnerScopeResolver ownerScopeResolver) {
         this.bookRepository = bookRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerScopeResolver = ownerScopeResolver;
     }
 
     @Override
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable) {
         return bookRepository.search(criteria, pageable);
+    }
+
+    @Override
+    public Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOOKS, owner, viewerId);
+        return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

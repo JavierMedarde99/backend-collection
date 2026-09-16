@@ -83,10 +83,12 @@ public class GameController {
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
             @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
             @Parameter(description = "Filtro por plataforma") @RequestParam(required = false) GamePlatform platform,
-            @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status) {
+            @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status,
+            @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, null, null);
-        return gameUseCase.search(criteria, pageable).map(game -> {
+        return gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
             var response = mapper.toResponse(game);
             return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
         });

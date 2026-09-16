@@ -53,6 +53,9 @@ class BookControllerTest {
     @MockitoBean
     private GoogleBooksClient googleBooksClient;
 
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
+
     private Book sampleBook() {
         return Book.builder()
                 .id("b1")
@@ -65,10 +68,41 @@ class BookControllerTest {
     }
 
     @Test
+    void listBooks_mine_requiresAuth_whenAnonymous() throws Exception {
+        mockMvc.perform(get("/api/v1/books"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void listBooks_other_isPublic() throws Exception {
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(any()))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/books").param("owner", "other"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listBooks_all_showsOwnBooks_despitePrivate() throws Exception {
+        Book book = sampleBook();
+        book.setComment("personal");
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(book)));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(any()))
+                .thenReturn(List.of("u1"));
+
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("owner", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].comment").value("personal"));
+    }
+
+    @Test
     void listBooks_returnsEmptyPage_whenNoBooks() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v1/books").with(user("u1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty());
@@ -78,7 +112,7 @@ class BookControllerTest {
     void listBooks_filtersByState() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/books").param("state", "READING"))
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("state", "READING"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
@@ -88,7 +122,7 @@ class BookControllerTest {
 
     @Test
     void listBooks_returns400_whenNameTooLong() throws Exception {
-        mockMvc.perform(get("/api/v1/books").param("name", "a".repeat(101)))
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -97,7 +131,7 @@ class BookControllerTest {
     void listBooks_filtersByNameAuthorAndType() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 
-        mockMvc.perform(get("/api/v1/books")
+        mockMvc.perform(get("/api/v1/books").with(user("u1"))
                         .param("name", "cien")
                         .param("author", "garcía")
                         .param("type", "NOVEL"))
@@ -166,7 +200,7 @@ class BookControllerTest {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(book)));
 
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v1/books").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].comment").value(Matchers.nullValue()));
     }

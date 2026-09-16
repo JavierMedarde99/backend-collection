@@ -10,6 +10,8 @@ public interface BookUseCase {
 
     Page<Book> search(BookSearchCriteria criteria, Pageable pageable);
 
+    Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
+
     Book findById(String id);
 
     Book save(Book book, String ownerId);
