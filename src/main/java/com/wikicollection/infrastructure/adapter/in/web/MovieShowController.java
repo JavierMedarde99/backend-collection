@@ -77,7 +77,7 @@ public class MovieShowController {
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) MovieStatus status,
             @Parameter(description = "Filtro por tipo") @RequestParam(required = false) MovieMediaType mediaType) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        MovieSearchCriteria criteria = new MovieSearchCriteria(name, status, mediaType);
+        MovieSearchCriteria criteria = new MovieSearchCriteria(name, status, mediaType, null, null);
         return movieShowUseCase.search(criteria, pageable).map(movieShow -> {
             var response = mapper.toResponse(movieShow);
             return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();

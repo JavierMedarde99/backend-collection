@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Deck;
@@ -45,5 +46,15 @@ public class DeckPersistenceAdapter implements DeckRepository {
     @Override
     public Page<Deck> findByName(String name, Pageable pageable) {
         return springDataDeckRepository.findByName(name, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Deck> findByOwnerId(String ownerId, Pageable pageable) {
+        return springDataDeckRepository.findByOwnerId(ownerId, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Deck> findByOwnerIdNotIn(Collection<String> ownerIds, Pageable pageable) {
+        return springDataDeckRepository.findByOwnerIdNotIn(ownerIds, pageable).map(mapper::toDomain);
     }
 }

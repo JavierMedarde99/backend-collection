@@ -78,6 +78,12 @@ public class MovieShowPersistenceAdapter implements MovieShowRepository {
         if (criteria == null) {
             return query;
         }
+        if (criteria.hasOwnerId()) {
+            query.addCriteria(Criteria.where("ownerId").is(criteria.ownerId()));
+        }
+        if (criteria.hasExcludeOwnerIds()) {
+            query.addCriteria(Criteria.where("ownerId").nin(criteria.excludeOwnerIds()));
+        }
         if (criteria.hasName()) {
             query.addCriteria(Criteria.where("title").regex(ciPattern(criteria.name())));
         }

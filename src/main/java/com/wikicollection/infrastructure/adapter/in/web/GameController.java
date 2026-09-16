@@ -85,7 +85,7 @@ public class GameController {
             @Parameter(description = "Filtro por plataforma") @RequestParam(required = false) GamePlatform platform,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status);
+        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, null, null);
         return gameUseCase.search(criteria, pageable).map(game -> {
             var response = mapper.toResponse(game);
             return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();

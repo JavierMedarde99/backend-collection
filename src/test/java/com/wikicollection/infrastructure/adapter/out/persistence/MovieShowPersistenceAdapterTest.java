@@ -112,7 +112,7 @@ class MovieShowPersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(MovieShowEntity.class))).thenReturn(0L);
 
         Page<MovieShow> result = adapter.findByCriteria(
-                new MovieSearchCriteria("fight", MovieStatus.WATCHED, MovieMediaType.MOVIE), pageable);
+                new MovieSearchCriteria("fight", MovieStatus.WATCHED, MovieMediaType.MOVIE, null, null), pageable);
 
         assertThat(result).isEmpty();
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);

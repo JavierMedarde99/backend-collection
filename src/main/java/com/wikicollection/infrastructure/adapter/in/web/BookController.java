@@ -76,7 +76,7 @@ public class BookController {
             @Parameter(description = "Filtro por tipo de libro") @RequestParam(required = false) BookType type,
             @Parameter(description = "Filtro por estado de lectura") @RequestParam(required = false) BookState state) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state);
+        BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state, null, null);
         return bookUseCase.search(criteria, pageable).map(book -> {
             var response = mapper.toResponse(book);
             return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
