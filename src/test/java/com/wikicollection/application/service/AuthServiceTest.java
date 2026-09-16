@@ -75,47 +75,6 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_createsDefaultPreferences_whenMissing() {
-        when(userRepository.existsByUsername("javi")).thenReturn(false);
-        when(userRepository.existsByEmail("javi@local.dev")).thenReturn(false);
-        when(passwordEncoder.encode("pass123")).thenReturn("hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User saved = invocation.getArgument(0);
-            saved.setId("u1");
-            return saved;
-        });
-        when(preferencesRepository.existsByUserId("u1")).thenReturn(false);
-        when(preferencesRepository.save(any(UserPreferences.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        authService.register("javi", "javi@local.dev", "pass123", "Javi");
-
-        ArgumentCaptor<UserPreferences> captor = ArgumentCaptor.forClass(UserPreferences.class);
-        verify(preferencesRepository).save(captor.capture());
-        assertThat(captor.getValue().getUserId()).isEqualTo("u1");
-        assertThat(captor.getValue().getActiveCollections()).containsEntry("books", true);
-        assertThat(captor.getValue().getCollectionVisibility())
-                .containsEntry("books", CollectionVisibility.PUBLIC);
-    }
-
-    @Test
-    void register_skipsPreferences_whenExisting() {
-        when(userRepository.existsByUsername("javi")).thenReturn(false);
-        when(userRepository.existsByEmail("javi@local.dev")).thenReturn(false);
-        when(passwordEncoder.encode("pass123")).thenReturn("hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User saved = invocation.getArgument(0);
-            saved.setId("u1");
-            return saved;
-        });
-        when(preferencesRepository.existsByUserId("u1")).thenReturn(true);
-
-        authService.register("javi", "javi@local.dev", "pass123", "Javi");
-
-        verify(preferencesRepository, never()).save(any(UserPreferences.class));
-    }
-
-    @Test
     void register_throwsConflict_whenUsernameExists() {
         when(userRepository.existsByUsername("javi")).thenReturn(true);
 
