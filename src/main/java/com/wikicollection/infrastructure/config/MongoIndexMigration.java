@@ -42,6 +42,8 @@ public class MongoIndexMigration implements ApplicationRunner {
                     .ensureIndex(new Index().on("username", Sort.Direction.ASC).unique());
             mongoTemplate.indexOps("users")
                     .ensureIndex(new Index().on("email", Sort.Direction.ASC).unique());
+            mongoTemplate.indexOps("user_preferences")
+                    .ensureIndex(new Index().on("userId", Sort.Direction.ASC).unique());
             Index ownerIndex = new Index().on("ownerId", Sort.Direction.ASC);
             for (String collection : OWNER_COLLECTIONS) {
                 mongoTemplate.indexOps(collection).ensureIndex(ownerIndex);
