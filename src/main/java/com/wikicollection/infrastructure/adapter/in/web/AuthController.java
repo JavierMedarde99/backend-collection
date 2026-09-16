@@ -12,7 +12,7 @@ import com.wikicollection.infrastructure.adapter.in.web.dto.UserResponse;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.wikicollection.application.service.UserPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -89,8 +89,8 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "No autenticado"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })
-    public UserResponse me(@AuthenticationPrincipal UserDetails principal) {
-        return UserResponse.from(userUseCase.getById(principal.getUsername()));
+    public UserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
+        return UserResponse.from(userUseCase.getById(principal.getId()));
     }
 
     private AuthResponse toResponse(AuthSession session) {

@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.wikicollection.application.exception.UserAlreadyExistsException;
+import com.wikicollection.application.service.UserPrincipal;
 import com.wikicollection.domain.model.AuthSession;
 import com.wikicollection.domain.model.AuthTokens;
 import com.wikicollection.domain.model.User;
@@ -22,6 +24,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -150,8 +153,11 @@ class AuthControllerTest {
     @Test
     void me_returnsUser_whenAuthenticated() throws Exception {
         when(userUseCase.getById("u1")).thenReturn(sampleUser());
+        var principal = new UserPrincipal("u1", "javi", "hash", "USER");
+        var authentication = new UsernamePasswordAuthenticationToken(
+                principal, null, principal.getAuthorities());
 
-        mockMvc.perform(get("/api/v1/auth/me").with(user("u1")))
+        mockMvc.perform(get("/api/v1/auth/me").with(authentication(authentication)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("javi"));
     }

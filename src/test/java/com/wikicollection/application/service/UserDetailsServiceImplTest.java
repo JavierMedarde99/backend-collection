@@ -9,9 +9,9 @@ import java.util.Optional;
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.out.UserRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,31 +23,49 @@ class UserDetailsServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
-    @InjectMocks
     private UserDetailsServiceImpl userDetailsService;
 
-    @Test
-    void loadUser_returnsDetailsWithUserIdAsUsername() {
-        User user = User.builder().id("u1").username("javi").password("hash").build();
-        when(userRepository.findByUsername("u1")).thenReturn(Optional.empty());
-        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
-
-        UserDetails details = userDetailsService.loadUserByUsername("u1");
-
-        assertThat(details.getUsername()).isEqualTo("u1");
-        assertThat(details.getPassword()).isEqualTo("hash");
-        assertThat(details.getAuthorities()).isNotEmpty();
+    @BeforeEach
+    void setUp() {
+        userDetailsService = new UserDetailsServiceImpl(userRepository, "admin");
     }
 
     @Test
-    void loadUser_byUsername_returnsDetailsWithUserIdAsUsername() {
+    void loadUser_returnsDetailsWithUsername() {
         User user = User.builder().id("u1").username("javi").password("hash").build();
         when(userRepository.findByUsername("javi")).thenReturn(Optional.of(user));
 
         UserDetails details = userDetailsService.loadUserByUsername("javi");
 
-        assertThat(details.getUsername()).isEqualTo("u1");
+        assertThat(details.getUsername()).isEqualTo("javi");
         assertThat(details.getPassword()).isEqualTo("hash");
+        assertThat(details.getAuthorities())
+                .extracting(Object::toString)
+                .containsExactly("ROLE_USER");
+    }
+
+    @Test
+    void loadUser_byId_returnsDetailsWithUsername() {
+        User user = User.builder().id("u1").username("javi").password("hash").build();
+        when(userRepository.findByUsername("u1")).thenReturn(Optional.empty());
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+
+        UserPrincipal principal = (UserPrincipal) userDetailsService.loadUserByUsername("u1");
+
+        assertThat(principal.getUsername()).isEqualTo("javi");
+        assertThat(principal.getId()).isEqualTo("u1");
+    }
+
+    @Test
+    void loadUser_adminUser_getsAdminRole() {
+        User admin = User.builder().id("a1").username("admin").password("hash").build();
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+
+        UserDetails details = userDetailsService.loadUserByUsername("admin");
+
+        assertThat(details.getAuthorities())
+                .extracting(Object::toString)
+                .containsExactly("ROLE_ADMIN");
     }
 
     @Test
