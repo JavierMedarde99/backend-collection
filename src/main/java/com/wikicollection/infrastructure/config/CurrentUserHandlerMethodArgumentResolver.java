@@ -27,6 +27,9 @@ public class CurrentUserHandlerMethodArgumentResolver implements HandlerMethodAr
             return null;
         }
         Object principal = authentication.getPrincipal();
+        if (principal instanceof com.wikicollection.application.service.UserPrincipal userPrincipal) {
+            return userPrincipal.getId();
+        }
         if (principal instanceof UserDetails details) {
             return details.getUsername();
         }
