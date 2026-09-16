@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.User;
@@ -27,6 +28,11 @@ public class UserPersistenceAdapter implements UserRepository {
     @Override
     public Optional<User> findById(String id) {
         return springDataUserRepository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return springDataUserRepository.findAll().stream().map(mapper::toDomain).toList();
     }
 
     @Override
