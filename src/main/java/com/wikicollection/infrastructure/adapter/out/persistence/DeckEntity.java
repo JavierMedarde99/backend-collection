@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -24,6 +25,7 @@ public class DeckEntity {
 
     @Id
     private String id;
+    @Indexed
     private String ownerId;
 
     private String name;
