@@ -7,20 +7,18 @@ import com.wikicollection.domain.model.User;
 public record UserResponse(
         String id,
         String username,
-        String email,
         String displayName,
         String avatarUrl,
         String bio,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime createdAt) {
 
     public static UserResponse from(User user) {
         if (user == null) {
             return null;
         }
         return new UserResponse(
-                user.getId(), user.getUsername(), user.getEmail(),
+                user.getId(), user.getUsername(),
                 user.getDisplayName(), user.getAvatarUrl(), user.getBio(),
-                user.getCreatedAt(), user.getUpdatedAt());
+                user.getCreatedAt());
     }
 }

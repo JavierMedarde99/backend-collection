@@ -40,6 +40,13 @@ public class AuthController {
         this.userUseCase = userUseCase;
     }
 
+    /**
+     * Registra un usuario y devuelve 201 con los tokens de la nueva sesión.
+     *
+     * <p>El header {@code Location} apunta a {@code /api/v1/auth/me}: con los tokens
+     * de esta misma respuesta ese endpoint resuelve al recurso recién creado,
+     * así que la URL identifica al usuario sin exponer su id en la cabecera.
+     */
     @PostMapping("/register")
     @Operation(summary = "Registra un usuario")
     @ApiResponses({

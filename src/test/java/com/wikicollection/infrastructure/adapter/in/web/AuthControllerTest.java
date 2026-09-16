@@ -60,6 +60,23 @@ class AuthControllerTest {
     }
 
     @Test
+    void register_responseOmitsPrivateUserFields() throws Exception {
+        when(userUseCase.register("javi", "javi@local.dev", "pass12345", "Javi"))
+                .thenReturn(sampleSession());
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"javi","email":"javi@local.dev","password":"pass12345","displayName":"Javi"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", Matchers.containsString("/api/v1/auth/me")))
+                .andExpect(jsonPath("$.user.username").value("javi"))
+                .andExpect(jsonPath("$.user.email").doesNotExist())
+                .andExpect(jsonPath("$.user.updatedAt").doesNotExist());
+    }
+
+    @Test
     void register_returns400_whenInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
