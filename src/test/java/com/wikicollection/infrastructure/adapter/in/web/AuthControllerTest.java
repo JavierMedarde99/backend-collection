@@ -45,13 +45,13 @@ class AuthControllerTest {
 
     @Test
     void register_returns201_withTokens() throws Exception {
-        when(userUseCase.register("javi", "javi@local.dev", "pass12345", "Javi"))
+        when(userUseCase.register("javi", "javi@local.dev", "Pass1234!", "Javi"))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"username":"javi","email":"javi@local.dev","password":"pass12345","displayName":"Javi"}
+                                {"username":"javi","email":"javi@local.dev","password":"Pass1234!","displayName":"Javi"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", Matchers.containsString("/api/v1/auth/me")))
@@ -61,19 +61,29 @@ class AuthControllerTest {
 
     @Test
     void register_responseOmitsPrivateUserFields() throws Exception {
-        when(userUseCase.register("javi", "javi@local.dev", "pass12345", "Javi"))
+        when(userUseCase.register("javi", "javi@local.dev", "Pass1234!", "Javi"))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"username":"javi","email":"javi@local.dev","password":"pass12345","displayName":"Javi"}
+                                {"username":"javi","email":"javi@local.dev","password":"Pass1234!","displayName":"Javi"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", Matchers.containsString("/api/v1/auth/me")))
                 .andExpect(jsonPath("$.user.username").value("javi"))
                 .andExpect(jsonPath("$.user.email").doesNotExist())
                 .andExpect(jsonPath("$.user.updatedAt").doesNotExist());
+    }
+
+    @Test
+    void register_returns400_whenWeakPassword() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"javi","email":"javi@local.dev","password":"pass12345"}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -94,7 +104,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"username":"javi","email":"javi@local.dev","password":"pass12345"}
+                                {"username":"javi","email":"javi@local.dev","password":"Pass1234!"}
                                 """))
                 .andExpect(status().isConflict());
     }
