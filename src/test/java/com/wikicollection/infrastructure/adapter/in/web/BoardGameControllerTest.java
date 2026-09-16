@@ -121,6 +121,16 @@ class BoardGameControllerTest {
     }
 
     @Test
+    void getBoardGame_hidesPrivateFields_whenNotOwner() throws Exception {
+        BoardGame game = sampleGame();
+        game.setNotes("privado");
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
+        mockMvc.perform(get("/api/v1/boardgames/bg1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notes").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getBoardGame_returns404_whenMissing() throws Exception {
         when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
 

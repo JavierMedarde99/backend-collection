@@ -49,12 +49,16 @@ public class BoardGameController {
     private final BoardGameSearchUseCase boardGameSearchUseCase;
     private final BoardGameDtoMapper mapper;
 
+    private final ResponseVisibility visibility;
+
     public BoardGameController(BoardGameUseCase boardGameUseCase,
                                BoardGameSearchUseCase boardGameSearchUseCase,
-                               BoardGameDtoMapper mapper) {
+                               BoardGameDtoMapper mapper,
+                               ResponseVisibility visibility) {
         this.boardGameUseCase = boardGameUseCase;
         this.boardGameSearchUseCase = boardGameSearchUseCase;
         this.mapper = mapper;
+        this.visibility = visibility;
     }
 
     @GetMapping
@@ -71,7 +75,10 @@ public class BoardGameController {
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) BoardGameStatus status) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status);
-        return boardGameUseCase.search(criteria, pageable).map(mapper::toResponse);
+        return boardGameUseCase.search(criteria, pageable).map(boardGame -> {
+            var response = mapper.toResponse(boardGame);
+            return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();
+        });
     }
 
     @GetMapping("/{id}")
@@ -82,7 +89,9 @@ public class BoardGameController {
     })
     public BoardGameResponse getById(
             @Parameter(description = "Identificador del juego de mesa") @PathVariable String id) {
-        return mapper.toResponse(boardGameUseCase.findById(id));
+        var boardGame = boardGameUseCase.findById(id);
+        var response = mapper.toResponse(boardGame);
+        return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();
     }
 
     @PostMapping

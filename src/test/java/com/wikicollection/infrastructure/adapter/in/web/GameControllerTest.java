@@ -122,6 +122,19 @@ class GameControllerTest {
     }
 
     @Test
+    void getGame_hidesPrivateFields_whenNotOwner() throws Exception {
+        Game game = sampleGame();
+        game.setComment("privado");
+        game.setUserRating(10);
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(game));
+
+        mockMvc.perform(get("/api/v1/games/g1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.userRating").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getGame_returns404_whenMissing() throws Exception {
         when(gameRepository.findById("nope")).thenReturn(Optional.empty());
 

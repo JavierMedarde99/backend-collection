@@ -51,12 +51,16 @@ public class MovieShowController {
     private final MovieSearchUseCase movieSearchUseCase;
     private final MovieShowDtoMapper mapper;
 
+    private final ResponseVisibility visibility;
+
     public MovieShowController(MovieShowUseCase movieShowUseCase,
                                MovieSearchUseCase movieSearchUseCase,
-                               MovieShowDtoMapper mapper) {
+                               MovieShowDtoMapper mapper,
+                               ResponseVisibility visibility) {
         this.movieShowUseCase = movieShowUseCase;
         this.movieSearchUseCase = movieSearchUseCase;
         this.mapper = mapper;
+        this.visibility = visibility;
     }
 
     @GetMapping
@@ -74,7 +78,10 @@ public class MovieShowController {
             @Parameter(description = "Filtro por tipo") @RequestParam(required = false) MovieMediaType mediaType) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         MovieSearchCriteria criteria = new MovieSearchCriteria(name, status, mediaType);
-        return movieShowUseCase.search(criteria, pageable).map(mapper::toResponse);
+        return movieShowUseCase.search(criteria, pageable).map(movieShow -> {
+            var response = mapper.toResponse(movieShow);
+            return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
+        });
     }
 
     @GetMapping("/{id}")
@@ -85,7 +92,9 @@ public class MovieShowController {
     })
     public MovieShowResponse getById(
             @Parameter(description = "Identificador") @PathVariable String id) {
-        return mapper.toResponse(movieShowUseCase.findById(id));
+        var movieShow = movieShowUseCase.findById(id);
+        var response = mapper.toResponse(movieShow);
+        return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
     }
 
     @PostMapping

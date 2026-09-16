@@ -122,6 +122,16 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void getCard_hidesPrivateFields_whenNotOwner() throws Exception {
+        MagicCard card = sampleCard();
+        card.setNotes("privado");
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        mockMvc.perform(get("/api/v1/magic/mc1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notes").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getCard_returns404_whenMissing() throws Exception {
         when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
 
