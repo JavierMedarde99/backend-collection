@@ -35,7 +35,7 @@ class MovieShowServiceOwnerFilterTest {
 
     private MovieShowService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new MovieShowService(movieShowRepository, mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase));
+        return new MovieShowService(movieShowRepository, mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test

@@ -25,13 +25,17 @@ public class MovieShowService implements MovieShowUseCase {
 
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public MovieShowService(MovieShowRepository movieShowRepository,
                             DateRangeValidator dateRangeValidator,
                             OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.movieShowRepository = movieShowRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -56,6 +60,7 @@ public class MovieShowService implements MovieShowUseCase {
     @Transactional
     public MovieShow save(MovieShow movieShow, String ownerId) {
         movieShow.setOwnerId(ownerId);
+        movieShow.setUserOwned(ownerResolver.resolveOwner(ownerId));
         dateRangeValidator.validate(movieShow.getDateAdded(), movieShow.getDateCompleted());
         assertNoDuplicate(movieShow.getExternalId(), null);
         return saveOrConflict(movieShow);

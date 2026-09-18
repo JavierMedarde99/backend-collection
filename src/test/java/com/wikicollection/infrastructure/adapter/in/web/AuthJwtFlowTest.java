@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,6 +16,7 @@ import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.domain.port.out.UserRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -29,6 +31,9 @@ class AuthJwtFlowTest {
 
     /** Secreto por defecto de application.properties: el JwtService del contexto lo usa. */
     private static final String APP_DEFAULT_SECRET = "clave-cambiar-en-produccion-min-256-bits";
+
+    @MockitoBean
+    private com.wikicollection.application.service.OwnerResolver ownerResolver;
 
     @Autowired
     private MockMvc mockMvc;
@@ -60,6 +65,13 @@ class AuthJwtFlowTest {
         return """
                 {"title":"Dune","author":"Herbert","state":"TO_READ","type":"NOVEL"}
                 """;
+    }
+
+    @BeforeEach
+    void stubOwnerResolver() {
+        lenient().when(ownerResolver.resolveOwner(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> com.wikicollection.domain.model.UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test

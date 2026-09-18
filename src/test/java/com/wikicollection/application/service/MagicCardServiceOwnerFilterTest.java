@@ -36,7 +36,7 @@ class MagicCardServiceOwnerFilterTest {
 
     private MagicCardService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new MagicCardService(magicCardRepository, mock(ExternalMagicCardCatalogClient.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase));
+        return new MagicCardService(magicCardRepository, mock(ExternalMagicCardCatalogClient.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test

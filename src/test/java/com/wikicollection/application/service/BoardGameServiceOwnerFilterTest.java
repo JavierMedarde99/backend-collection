@@ -35,7 +35,7 @@ class BoardGameServiceOwnerFilterTest {
 
     private BoardGameService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new BoardGameService(boardGameRepository, mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase));
+        return new BoardGameService(boardGameRepository, mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test

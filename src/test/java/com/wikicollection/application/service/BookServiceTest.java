@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,10 +14,12 @@ import java.util.Optional;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.port.out.BookRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +45,9 @@ class BookServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     @InjectMocks
     private BookService bookService;
 
@@ -51,6 +57,13 @@ class BookServiceTest {
         book.setAuthor("Gabriel García Márquez");
         book.setState(BookState.TO_READ);
         return book;
+    }
+
+    @BeforeEach
+    void stubOwner() {
+        lenient().when(ownerResolver.resolveOwner(any()))
+                .thenAnswer(invocation -> UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test
@@ -91,6 +104,7 @@ class BookServiceTest {
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Book result = bookService.save(book, "u1");
+        assertThat(result.getUserOwned().getOwnerName()).isEqualTo("Javi");
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);

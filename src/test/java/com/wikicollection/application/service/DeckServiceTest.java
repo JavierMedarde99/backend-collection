@@ -13,6 +13,7 @@ import java.util.Optional;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.domain.model.Deck;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.model.DeckStatusReport;
@@ -50,9 +51,12 @@ class DeckServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     private DeckService deckService() {
         return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator,
-                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)));
+                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)), ownerResolver);
     }
 
     private Deck sampleDeck() {
@@ -86,9 +90,12 @@ class DeckServiceTest {
     void save_setsTimestamps() {
         Deck deck = Deck.builder().name("Nuevo").build();
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(ownerResolver.resolveOwner("u1")).thenReturn(
+                UserOwned.builder().ownerId("u1").ownerName("Javi").build());
 
         Deck result = deckService().save(deck, "u1");
 
+        assertThat(result.getUserOwned().getOwnerName()).isEqualTo("Javi");
         assertThat(result.getCreatedAt()).isNotNull();
         assertThat(result.getUpdatedAt()).isNotNull();
     }

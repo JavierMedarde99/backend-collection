@@ -36,7 +36,7 @@ class GameServiceOwnerFilterTest {
 
     private GameService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new GameService(gameRepository, mock(SteamCatalogueClient.class), mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase));
+        return new GameService(gameRepository, mock(SteamCatalogueClient.class), mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test
