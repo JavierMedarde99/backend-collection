@@ -15,7 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
     private final CurrentUserHandlerMethodArgumentResolver currentUserResolver;
 
     public WebConfig(
-            @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins,
+            @Value("${app.cors.allowed-origins:http://localhost:5173,https://frontend-collection-eta.vercel.app}") String allowedOrigins,
             CurrentUserHandlerMethodArgumentResolver currentUserResolver) {
         this.allowedOrigins = allowedOrigins.split(",");
         this.currentUserResolver = currentUserResolver;
