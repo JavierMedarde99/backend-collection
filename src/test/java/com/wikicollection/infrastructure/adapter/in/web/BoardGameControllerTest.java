@@ -136,7 +136,7 @@ class BoardGameControllerTest {
     void getBoardGame_hidesPrivateFields_whenNotOwner() throws Exception {
         BoardGame game = sampleGame();
         game.setNotes("privado");
-        game.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi"));
+        game.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
         mockMvc.perform(get("/api/v1/boardgames/bg1").with(user("other")))
                 .andExpect(status().isOk())

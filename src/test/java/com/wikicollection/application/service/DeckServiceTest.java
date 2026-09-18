@@ -91,7 +91,7 @@ class DeckServiceTest {
         Deck deck = Deck.builder().name("Nuevo").build();
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(ownerResolver.resolveOwner("u1")).thenReturn(
-                UserOwned.builder().ownerId("u1").ownerName("Javi").build());
+                UserOwned.builder().ownerId("u1").ownerName("Javi").username("javi").build());
 
         Deck result = deckService().save(deck, "u1");
 

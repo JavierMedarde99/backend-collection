@@ -15,11 +15,13 @@ public class OwnerResolver {
     }
 
     public UserOwned resolveOwner(String ownerId) {
-        String ownerName = userRepository.findById(ownerId)
-                .map(user -> user.getDisplayName() != null && !user.getDisplayName().isBlank()
-                        ? user.getDisplayName()
-                        : user.getUsername())
+        var user = userRepository.findById(ownerId);
+        String ownerName = user
+                .map(u -> u.getDisplayName() != null && !u.getDisplayName().isBlank()
+                        ? u.getDisplayName()
+                        : u.getUsername())
                 .orElse(ownerId);
-        return UserOwned.builder().ownerId(ownerId).ownerName(ownerName).build();
+        String username = user.map(com.wikicollection.domain.model.User::getUsername).orElse(ownerId);
+        return UserOwned.builder().ownerId(ownerId).ownerName(ownerName).username(username).build();
     }
 }

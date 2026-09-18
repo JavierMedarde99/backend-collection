@@ -137,7 +137,7 @@ class MagicCardControllerTest {
     void getCard_hidesPrivateFields_whenNotOwner() throws Exception {
         MagicCard card = sampleCard();
         card.setNotes("privado");
-        card.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi"));
+        card.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
         mockMvc.perform(get("/api/v1/magic/mc1").with(user("other")))
                 .andExpect(status().isOk())

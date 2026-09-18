@@ -56,7 +56,9 @@ public class UserOwnedBackfillMigration implements ApplicationRunner {
     }
 
     private void backfill(String collection) {
-        Query missing = new Query(Criteria.where("userOwned").exists(false));
+        Query missing = new Query(new Criteria().orOperator(
+                Criteria.where("userOwned").exists(false),
+                Criteria.where("userOwned.username").exists(false)));
         missing.fields().include("_id").include("ownerId");
         for (Document doc : mongoTemplate.find(missing, Document.class, collection)) {
             String ownerId = doc.getString("ownerId");
@@ -64,8 +66,10 @@ public class UserOwnedBackfillMigration implements ApplicationRunner {
                 continue;
             }
             UserOwned owned = ownerResolver.resolveOwner(ownerId);
-            Update update = new Update().set("userOwned",
-                    Map.of("ownerId", owned.getOwnerId(), "ownerName", owned.getOwnerName()));
+            Update update = new Update().set("userOwned", Map.of(
+                    "ownerId", owned.getOwnerId(),
+                    "ownerName", owned.getOwnerName(),
+                    "username", owned.getUsername()));
             mongoTemplate.updateFirst(
                     new Query(Criteria.where("_id").is(doc.get("_id"))), update, collection);
         }

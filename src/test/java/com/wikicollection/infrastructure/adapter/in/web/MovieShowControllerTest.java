@@ -134,7 +134,7 @@ class MovieShowControllerTest {
     void getShow_hidesPrivateFields_whenNotOwner() throws Exception {
         MovieShow show = sampleShow();
         show.setComment("privado");
-        show.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi"));
+        show.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(show));
         mockMvc.perform(get("/api/v1/movieshows/m1").with(user("other")))
                 .andExpect(status().isOk())

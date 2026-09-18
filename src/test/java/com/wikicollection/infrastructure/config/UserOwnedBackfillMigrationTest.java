@@ -40,7 +40,7 @@ class UserOwnedBackfillMigrationTest {
         when(mongoTemplate.find(any(Query.class), eq(Document.class), any(String.class)))
                 .thenReturn(List.of(doc));
         when(ownerResolver.resolveOwner("u1"))
-                .thenReturn(UserOwned.builder().ownerId("u1").ownerName("Javi").build());
+                .thenReturn(UserOwned.builder().ownerId("u1").ownerName("Javi").username("javi").build());
 
         migration(true).run(null);
 

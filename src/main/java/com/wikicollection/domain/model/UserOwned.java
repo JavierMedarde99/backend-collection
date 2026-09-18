@@ -15,4 +15,5 @@ public class UserOwned {
 
     private String ownerId;
     private String ownerName;
+    private String username;
 }
