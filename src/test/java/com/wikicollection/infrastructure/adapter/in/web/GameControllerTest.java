@@ -138,12 +138,14 @@ class GameControllerTest {
         Game game = sampleGame();
         game.setComment("privado");
         game.setUserRating(10);
+        game.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi"));
         when(gameRepository.findById("g1")).thenReturn(Optional.of(game));
 
         mockMvc.perform(get("/api/v1/games/g1").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.comment").value(Matchers.nullValue()))
-                .andExpect(jsonPath("$.userRating").value(Matchers.nullValue()));
+                .andExpect(jsonPath("$.userRating").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.userOwned.ownerName").value("Javi"));
     }
 
     @Test

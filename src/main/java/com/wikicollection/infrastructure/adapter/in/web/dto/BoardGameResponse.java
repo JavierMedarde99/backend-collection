@@ -25,12 +25,13 @@ public record BoardGameResponse(
         String bggId,
         BoardGameStatus status,
         String notes,
-        LocalDate dateAdded) {
+        LocalDate dateAdded,
+        UserOwnedResponse userOwned) {
 
 
     public BoardGameResponse withoutPrivate() {
         return new BoardGameResponse(id, title, description, yearPublished, minPlayers, maxPlayers,
                 minPlaytime, maxPlaytime, publisher, designers, categories, mechanics, imageUrl,
-                thumbnailUrl, bggRating, bggId, status, null, dateAdded);
+                thumbnailUrl, bggRating, bggId, status, null, dateAdded, userOwned);
     }
 }

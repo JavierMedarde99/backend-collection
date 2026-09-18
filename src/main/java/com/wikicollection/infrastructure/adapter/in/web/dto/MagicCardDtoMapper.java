@@ -45,6 +45,7 @@ public class MagicCardDtoMapper {
                 magicCard.getIsFoil(),
                 magicCard.getQuantity(),
                 magicCard.getNotes(),
-                magicCard.getDateAdded());
+                magicCard.getDateAdded(),
+                UserOwnedResponse.from(magicCard.getUserOwned()));
     }
 }

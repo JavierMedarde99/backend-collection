@@ -48,6 +48,7 @@ public class MovieShowDtoMapper {
                 movieShow.getComment(),
                 movieShow.getDateAdded(),
                 movieShow.getDateCompleted(),
-                movieShow.getExternalSource());
+                movieShow.getExternalSource(),
+                UserOwnedResponse.from(movieShow.getUserOwned()));
     }
 }

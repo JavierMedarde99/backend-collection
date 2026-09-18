@@ -56,6 +56,7 @@ public class BoardGameDtoMapper {
                 boardGame.getBggId(),
                 boardGame.getStatus(),
                 boardGame.getNotes(),
-                boardGame.getDateAdded());
+                boardGame.getDateAdded(),
+                UserOwnedResponse.from(boardGame.getUserOwned()));
     }
 }

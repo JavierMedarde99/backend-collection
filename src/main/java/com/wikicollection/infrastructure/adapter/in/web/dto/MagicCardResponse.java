@@ -41,7 +41,8 @@ public record MagicCardResponse(
         Boolean isFoil,
         Integer quantity,
         String notes,
-        LocalDateTime dateAdded) {
+        LocalDateTime dateAdded,
+        UserOwnedResponse userOwned) {
 
 
     public MagicCardResponse withoutPrivate() {
@@ -49,6 +50,6 @@ public record MagicCardResponse(
                 convertedManaCost, type, text, power, toughness, loyalty, colors, colorIdentity,
                 keywords, rarity, setCode, setName, artist, frame, borderColor, layout, legalities,
                 priceUsd, priceEur, imageUrl, imageLargeUrl, artCropUrl, condition, isFoil, quantity,
-                null, dateAdded);
+                null, dateAdded, userOwned);
     }
 }

@@ -17,11 +17,12 @@ public record GameResponse(
         LocalDate dateAdded,
         LocalDate dateCompleted,
         String externalSource,
-        String steamAppId) {
+        String steamAppId,
+        UserOwnedResponse userOwned) {
 
 
     public GameResponse withoutPrivate() {
         return new GameResponse(id, externalId, title, platform, thumbnailUrl, status,
-                null, null, dateAdded, dateCompleted, externalSource, steamAppId);
+                null, null, dateAdded, dateCompleted, externalSource, steamAppId, userOwned);
     }
 }

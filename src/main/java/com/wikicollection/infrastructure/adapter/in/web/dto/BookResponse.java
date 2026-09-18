@@ -18,11 +18,12 @@ public record BookResponse(
         Integer start,
         LocalDate startDate,
         LocalDate endDate,
-        String frontpage) {
+        String frontpage,
+        UserOwnedResponse userOwned) {
 
 
     public BookResponse withoutPrivate() {
         return new BookResponse(id, externalId, title, descripcion, author, pages, type, state,
-                null, null, null, null, frontpage);
+                null, null, null, null, frontpage, userOwned);
     }
 }
