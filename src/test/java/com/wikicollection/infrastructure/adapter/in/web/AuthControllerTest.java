@@ -1,10 +1,15 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -150,6 +155,11 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.accessToken").value("access"));
     }
 
+    private static org.springframework.security.core.Authentication authenticationFor(String id, String username) {
+        var principal = new UserPrincipal(id, username, "hash", "USER");
+        return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+    }
+
     @Test
     void me_returnsUser_whenAuthenticated() throws Exception {
         when(userUseCase.getById("u1")).thenReturn(sampleUser());
@@ -160,6 +170,44 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/v1/auth/me").with(authentication(authentication)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("javi"));
+    }
+
+    @Test
+    void patchMe_updatesProfile() throws Exception {
+        User updated = User.builder().id("u1").username("javi").displayName("Nuevo nombre").build();
+        when(userUseCase.updateProfile(eq("u1"), eq("Nuevo nombre"), isNull(), isNull()))
+                .thenReturn(updated);
+
+        mockMvc.perform(patch("/api/v1/auth/me").with(authentication(authenticationFor("u1", "javi")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"displayName":"Nuevo nombre"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.displayName").value("Nuevo nombre"));
+    }
+
+    @Test
+    void patchMe_returns401_whenAnonymous() throws Exception {
+        mockMvc.perform(patch("/api/v1/auth/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"displayName":"X"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteMe_removesAccount() throws Exception {
+        mockMvc.perform(delete("/api/v1/auth/me").with(authentication(authenticationFor("u1", "javi"))))
+                .andExpect(status().isNoContent());
+        verify(userUseCase).deleteAccount("u1");
+    }
+
+    @Test
+    void deleteMe_returns401_whenAnonymous() throws Exception {
+        mockMvc.perform(delete("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

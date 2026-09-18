@@ -19,4 +19,6 @@ public interface BookRepository {
     Book save(Book book);
 
     void deleteById(String id);
+
+    void updateOwnerName(String ownerId, String ownerName);
 }

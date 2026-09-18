@@ -24,4 +24,6 @@ public interface MovieShowRepository {
     Optional<MovieShow> findByExternalId(String externalId);
 
     long count();
+
+    void updateOwnerName(String ownerId, String ownerName);
 }

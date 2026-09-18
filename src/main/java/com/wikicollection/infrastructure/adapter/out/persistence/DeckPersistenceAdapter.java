@@ -8,17 +8,24 @@ import com.wikicollection.domain.port.out.DeckRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DeckPersistenceAdapter implements DeckRepository {
 
     private final SpringDataDeckRepository springDataDeckRepository;
+    private final MongoTemplate mongoTemplate;
     private final DeckEntityMapper mapper;
 
     public DeckPersistenceAdapter(SpringDataDeckRepository springDataDeckRepository,
+                                  MongoTemplate mongoTemplate,
                                   DeckEntityMapper mapper) {
         this.springDataDeckRepository = springDataDeckRepository;
+        this.mongoTemplate = mongoTemplate;
         this.mapper = mapper;
     }
 
@@ -66,5 +73,13 @@ public class DeckPersistenceAdapter implements DeckRepository {
     @Override
     public Page<Deck> findByNameAndOwnerIdNotIn(String name, Collection<String> ownerIds, Pageable pageable) {
         return springDataDeckRepository.findByNameAndOwnerIdNotIn(name, ownerIds, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public void updateOwnerName(String ownerId, String ownerName) {
+        mongoTemplate.updateMulti(
+                new Query(Criteria.where("ownerId").is(ownerId)),
+                new Update().set("userOwned.ownerName", ownerName),
+                DeckEntity.class);
     }
 }

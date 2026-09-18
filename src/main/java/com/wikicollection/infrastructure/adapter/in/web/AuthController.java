@@ -9,12 +9,15 @@ import com.wikicollection.infrastructure.adapter.in.web.dto.LoginRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.RefreshTokenRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.RegisterRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.UserResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.UpdateProfileRequest;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.wikicollection.application.service.UserPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -91,6 +94,32 @@ public class AuthController {
     })
     public UserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
         return UserResponse.from(userUseCase.getById(principal.getId()));
+    }
+
+    @PatchMapping("/me")
+    @Operation(summary = "Edita el perfil del usuario autenticado")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Perfil actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public UserResponse updateMe(@Valid @RequestBody UpdateProfileRequest request,
+                                 @AuthenticationPrincipal UserPrincipal principal) {
+        return UserResponse.from(userUseCase.updateProfile(
+                principal.getId(), request.displayName(), request.avatarUrl(), request.bio()));
+    }
+
+    @DeleteMapping("/me")
+    @Operation(summary = "Borra la cuenta del usuario autenticado con todos sus elementos")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Cuenta eliminada"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public ResponseEntity<Void> deleteMe(@AuthenticationPrincipal UserPrincipal principal) {
+        userUseCase.deleteAccount(principal.getId());
+        return ResponseEntity.noContent().build();
     }
 
     private AuthResponse toResponse(AuthSession session) {

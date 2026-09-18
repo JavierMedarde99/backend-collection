@@ -12,4 +12,8 @@ public interface UserUseCase {
     AuthSession refresh(String refreshToken);
 
     User getById(String userId);
+
+    User updateProfile(String userId, String displayName, String avatarUrl, String bio);
+
+    void deleteAccount(String userId);
 }

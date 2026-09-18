@@ -17,4 +17,6 @@ public interface GameRepository {
     Game save(Game game);
 
     void deleteById(String id);
+
+    void updateOwnerName(String ownerId, String ownerName);
 }

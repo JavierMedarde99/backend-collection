@@ -28,4 +28,6 @@ public interface DeckRepository {
     Page<Deck> findByNameAndOwnerId(String name, String ownerId, Pageable pageable);
 
     Page<Deck> findByNameAndOwnerIdNotIn(String name, Collection<String> ownerIds, Pageable pageable);
+
+    void updateOwnerName(String ownerId, String ownerName);
 }

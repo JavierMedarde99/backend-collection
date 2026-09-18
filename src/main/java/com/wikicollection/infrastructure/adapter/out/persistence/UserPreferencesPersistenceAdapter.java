@@ -44,6 +44,11 @@ public class UserPreferencesPersistenceAdapter implements UserPreferencesReposit
     }
 
     @Override
+    public void deleteByUserId(String userId) {
+        springDataRepository.deleteByUserId(userId);
+    }
+
+    @Override
     public List<String> findUserIdsWithPrivateCollection(String collectionKey) {
         Query query = new Query(Criteria.where("collectionVisibility." + collectionKey)
                 .is(CollectionVisibility.PRIVATE.name()));
