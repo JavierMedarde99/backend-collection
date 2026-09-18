@@ -20,12 +20,13 @@ public record MovieShowResponse(
         String comment,
         LocalDate dateAdded,
         LocalDate dateCompleted,
-        String externalSource) {
+        String externalSource,
+        UserOwnedResponse userOwned) {
 
 
     public MovieShowResponse withoutPrivate() {
         return new MovieShowResponse(id, externalId, title, overview, releaseDate, posterUrl,
                 backdropUrl, voteAverage, mediaType, status, null, null, dateAdded, dateCompleted,
-                externalSource);
+                externalSource, userOwned);
     }
 }

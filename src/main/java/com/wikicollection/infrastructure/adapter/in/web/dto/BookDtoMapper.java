@@ -44,6 +44,7 @@ public class BookDtoMapper {
                 book.getStart(),
                 book.getStartDate(),
                 book.getEndDate(),
-                book.getFrontpage());
+                book.getFrontpage(),
+                UserOwnedResponse.from(book.getUserOwned()));
     }
 }

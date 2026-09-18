@@ -11,5 +11,6 @@ public record DeckResponse(
         List<String> commanderColors,
         List<DeckCardResponse> cards,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        UserOwnedResponse userOwned) {
 }

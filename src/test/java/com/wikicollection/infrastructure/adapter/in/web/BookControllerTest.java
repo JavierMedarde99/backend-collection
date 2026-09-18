@@ -218,6 +218,21 @@ class BookControllerTest {
     }
 
     @Test
+    void getBook_showsOwner_everyone() throws Exception {
+        Book book = sampleBook();
+        book.setComment("muy personal");
+        book.setUserOwned(com.wikicollection.domain.model.UserOwned.builder()
+                .ownerId("u1").ownerName("Javi").build());
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+
+        mockMvc.perform(get("/api/v1/books/b1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userOwned.ownerId").value("u1"))
+                .andExpect(jsonPath("$.userOwned.ownerName").value("Javi"))
+                .andExpect(jsonPath("$.comment").value(Matchers.nullValue()));
+    }
+
+    @Test
     void getBook_returns404_whenMissing() throws Exception {
         when(bookRepository.findById("nope")).thenReturn(Optional.empty());
 

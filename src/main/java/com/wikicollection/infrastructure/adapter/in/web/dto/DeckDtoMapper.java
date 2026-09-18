@@ -38,7 +38,8 @@ public class DeckDtoMapper {
                 deck.getCommanderColors(),
                 cards,
                 deck.getCreatedAt(),
-                deck.getUpdatedAt());
+                deck.getUpdatedAt(),
+                UserOwnedResponse.from(deck.getUserOwned()));
     }
 
     public DeckStatusResponse toStatusResponse(DeckStatusReport report) {
