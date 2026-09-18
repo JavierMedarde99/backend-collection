@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -80,5 +81,13 @@ public class GamePersistenceAdapter implements GameRepository {
     @Override
     public void deleteById(String id) {
         springDataGameRepository.deleteById(id);
+    }
+
+    @Override
+    public void updateOwnerName(String ownerId, String ownerName) {
+        mongoTemplate.updateMulti(
+                new Query(Criteria.where("ownerId").is(ownerId)),
+                new Update().set("userOwned.ownerName", ownerName),
+                GameEntity.class);
     }
 }

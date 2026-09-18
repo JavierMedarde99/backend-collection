@@ -14,4 +14,6 @@ public interface UserPreferencesRepository {
     boolean existsByUserId(String userId);
 
     List<String> findUserIdsWithPrivateCollection(String collectionKey);
+
+    void deleteByUserId(String userId);
 }

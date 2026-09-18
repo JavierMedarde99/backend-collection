@@ -17,4 +17,6 @@ public interface BoardGameRepository {
     BoardGame save(BoardGame boardGame);
 
     void deleteById(String id);
+
+    void updateOwnerName(String ownerId, String ownerName);
 }

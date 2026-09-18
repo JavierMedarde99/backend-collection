@@ -54,4 +54,9 @@ public class UserPersistenceAdapter implements UserRepository {
     public boolean existsByEmail(String email) {
         return springDataUserRepository.existsByEmail(email);
     }
+
+    @Override
+    public void deleteById(String userId) {
+        springDataUserRepository.deleteById(userId);
+    }
 }

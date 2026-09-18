@@ -9,4 +9,6 @@ public interface SpringDataUserPreferencesRepository extends MongoRepository<Use
     Optional<UserPreferencesEntity> findByUserId(String userId);
 
     boolean existsByUserId(String userId);
+
+    void deleteByUserId(String userId);
 }

@@ -17,4 +17,6 @@ public interface MagicCardRepository {
     MagicCard save(MagicCard magicCard);
 
     void deleteById(String id);
+
+    void updateOwnerName(String ownerId, String ownerName);
 }
