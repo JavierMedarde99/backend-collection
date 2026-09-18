@@ -33,6 +33,7 @@ class OwnerResolverTest {
 
         assertThat(owned.getOwnerId()).isEqualTo("u1");
         assertThat(owned.getOwnerName()).isEqualTo("Javi");
+        assertThat(owned.getUsername()).isEqualTo("javi");
     }
 
     @Test

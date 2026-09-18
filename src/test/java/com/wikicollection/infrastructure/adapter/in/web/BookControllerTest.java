@@ -222,13 +222,14 @@ class BookControllerTest {
         Book book = sampleBook();
         book.setComment("muy personal");
         book.setUserOwned(com.wikicollection.domain.model.UserOwned.builder()
-                .ownerId("u1").ownerName("Javi").build());
+                .ownerId("u1").ownerName("Javi").username("javi").build());
         when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
 
         mockMvc.perform(get("/api/v1/books/b1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userOwned.ownerId").value("u1"))
                 .andExpect(jsonPath("$.userOwned.ownerName").value("Javi"))
+                .andExpect(jsonPath("$.userOwned.username").value("javi"))
                 .andExpect(jsonPath("$.comment").value(Matchers.nullValue()));
     }
 

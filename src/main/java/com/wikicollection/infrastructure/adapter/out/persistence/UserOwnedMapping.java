@@ -14,6 +14,7 @@ final class UserOwnedMapping {
         return UserOwnedEntity.builder()
                 .ownerId(owned.getOwnerId())
                 .ownerName(owned.getOwnerName())
+                .username(owned.getUsername())
                 .build();
     }
 
@@ -24,6 +25,7 @@ final class UserOwnedMapping {
         return UserOwned.builder()
                 .ownerId(entity.getOwnerId())
                 .ownerName(entity.getOwnerName())
+                .username(entity.getUsername())
                 .build();
     }
 }
