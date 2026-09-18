@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -12,11 +13,13 @@ import java.util.Optional;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.domain.model.MovieMediaType;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.model.MovieStatus;
 import com.wikicollection.domain.port.out.MovieShowRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +44,9 @@ class MovieShowServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     @InjectMocks
     private MovieShowService movieShowService;
 
@@ -53,6 +59,13 @@ class MovieShowServiceTest {
                 .status(MovieStatus.WATCHED)
                 .externalSource("TMDB")
                 .build();
+    }
+
+    @BeforeEach
+    void stubOwner() {
+        lenient().when(ownerResolver.resolveOwner(any()))
+                .thenAnswer(invocation -> UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test
@@ -90,6 +103,7 @@ class MovieShowServiceTest {
         when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         MovieShow result = movieShowService.save(show, "u1");
+        assertThat(result.getUserOwned().getOwnerName()).isEqualTo("Javi");
 
         assertThat(result).isSameAs(show);
     }

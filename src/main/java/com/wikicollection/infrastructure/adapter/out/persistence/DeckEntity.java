@@ -27,6 +27,7 @@ public class DeckEntity {
     private String id;
     @Indexed
     private String ownerId;
+    private UserOwnedEntity userOwned;
 
     private String name;
 

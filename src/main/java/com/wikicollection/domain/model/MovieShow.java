@@ -20,6 +20,7 @@ public class MovieShow {
 
     private String id;
     private String ownerId;
+    private UserOwned userOwned;
     private String externalId;
     private String title;
     private String overview;

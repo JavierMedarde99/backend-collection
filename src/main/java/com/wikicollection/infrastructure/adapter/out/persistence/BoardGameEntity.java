@@ -30,6 +30,7 @@ public class BoardGameEntity {
     private String id;
     @Indexed
     private String ownerId;
+    private UserOwnedEntity userOwned;
 
     private String title;
 

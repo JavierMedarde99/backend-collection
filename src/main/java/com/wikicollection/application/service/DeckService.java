@@ -35,17 +35,21 @@ public class DeckService implements DeckUseCase {
     private final OwnershipValidator ownershipValidator;
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public DeckService(DeckRepository deckRepository,
                        ExternalMagicCardCatalogClient catalogClient,
                        MagicCardRepository magicCardRepository,
                        DeckValidator validator,
                        OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.deckRepository = deckRepository;
         this.catalogClient = catalogClient;
         this.magicCardRepository = magicCardRepository;
         this.validator = validator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -86,6 +90,7 @@ public class DeckService implements DeckUseCase {
     @Override
     public Deck save(Deck deck, String ownerId) {
         deck.setOwnerId(ownerId);
+        deck.setUserOwned(ownerResolver.resolveOwner(ownerId));
         requireName(deck);
         deck.setCreatedAt(deck.getCreatedAt() != null ? deck.getCreatedAt() : LocalDateTime.now());
         deck.setUpdatedAt(LocalDateTime.now());

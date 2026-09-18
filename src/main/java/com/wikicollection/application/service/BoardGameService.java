@@ -19,11 +19,15 @@ public class BoardGameService implements BoardGameUseCase {
 
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public BoardGameService(BoardGameRepository boardGameRepository,
                               OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.boardGameRepository = boardGameRepository;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -47,6 +51,7 @@ public class BoardGameService implements BoardGameUseCase {
     @Override
     public BoardGame save(BoardGame boardGame, String ownerId) {
         boardGame.setOwnerId(ownerId);
+        boardGame.setUserOwned(ownerResolver.resolveOwner(ownerId));
         return boardGameRepository.save(boardGame);
     }
 

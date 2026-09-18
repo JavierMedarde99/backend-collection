@@ -22,13 +22,17 @@ public class GameService implements GameUseCase {
 
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator,
                        OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.gameRepository = gameRepository;
         this.steamCatalogueClient = steamCatalogueClient;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -52,6 +56,7 @@ public class GameService implements GameUseCase {
     @Override
     public Game save(Game game, boolean obtainPlatinum, String ownerId) {
         game.setOwnerId(ownerId);
+        game.setUserOwned(ownerResolver.resolveOwner(ownerId));
         dateRangeValidator.validate(game.getDateAdded(), game.getDateCompleted());
         resolveSteamAppId(game, obtainPlatinum);
         return gameRepository.save(game);

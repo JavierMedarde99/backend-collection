@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -13,12 +14,14 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.SteamCatalogueClient;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +48,9 @@ class GameServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     @InjectMocks
     private GameService gameService;
 
@@ -54,6 +60,13 @@ class GameServiceTest {
                 .platform(GamePlatform.PC)
                 .status(GameStatus.PLAYING)
                 .build();
+    }
+
+    @BeforeEach
+    void stubOwner() {
+        lenient().when(ownerResolver.resolveOwner(any()))
+                .thenAnswer(invocation -> UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test
@@ -94,6 +107,7 @@ class GameServiceTest {
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Game result = gameService.save(game, false, "u1");
+        assertThat(result.getUserOwned().getOwnerName()).isEqualTo("Javi");
 
         assertThat(result).isSameAs(game);
         verify(gameRepository).save(game);

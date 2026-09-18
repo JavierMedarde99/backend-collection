@@ -2,7 +2,9 @@ package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -10,10 +12,12 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.MagicCardNotFoundException;
 import com.wikicollection.domain.model.MagicCard;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,6 +41,9 @@ class MagicCardServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     @InjectMocks
     private MagicCardService magicCardService;
 
@@ -54,6 +61,13 @@ class MagicCardServiceTest {
         card.setId(id);
         card.setName(name);
         return card;
+    }
+
+    @BeforeEach
+    void stubOwner() {
+        lenient().when(ownerResolver.resolveOwner(any()))
+                .thenAnswer(invocation -> UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test
@@ -106,6 +120,7 @@ class MagicCardServiceTest {
         when(magicCardRepository.save(fetched)).thenReturn(saved);
 
         MagicCard result = magicCardService.addFromScryfall("sf-1", 1, "u1");
+        assertThat(fetched.getUserOwned().getOwnerName()).isEqualTo("Javi");
 
         assertThat(result).isSameAs(saved);
         assertThat(result.getColorIdentity()).containsExactly("R");

@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,6 +26,7 @@ import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.infrastructure.adapter.out.google.GoogleBooksClient;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,9 @@ import org.springframework.web.client.RestClientResponseException;
 @SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})
 @AutoConfigureMockMvc
 class BookControllerTest {
+
+    @MockitoBean
+    private com.wikicollection.application.service.OwnerResolver ownerResolver;
 
     @Autowired
     private MockMvc mockMvc;
@@ -65,6 +70,13 @@ class BookControllerTest {
                 .state(BookState.TO_READ)
                 .type(BookType.NOVEL)
                 .build();
+    }
+
+    @BeforeEach
+    void stubOwnerResolver() {
+        lenient().when(ownerResolver.resolveOwner(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> com.wikicollection.domain.model.UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test

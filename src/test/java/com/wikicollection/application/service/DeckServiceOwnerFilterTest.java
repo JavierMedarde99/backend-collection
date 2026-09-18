@@ -19,6 +19,7 @@ import com.wikicollection.domain.port.out.DeckRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,7 +38,7 @@ class DeckServiceOwnerFilterTest {
 
     private DeckService service() {
         return new DeckService(deckRepository, null, null, new DeckValidator(),
-                ownershipValidator, new OwnerScopeResolver(preferencesUseCase));
+                ownershipValidator, new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test

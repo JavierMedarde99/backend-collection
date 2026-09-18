@@ -23,13 +23,17 @@ public class MagicCardService implements MagicCardUseCase {
 
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public MagicCardService(MagicCardRepository magicCardRepository,
                             ExternalMagicCardCatalogClient catalogClient,
                             OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.magicCardRepository = magicCardRepository;
         this.catalogClient = catalogClient;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -66,6 +70,7 @@ public class MagicCardService implements MagicCardUseCase {
         }
         fetched.setQuantity(quantity);
         fetched.setOwnerId(ownerId);
+        fetched.setUserOwned(ownerResolver.resolveOwner(ownerId));
         return magicCardRepository.save(fetched);
     }
 

@@ -21,6 +21,7 @@ public class MagicCard {
 
     private String id;
     private String ownerId;
+    private UserOwned userOwned;
     private String scryfallId;
     private String oracleId;
     private String name;

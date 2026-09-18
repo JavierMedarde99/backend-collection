@@ -23,12 +23,16 @@ public class BookService implements BookUseCase {
 
     private final OwnerScopeResolver ownerScopeResolver;
 
+    private final OwnerResolver ownerResolver;
+
     public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator,
                        OwnershipValidator ownershipValidator,
-                       OwnerScopeResolver ownerScopeResolver) {
+                       OwnerScopeResolver ownerScopeResolver,
+                       OwnerResolver ownerResolver) {
         this.bookRepository = bookRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
     }
 
@@ -53,6 +57,7 @@ public class BookService implements BookUseCase {
     @Transactional
     public Book save(Book book, String ownerId) {
         book.setOwnerId(ownerId);
+        book.setUserOwned(ownerResolver.resolveOwner(ownerId));
         checkExternalIdUnique(book.getExternalId(), null);
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return saveOrConflict(book);

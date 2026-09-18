@@ -20,6 +20,7 @@ public class Deck {
 
     private String id;
     private String ownerId;
+    private UserOwned userOwned;
     private String name;
     private String description;
     private String commander;

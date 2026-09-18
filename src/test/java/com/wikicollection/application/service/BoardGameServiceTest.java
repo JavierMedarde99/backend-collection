@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -12,10 +13,12 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.domain.model.BoardGame;
+import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameStatus;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +38,9 @@ class BoardGameServiceTest {
     @Mock
     private OwnershipValidator ownershipValidator;
 
+    @Mock
+    private OwnerResolver ownerResolver;
+
     @InjectMocks
     private BoardGameService boardGameService;
 
@@ -50,6 +56,13 @@ class BoardGameServiceTest {
         game.setId(id);
         game.setTitle(title);
         return game;
+    }
+
+    @BeforeEach
+    void stubOwner() {
+        lenient().when(ownerResolver.resolveOwner(any()))
+                .thenAnswer(invocation -> UserOwned.builder()
+                        .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
     }
 
     @Test
@@ -89,6 +102,7 @@ class BoardGameServiceTest {
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BoardGame result = boardGameService.save(game, "u1");
+        assertThat(result.getUserOwned().getOwnerName()).isEqualTo("Javi");
 
         assertThat(result).isSameAs(game);
         verify(boardGameRepository).save(game);

@@ -21,6 +21,7 @@ public class BoardGame {
 
     private String id;
     private String ownerId;
+    private UserOwned userOwned;
     private String title;
     private String description;
     private Integer yearPublished;
