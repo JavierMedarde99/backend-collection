@@ -422,4 +422,14 @@ class BookControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
+
+    @Test
+    void cors_allowsVercelFrontend() throws Exception {
+        mockMvc.perform(options("/api/v1/books")
+                        .header("Origin", "https://frontend-collection-eta.vercel.app")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin",
+                        "https://frontend-collection-eta.vercel.app"));
+    }
 }
