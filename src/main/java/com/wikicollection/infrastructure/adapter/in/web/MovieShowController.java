@@ -3,6 +3,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchResult;
@@ -82,7 +83,7 @@ public class MovieShowController {
         MovieSearchCriteria criteria = new MovieSearchCriteria(name, status, mediaType, null, null);
         return movieShowUseCase.search(criteria, pageable, owner, viewerId).map(movieShow -> {
             var response = mapper.toResponse(movieShow);
-            return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(movieShow.getOwnerId(), CollectionType.MOVIESHOWS) ? response : response.withoutPrivate();
         });
     }
 
@@ -96,7 +97,7 @@ public class MovieShowController {
             @Parameter(description = "Identificador") @PathVariable String id) {
         var movieShow = movieShowUseCase.findById(id);
         var response = mapper.toResponse(movieShow);
-        return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
+        return visibility.canSeePrivate(movieShow.getOwnerId(), CollectionType.MOVIESHOWS) ? response : response.withoutPrivate();
     }
 
     @PostMapping

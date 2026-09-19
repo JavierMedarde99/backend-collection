@@ -99,7 +99,7 @@ public class UserProfileController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size) {
         return profileUseCase.getPublicBooks(username, PageRequest.of(page, size)).map(book -> {
             var response = bookMapper.toResponse(book);
-            return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(book.getOwnerId(), CollectionType.BOOKS) ? response : response.withoutPrivate();
         });
     }
 
@@ -111,7 +111,7 @@ public class UserProfileController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size) {
         return profileUseCase.getPublicGames(username, PageRequest.of(page, size)).map(game -> {
             var response = gameMapper.toResponse(game);
-            return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
         });
     }
 
@@ -123,7 +123,7 @@ public class UserProfileController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size) {
         return profileUseCase.getPublicBoardGames(username, PageRequest.of(page, size)).map(boardGame -> {
             var response = boardGameMapper.toResponse(boardGame);
-            return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(boardGame.getOwnerId(), CollectionType.BOARDGAMES) ? response : response.withoutPrivate();
         });
     }
 
@@ -135,7 +135,7 @@ public class UserProfileController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size) {
         return profileUseCase.getPublicMagicCards(username, PageRequest.of(page, size)).map(card -> {
             var response = magicCardMapper.toResponse(card);
-            return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(card.getOwnerId(), CollectionType.MAGIC) ? response : response.withoutPrivate();
         });
     }
 
@@ -157,7 +157,7 @@ public class UserProfileController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size) {
         return profileUseCase.getPublicMovieShows(username, PageRequest.of(page, size)).map(movieShow -> {
             var response = movieShowMapper.toResponse(movieShow);
-            return visibility.canSeePrivate(movieShow.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(movieShow.getOwnerId(), CollectionType.MOVIESHOWS) ? response : response.withoutPrivate();
         });
     }
 }

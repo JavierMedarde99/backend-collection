@@ -20,6 +20,7 @@ import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.infrastructure.adapter.out.bgg.xml.BggXmlClient;
 
@@ -52,6 +53,9 @@ class BoardGameControllerTest {
 
     @MockitoBean
     private BggXmlClient bggXmlClient;
+
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     private BoardGame sampleGame() {
         return BoardGame.builder()
@@ -138,6 +142,8 @@ class BoardGameControllerTest {
         game.setNotes("privado");
         game.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOARDGAMES))
+                .thenReturn(List.of("u1"));
         mockMvc.perform(get("/api/v1/boardgames/bg1").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notes").value(Matchers.nullValue()))

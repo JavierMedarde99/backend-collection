@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.DeckSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardSearchUseCase;
@@ -80,7 +81,7 @@ public class MagicCardController {
         MagicCardSearchCriteria criteria = new MagicCardSearchCriteria(name, rarity, color, type, null, null);
         return magicCardUseCase.search(criteria, pageable, owner, viewerId).map(card -> {
             var response = mapper.toResponse(card);
-            return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(card.getOwnerId(), CollectionType.MAGIC) ? response : response.withoutPrivate();
         });
     }
 
@@ -94,7 +95,7 @@ public class MagicCardController {
             @Parameter(description = "Identificador de la carta") @PathVariable String id) {
         var card = magicCardUseCase.findById(id);
         var response = mapper.toResponse(card);
-        return visibility.canSeePrivate(card.getOwnerId()) ? response : response.withoutPrivate();
+        return visibility.canSeePrivate(card.getOwnerId(), CollectionType.MAGIC) ? response : response.withoutPrivate();
     }
 
     @PostMapping("/scryfall/{scryfallId}")

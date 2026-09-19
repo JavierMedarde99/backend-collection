@@ -3,6 +3,7 @@ package com.wikicollection.infrastructure.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
@@ -90,7 +91,7 @@ public class GameController {
         GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, null, null);
         return gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
             var response = mapper.toResponse(game);
-            return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
         });
     }
 
@@ -104,7 +105,7 @@ public class GameController {
             @Parameter(description = "Identificador del juego") @PathVariable String id) {
         var game = gameUseCase.findById(id);
         var response = mapper.toResponse(game);
-        return visibility.canSeePrivate(game.getOwnerId()) ? response : response.withoutPrivate();
+        return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
     }
 
     @PostMapping
