@@ -19,6 +19,7 @@ public class UserEntityMapper {
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
                 .bio(user.getBio())
+                .steamId(user.getSteamId())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
@@ -36,6 +37,7 @@ public class UserEntityMapper {
                 .displayName(entity.getDisplayName())
                 .avatarUrl(entity.getAvatarUrl())
                 .bio(entity.getBio())
+                .steamId(entity.getSteamId())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

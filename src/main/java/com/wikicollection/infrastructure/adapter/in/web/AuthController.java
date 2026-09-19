@@ -59,7 +59,7 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, UriComponentsBuilder ucb) {
         AuthSession session = userUseCase.register(
-                request.username(), request.email(), request.password(), request.displayName());
+                request.username(), request.email(), request.password(), request.displayName(), request.steamId());
         URI location = ucb.path("/api/v1/auth/me").build().toUri();
         return ResponseEntity.created(location).body(toResponse(session));
     }
@@ -107,7 +107,7 @@ public class AuthController {
     public UserResponse updateMe(@Valid @RequestBody UpdateProfileRequest request,
                                  @AuthenticationPrincipal UserPrincipal principal) {
         return UserResponse.from(userUseCase.updateProfile(
-                principal.getId(), request.displayName(), request.avatarUrl(), request.bio()));
+                principal.getId(), request.displayName(), request.avatarUrl(), request.bio(), request.steamId()));
     }
 
     @DeleteMapping("/me")

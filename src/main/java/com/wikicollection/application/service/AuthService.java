@@ -70,7 +70,7 @@ public class AuthService implements UserUseCase {
     }
 
     @Override
-    public AuthSession register(String username, String email, String password, String displayName) {
+    public AuthSession register(String username, String email, String password, String displayName, String steamId) {
         if (userRepository.existsByUsername(username)) {
             throw new UserAlreadyExistsException("El username ya está en uso: " + username);
         }
@@ -82,6 +82,7 @@ public class AuthService implements UserUseCase {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .displayName(displayName)
+                .steamId(steamId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -117,7 +118,7 @@ public class AuthService implements UserUseCase {
     }
 
     @Override
-    public User updateProfile(String userId, String displayName, String avatarUrl, String bio) {
+    public User updateProfile(String userId, String displayName, String avatarUrl, String bio, String steamId) {
         User user = getById(userId);
         if (displayName != null) {
             user.setDisplayName(displayName);
@@ -127,6 +128,9 @@ public class AuthService implements UserUseCase {
         }
         if (bio != null) {
             user.setBio(bio);
+        }
+        if (steamId != null) {
+            user.setSteamId(steamId.isBlank() ? null : steamId);
         }
         user.setUpdatedAt(LocalDateTime.now());
         User saved = userRepository.save(user);

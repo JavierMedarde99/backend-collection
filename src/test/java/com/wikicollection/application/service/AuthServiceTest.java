@@ -63,7 +63,7 @@ class AuthServiceTest {
             return saved;
         });
 
-        AuthSession session = authService.register("javi", "javi@local.dev", "pass123", "Javi");
+        AuthSession session = authService.register("javi", "javi@local.dev", "pass123", "Javi", null);
 
         assertThat(session.tokens().accessToken()).isNotBlank();
         assertThat(session.tokens().refreshToken()).isNotBlank();
@@ -75,19 +75,71 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_persistsSteamId() {
+        when(userRepository.existsByUsername("javi")).thenReturn(false);
+        when(userRepository.existsByEmail("javi@local.dev")).thenReturn(false);
+        when(passwordEncoder.encode("pass123")).thenReturn("hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId("u1");
+            return saved;
+        });
+
+        AuthSession session = authService.register("javi", "javi@local.dev", "pass123", "Javi", "76561198000000000");
+
+        assertThat(session.user().getSteamId()).isEqualTo("76561198000000000");
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getSteamId()).isEqualTo("76561198000000000");
+    }
+
+    @Test
     void register_throwsConflict_whenUsernameExists() {
         when(userRepository.existsByUsername("javi")).thenReturn(true);
 
-        assertThatThrownBy(() -> authService.register("javi", "javi@local.dev", "pass123", "Javi"))
+        assertThatThrownBy(() -> authService.register("javi", "javi@local.dev", "pass123", "Javi", null))
                 .isInstanceOf(UserAlreadyExistsException.class);
     }
 
+    @Test
+    void updateProfile_setsSteamId() {
+        User user = User.builder().id("u1").username("javi").build();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = authService.updateProfile("u1", null, null, null, "76561198000000000");
+
+        assertThat(updated.getSteamId()).isEqualTo("76561198000000000");
+    }
+
+    @Test
+    void updateProfile_clearsSteamId_whenBlank() {
+        User user = User.builder().id("u1").username("javi").steamId("76561198000000000").build();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = authService.updateProfile("u1", null, null, null, "");
+
+        assertThat(updated.getSteamId()).isNull();
+    }
+
+    @Test
+    void updateProfile_keepsSteamId_whenNull() {
+        User user = User.builder().id("u1").username("javi").steamId("76561198000000000").build();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = authService.updateProfile("u1", null, "http://avatar", null, null);
+
+        assertThat(updated.getSteamId()).isEqualTo("76561198000000000");
+        assertThat(updated.getAvatarUrl()).isEqualTo("http://avatar");
+    }
     @Test
     void register_throwsConflict_whenEmailExists() {
         when(userRepository.existsByUsername("javi")).thenReturn(false);
         when(userRepository.existsByEmail("javi@local.dev")).thenReturn(true);
 
-        assertThatThrownBy(() -> authService.register("javi", "javi@local.dev", "pass123", "Javi"))
+        assertThatThrownBy(() -> authService.register("javi", "javi@local.dev", "pass123", "Javi", null))
                 .isInstanceOf(EmailAlreadyExistsException.class);
     }
 

@@ -5,7 +5,7 @@ import com.wikicollection.domain.model.User;
 
 public interface UserUseCase {
 
-    AuthSession register(String username, String email, String password, String displayName);
+    AuthSession register(String username, String email, String password, String displayName, String steamId);
 
     AuthSession login(String username, String password);
 
@@ -13,7 +13,7 @@ public interface UserUseCase {
 
     User getById(String userId);
 
-    User updateProfile(String userId, String displayName, String avatarUrl, String bio);
+    User updateProfile(String userId, String displayName, String avatarUrl, String bio, String steamId);
 
     void deleteAccount(String userId);
 }

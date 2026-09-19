@@ -384,8 +384,23 @@ class GameControllerTest {
 
     @Test
     void getAchievements_returns400_whenSteamIdMissing() throws Exception {
+        when(gameAchievementsUseCase.getAchievements("g1", null))
+                .thenThrow(new IllegalArgumentException("El parámetro steamId es obligatorio"));
+
         mockMvc.perform(get("/api/v1/games/g1/achievements"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAchievements_usesOwnerSteamId_whenSteamIdMissing() throws Exception {
+        when(gameAchievementsUseCase.getAchievements("g1", null)).thenReturn(new AchievementsSummary(
+                List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", "http://icon")),
+                1, 1, 100.0));
+
+        mockMvc.perform(get("/api/v1/games/g1/achievements"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.achievements[0].name").value("El nacimiento"))
+                .andExpect(jsonPath("$.totalAchieved").value(1));
     }
 
     @Test
