@@ -10,6 +10,7 @@ public record UserResponse(
         String displayName,
         String avatarUrl,
         String bio,
+        String steamId,
         LocalDateTime createdAt) {
 
     public static UserResponse from(User user) {
@@ -19,6 +20,7 @@ public record UserResponse(
         return new UserResponse(
                 user.getId(), user.getUsername(),
                 user.getDisplayName(), user.getAvatarUrl(), user.getBio(),
+                user.getSteamId(),
                 user.getCreatedAt());
     }
 }

@@ -53,7 +53,7 @@ class AuthControllerTest {
 
     @Test
     void register_returns201_withTokens() throws Exception {
-        when(userUseCase.register("javi", "javi@local.dev", "Pass1234!", "Javi"))
+        when(userUseCase.register(eq("javi"), eq("javi@local.dev"), eq("Pass1234!"), eq("Javi"), isNull()))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -69,7 +69,7 @@ class AuthControllerTest {
 
     @Test
     void register_responseOmitsPrivateUserFields() throws Exception {
-        when(userUseCase.register("javi", "javi@local.dev", "Pass1234!", "Javi"))
+        when(userUseCase.register(eq("javi"), eq("javi@local.dev"), eq("Pass1234!"), eq("Javi"), isNull()))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -106,7 +106,7 @@ class AuthControllerTest {
 
     @Test
     void register_returns409_whenUsernameExists() throws Exception {
-        when(userUseCase.register(any(), any(), any(), any()))
+        when(userUseCase.register(any(), any(), any(), any(), any()))
                 .thenThrow(new UserAlreadyExistsException("en uso"));
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -115,6 +115,32 @@ class AuthControllerTest {
                                 {"username":"javi","email":"javi@local.dev","password":"Pass1234!"}
                                 """))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void register_returns201_withSteamId() throws Exception {
+        User userWithSteam = User.builder().id("u1").username("javi")
+                .email("javi@local.dev").steamId("76561198000000000").build();
+        when(userUseCase.register("javi", "javi@local.dev", "Pass1234!", "Javi", "76561198000000000"))
+                .thenReturn(new AuthSession(userWithSteam, new AuthTokens("access", "refresh")));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"javi","email":"javi@local.dev","password":"Pass1234!","displayName":"Javi","steamId":"76561198000000000"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.steamId").value("76561198000000000"));
+    }
+
+    @Test
+    void register_returns400_whenInvalidSteamId() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"javi","email":"javi@local.dev","password":"Pass1234!","steamId":"no-es-steam-id"}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -175,7 +201,7 @@ class AuthControllerTest {
     @Test
     void patchMe_updatesProfile() throws Exception {
         User updated = User.builder().id("u1").username("javi").displayName("Nuevo nombre").build();
-        when(userUseCase.updateProfile(eq("u1"), eq("Nuevo nombre"), isNull(), isNull()))
+        when(userUseCase.updateProfile(eq("u1"), eq("Nuevo nombre"), isNull(), isNull(), isNull()))
                 .thenReturn(updated);
 
         mockMvc.perform(patch("/api/v1/auth/me").with(authentication(authenticationFor("u1", "javi")))
@@ -185,6 +211,31 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value("Nuevo nombre"));
+    }
+
+    @Test
+    void patchMe_updatesSteamId() throws Exception {
+        User updated = User.builder().id("u1").username("javi").steamId("76561198000000000").build();
+        when(userUseCase.updateProfile(eq("u1"), isNull(), isNull(), isNull(), eq("76561198000000000")))
+                .thenReturn(updated);
+
+        mockMvc.perform(patch("/api/v1/auth/me").with(authentication(authenticationFor("u1", "javi")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"steamId":"76561198000000000"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.steamId").value("76561198000000000"));
+    }
+
+    @Test
+    void patchMe_returns400_whenInvalidSteamId() throws Exception {
+        mockMvc.perform(patch("/api/v1/auth/me").with(authentication(authenticationFor("u1", "javi")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"steamId":"abc"}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

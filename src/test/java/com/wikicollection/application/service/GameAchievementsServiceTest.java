@@ -11,8 +11,10 @@ import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.SteamAchievement;
+import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.SteamCatalogueClient;
+import com.wikicollection.domain.port.out.UserRepository;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +31,9 @@ class GameAchievementsServiceTest {
     @Mock
     private SteamCatalogueClient steamCatalogueClient;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private GameAchievementsService gameAchievementsService;
 
@@ -37,6 +42,7 @@ class GameAchievementsServiceTest {
                 .id("g1")
                 .title("Half-Life")
                 .steamAppId("70")
+                .ownerId("u1")
                 .build();
     }
 
@@ -115,7 +121,47 @@ class GameAchievementsServiceTest {
 
     @Test
     void getAchievements_throwsBadRequest_whenSteamIdBlank() {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGameLinkedToSteam()));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(User.builder().id("u1").username("javi").build()));
+
         assertThatThrownBy(() -> gameAchievementsService.getAchievements("g1", " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("steamId");
+    }
+
+    @Test
+    void getAchievements_usesOwnerSteamId_whenSteamIdNull() {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGameLinkedToSteam()));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(
+                User.builder().id("u1").username("javi").steamId("76561198000000000").build()));
+        when(steamCatalogueClient.getGameSchema(70L)).thenReturn(List.of());
+        when(steamCatalogueClient.getPlayerAchievements(70L, "76561198000000000"))
+                .thenReturn(List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", null)));
+
+        AchievementsSummary result = gameAchievementsService.getAchievements("g1", null);
+
+        assertThat(result.totalAchievements()).isEqualTo(1);
+        assertThat(result.totalAchieved()).isEqualTo(1);
+    }
+
+    @Test
+    void getAchievements_prefersExplicitSteamId_whenProvided() {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGameLinkedToSteam()));
+        when(steamCatalogueClient.getGameSchema(70L)).thenReturn(List.of());
+        when(steamCatalogueClient.getPlayerAchievements(70L, "7656"))
+                .thenReturn(List.of(new SteamAchievement("ACH_BORN", true, "El nacimiento", "Comienza la aventura.", null)));
+
+        AchievementsSummary result = gameAchievementsService.getAchievements("g1", "7656");
+
+        assertThat(result.totalAchievements()).isEqualTo(1);
+    }
+
+    @Test
+    void getAchievements_throwsBadRequest_whenNoSteamIdAndOwnerHasNone() {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGameLinkedToSteam()));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(User.builder().id("u1").username("javi").build()));
+
+        assertThatThrownBy(() -> gameAchievementsService.getAchievements("g1", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("steamId");
     }

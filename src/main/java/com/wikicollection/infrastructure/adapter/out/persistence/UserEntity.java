@@ -37,6 +37,7 @@ public class UserEntity {
     private String displayName;
     private String avatarUrl;
     private String bio;
+    private String steamId;
 
     @CreatedDate
     private LocalDateTime createdAt;

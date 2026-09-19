@@ -94,7 +94,7 @@ class AuthServiceCreatePreferencesTest {
         when(preferencesRepository.save(any(UserPreferences.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        authService.register("javi", "javi@local.dev", "pass123", "Javi");
+        authService.register("javi", "javi@local.dev", "pass123", "Javi", null);
 
         ArgumentCaptor<UserPreferences> captor = ArgumentCaptor.forClass(UserPreferences.class);
         verify(preferencesRepository).save(captor.capture());
@@ -110,7 +110,7 @@ class AuthServiceCreatePreferencesTest {
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User updated = authService.updateProfile("u1", "Nuevo", null, "bio nueva");
+        User updated = authService.updateProfile("u1", "Nuevo", null, "bio nueva", null);
 
         assertThat(updated.getDisplayName()).isEqualTo("Nuevo");
         assertThat(updated.getBio()).isEqualTo("bio nueva");
@@ -126,7 +126,7 @@ class AuthServiceCreatePreferencesTest {
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        authService.updateProfile("u1", null, "http://avatar", null);
+        authService.updateProfile("u1", null, "http://avatar", null, null);
 
         verify(bookRepository, never()).updateOwnerName(any(), any());
     }
@@ -178,7 +178,7 @@ class AuthServiceCreatePreferencesTest {
         });
         when(preferencesRepository.existsByUserId("u1")).thenReturn(true);
 
-        authService.register("javi", "javi@local.dev", "pass123", "Javi");
+        authService.register("javi", "javi@local.dev", "pass123", "Javi", null);
 
         verify(preferencesRepository, never()).save(any(UserPreferences.class));
     }

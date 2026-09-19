@@ -147,15 +147,15 @@ public class GameController {
     }
 
     @GetMapping("/{id}/achievements")
-    @Operation(summary = "Obtiene los logros de un juego de Steam", description = "Combina el esquema de logros del juego con el progreso del jugador indicado por steamaId.")
+    @Operation(summary = "Obtiene los logros de un juego de Steam", description = "Combina el esquema de logros del juego con el progreso del jugador. Si no se indica steamId, usa el SteamId guardado del dueño del juego.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Logros obtenidos"),
-            @ApiResponse(responseCode = "400", description = "Falta steamId o el juego no está vinculado a Steam"),
+            @ApiResponse(responseCode = "400", description = "Falta steamId (ni en la petición ni en el dueño) o el juego no está vinculado a Steam"),
             @ApiResponse(responseCode = "404", description = "Juego no encontrado")
     })
     public AchievementsResponse getAchievements(
             @Parameter(description = "Identificador del juego") @PathVariable String id,
-            @Parameter(description = "SteamID del jugador") @RequestParam("steamId") String steamId) {
+            @Parameter(description = "SteamID del jugador (opcional si el dueño tiene SteamId guardado)") @RequestParam(value = "steamId", required = false) String steamId) {
         var summary = gameAchievementsUseCase.getAchievements(id, steamId);
         List<GameAchievementResponse> mapped = summary.achievements().stream()
                 .map(achievementMapper::toResponse)

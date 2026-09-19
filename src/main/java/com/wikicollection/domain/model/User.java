@@ -41,6 +41,9 @@ public class User {
     @Size(max = 200, message = "La bio no puede superar los 200 caracteres")
     private String bio;
 
+    @Pattern(regexp = "^\\d{17}$", message = "El SteamId debe ser un SteamID64 de 17 dígitos")
+    private String steamId;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

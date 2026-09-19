@@ -18,5 +18,7 @@ public record RegisterRequest(
         @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).+$",
                 message = "La contraseña debe incluir mayúscula, minúscula, número y carácter especial")
         String password,
-        String displayName) {
+        String displayName,
+        @Pattern(regexp = "^\\d{17}$", message = "El SteamId debe ser un SteamID64 de 17 dígitos")
+        String steamId) {
 }
