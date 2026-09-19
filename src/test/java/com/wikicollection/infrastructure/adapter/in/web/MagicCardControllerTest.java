@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.model.MagicCardSearchResult;
@@ -51,6 +52,9 @@ class MagicCardControllerTest {
 
     @MockitoBean
     private ScryfallClient scryfallClient;
+
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     private MagicCard sampleCard() {
         return MagicCard.builder()
@@ -139,6 +143,8 @@ class MagicCardControllerTest {
         card.setNotes("privado");
         card.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.MAGIC))
+                .thenReturn(List.of("u1"));
         mockMvc.perform(get("/api/v1/magic/mc1").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notes").value(Matchers.nullValue()))

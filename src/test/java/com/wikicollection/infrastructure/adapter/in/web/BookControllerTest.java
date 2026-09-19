@@ -22,6 +22,7 @@ import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.infrastructure.adapter.out.google.GoogleBooksClient;
 
@@ -174,12 +175,29 @@ class BookControllerTest {
         book.setComment("muy personal");
         book.setStart(5);
         when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of("u1"));
 
         mockMvc.perform(get("/api/v1/books/b1").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Cien años de soledad"))
                 .andExpect(jsonPath("$.comment").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.start").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void getBook_showsPrivateFields_whenCollectionPublic() throws Exception {
+        Book book = sampleBook();
+        book.setComment("muy personal");
+        book.setStart(5);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/books/b1").with(user("other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value("muy personal"))
+                .andExpect(jsonPath("$.start").value(5));
     }
 
     @Test
@@ -211,6 +229,8 @@ class BookControllerTest {
         book.setComment("muy personal");
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(book)));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of("someone-else"));
 
         mockMvc.perform(get("/api/v1/books").with(user("other")))
                 .andExpect(status().isOk())
@@ -224,6 +244,8 @@ class BookControllerTest {
         book.setUserOwned(com.wikicollection.domain.model.UserOwned.builder()
                 .ownerId("u1").ownerName("Javi").username("javi").build());
         when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of("u1"));
 
         mockMvc.perform(get("/api/v1/books/b1"))
                 .andExpect(status().isOk())

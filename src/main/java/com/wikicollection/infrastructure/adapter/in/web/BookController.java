@@ -7,6 +7,7 @@ import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.port.in.BookSearchUseCase;
 import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookDtoMapper;
@@ -81,7 +82,7 @@ public class BookController {
         BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state, null, null);
         return bookUseCase.search(criteria, pageable, owner, viewerId).map(book -> {
             var response = mapper.toResponse(book);
-            return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(book.getOwnerId(), CollectionType.BOOKS) ? response : response.withoutPrivate();
         });
     }
 
@@ -95,7 +96,7 @@ public class BookController {
             @Parameter(description = "Identificador del libro") @PathVariable String id) {
         var book = bookUseCase.findById(id);
         var response = mapper.toResponse(book);
-        return visibility.canSeePrivate(book.getOwnerId()) ? response : response.withoutPrivate();
+        return visibility.canSeePrivate(book.getOwnerId(), CollectionType.BOOKS) ? response : response.withoutPrivate();
     }
 
     @PostMapping

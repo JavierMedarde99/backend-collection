@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.AchievementsSummary;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
@@ -69,6 +70,9 @@ class GameControllerTest {
 
     @MockitoBean
     private SteamCatalogueClient steamCatalogueClient;
+
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     private Game sampleGame() {
         return Game.builder()
@@ -140,6 +144,8 @@ class GameControllerTest {
         game.setUserRating(10);
         game.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(gameRepository.findById("g1")).thenReturn(Optional.of(game));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.GAMES))
+                .thenReturn(List.of("u1"));
 
         mockMvc.perform(get("/api/v1/games/g1").with(user("other")))
                 .andExpect(status().isOk())

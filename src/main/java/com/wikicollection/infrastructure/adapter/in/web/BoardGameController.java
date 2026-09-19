@@ -4,6 +4,7 @@ import java.net.URI;
 
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.port.in.BoardGameSearchUseCase;
 import com.wikicollection.domain.port.in.BoardGameUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameDtoMapper;
@@ -79,7 +80,7 @@ public class BoardGameController {
         BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status, null, null);
         return boardGameUseCase.search(criteria, pageable, owner, viewerId).map(boardGame -> {
             var response = mapper.toResponse(boardGame);
-            return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();
+            return visibility.canSeePrivate(boardGame.getOwnerId(), CollectionType.BOARDGAMES) ? response : response.withoutPrivate();
         });
     }
 
@@ -93,7 +94,7 @@ public class BoardGameController {
             @Parameter(description = "Identificador del juego de mesa") @PathVariable String id) {
         var boardGame = boardGameUseCase.findById(id);
         var response = mapper.toResponse(boardGame);
-        return visibility.canSeePrivate(boardGame.getOwnerId()) ? response : response.withoutPrivate();
+        return visibility.canSeePrivate(boardGame.getOwnerId(), CollectionType.BOARDGAMES) ? response : response.withoutPrivate();
     }
 
     @PostMapping

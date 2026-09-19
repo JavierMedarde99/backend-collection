@@ -13,6 +13,7 @@ import com.wikicollection.application.exception.UserNotFoundException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.in.UserProfileUseCase;
 
@@ -35,6 +36,9 @@ class UserProfileControllerTest {
 
     @MockitoBean
     private UserProfileUseCase profileUseCase;
+
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     private User sampleUser() {
         return User.builder().id("u1").username("javi").displayName("Javi").build();
@@ -82,10 +86,27 @@ class UserProfileControllerTest {
                 .state(BookState.TO_READ).type(BookType.NOVEL).comment("privado").build();
         when(profileUseCase.getPublicBooks(eq("javi"), any()))
                 .thenReturn(new PageImpl<>(List.of(book), PageRequest.of(0, 20), 1));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of("u1"));
 
         mockMvc.perform(get("/api/v1/users/javi/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Dune"))
                 .andExpect(jsonPath("$.content[0].comment").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void getPublicBooks_showsPrivateFields_whenCollectionPublic() throws Exception {
+        Book book = Book.builder().id("b1").ownerId("u1").title("Dune").author("Herbert")
+                .state(BookState.TO_READ).type(BookType.NOVEL).comment("privado").build();
+        when(profileUseCase.getPublicBooks(eq("javi"), any()))
+                .thenReturn(new PageImpl<>(List.of(book), PageRequest.of(0, 20), 1));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.BOOKS))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/users/javi/books"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].title").value("Dune"))
+                .andExpect(jsonPath("$.content[0].comment").value("privado"));
     }
 }

@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchResult;
@@ -54,6 +55,9 @@ class MovieShowControllerTest {
 
     @MockitoBean
     private ExternalMovieCatalogClient catalogClient;
+
+    @MockitoBean
+    private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     private MovieShow sampleShow() {
         return MovieShow.builder()
@@ -136,6 +140,8 @@ class MovieShowControllerTest {
         show.setComment("privado");
         show.setUserOwned(new com.wikicollection.domain.model.UserOwned("u1", "Javi", "javi"));
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(show));
+        when(preferencesUseCase.getUserIdsWithPrivateCollection(CollectionType.MOVIESHOWS))
+                .thenReturn(List.of("u1"));
         mockMvc.perform(get("/api/v1/movieshows/m1").with(user("other")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.comment").value(Matchers.nullValue()))
