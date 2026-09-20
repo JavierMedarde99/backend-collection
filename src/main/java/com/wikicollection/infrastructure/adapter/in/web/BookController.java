@@ -137,18 +137,25 @@ public class BookController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Busca libros en el catálogo externo", description = "Busca en Google Books por título.")
+    @Operation(summary = "Busca libros en el catálogo externo", description = "Busca en Google Books por título (name) o por ISBN (isbn). Si vienen ambos, manda isbn.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Resultados de búsqueda"),
-            @ApiResponse(responseCode = "400", description = "El parámetro 'name' es obligatorio"),
+            @ApiResponse(responseCode = "400", description = "Falta 'name' o 'isbn'"),
             @ApiResponse(responseCode = "502", description = "El catálogo externo devolvió un error"),
             @ApiResponse(responseCode = "503", description = "El catálogo externo no está disponible")
     })
     public Page<BookSearchResult> search(
-            @Parameter(description = "Título a buscar") @RequestParam("name") @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "Título a buscar") @RequestParam(value = "name", required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
+            @Parameter(description = "ISBN a buscar (con o sin guiones)") @RequestParam(value = "isbn", required = false) @Size(max = 20, message = "El ISBN no puede superar los 20 caracteres") String isbn,
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
-        return bookSearchUseCase.search(name, PageRequest.of(page, size));
+        if (isbn != null && !isbn.isBlank()) {
+            return bookSearchUseCase.searchByIsbn(isbn, PageRequest.of(page, size));
+        }
+        if (name != null && !name.isBlank()) {
+            return bookSearchUseCase.search(name, PageRequest.of(page, size));
+        }
+        throw new IllegalArgumentException("Indica 'name' o 'isbn' para buscar");
     }
 
     private Sort buildSort(String sort) {

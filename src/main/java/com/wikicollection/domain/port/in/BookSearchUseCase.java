@@ -8,4 +8,6 @@ import com.wikicollection.domain.model.BookSearchResult;
 public interface BookSearchUseCase {
 
     Page<BookSearchResult> search(String query, Pageable pageable);
+
+    Page<BookSearchResult> searchByIsbn(String isbn, Pageable pageable);
 }

@@ -47,11 +47,21 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     @Override
     @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "#query")
     public List<BookSearchResult> search(String query) {
+        return searchWithRetry("intitle:" + query);
+    }
+
+    @Override
+    @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "'isbn:' + #isbn")
+    public List<BookSearchResult> searchByIsbn(String isbn) {
+        return searchWithRetry("isbn:" + isbn);
+    }
+
+    private List<BookSearchResult> searchWithRetry(String q) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;
         for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             try {
-                return doSearch(query);
+                return doSearch(q);
             } catch (RestClientResponseException e) {
                 lastHttp = e;
                 log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -69,11 +79,11 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         throw lastConnection;
     }
 
-    private List<BookSearchResult> doSearch(String query) {
+    private List<BookSearchResult> doSearch(String q) {
         GoogleBooksResponse response = restClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path(VOLUMES_PATH)
-                            .queryParam("q", "intitle:" + query)
+                            .queryParam("q", q)
                             .queryParam("langRestrict", "es");
                     if (apiKey != null && !apiKey.isBlank()) {
                         uriBuilder.queryParam("key", apiKey);
