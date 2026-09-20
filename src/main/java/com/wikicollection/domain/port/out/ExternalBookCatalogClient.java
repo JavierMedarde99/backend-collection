@@ -7,4 +7,6 @@ import com.wikicollection.domain.model.BookSearchResult;
 public interface ExternalBookCatalogClient {
 
     List<BookSearchResult> search(String query);
+
+    List<BookSearchResult> searchByIsbn(String isbn);
 }

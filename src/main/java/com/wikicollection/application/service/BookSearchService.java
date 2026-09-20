@@ -24,4 +24,20 @@ public class BookSearchService implements BookSearchUseCase {
         }
         return PagedResults.slice(externalBookCatalogClient.search(query), pageable);
     }
+
+    @Override
+    public Page<BookSearchResult> searchByIsbn(String isbn, Pageable pageable) {
+        String clean = normalizeIsbn(isbn);
+        if (clean.isEmpty()) {
+            throw new IllegalArgumentException("El parámetro 'isbn' es obligatorio");
+        }
+        return PagedResults.slice(externalBookCatalogClient.searchByIsbn(clean), pageable);
+    }
+
+    private static String normalizeIsbn(String isbn) {
+        if (isbn == null) {
+            return "";
+        }
+        return isbn.replaceAll("[\\s-]", "");
+    }
 }

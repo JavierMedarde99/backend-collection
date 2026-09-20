@@ -408,6 +408,27 @@ class BookControllerTest {
     }
 
     @Test
+    void searchByIsbn_returns200() throws Exception {
+        BookSearchResult result = new BookSearchResult(
+                "abc123", "Dune", List.of("Frank Herbert"),
+                "9788498382671", "http://thumb", "Sinopsis", 412,
+                "Debolsillo", "2008-01-01", "es", List.of("Novela"));
+        when(googleBooksClient.searchByIsbn("9788498382671")).thenReturn(List.of(result));
+
+        mockMvc.perform(get("/api/v1/books/search").param("isbn", "978-84-9838-267-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].title").value("Dune"))
+                .andExpect(jsonPath("$.content[0].isbn").value("9788498382671"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void search_returns400_whenNoParams() throws Exception {
+        mockMvc.perform(get("/api/v1/books/search"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void search_returnsEmpty_whenGoogleUnavailable() throws Exception {
         when(googleBooksClient.search("cien")).thenReturn(List.of());
 
