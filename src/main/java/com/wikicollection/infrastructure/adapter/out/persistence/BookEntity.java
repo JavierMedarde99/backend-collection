@@ -33,6 +33,8 @@ public class BookEntity {
 
     private String externalId;
 
+    private String isbn;
+
     private String title;
 
     private String descripcion;
