@@ -21,6 +21,7 @@ public class Book {
     private String ownerId;
     private UserOwned userOwned;
     private String externalId;
+    private String isbn;
     private String title;
     private String descripcion;
     private String author;

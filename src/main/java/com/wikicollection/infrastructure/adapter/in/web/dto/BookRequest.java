@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record BookRequest(
         String externalId,
+        String isbn,
         @NotBlank(message = "El título es obligatorio") String title,
         String descripcion,
         @NotBlank(message = "El autor es obligatorio") String author,

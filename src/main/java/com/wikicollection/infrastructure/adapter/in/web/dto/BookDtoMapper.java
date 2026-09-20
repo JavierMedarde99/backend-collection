@@ -13,6 +13,7 @@ public class BookDtoMapper {
         }
         return Book.builder()
                 .externalId(request.externalId())
+                .isbn(request.isbn())
                 .title(request.title())
                 .descripcion(request.descripcion())
                 .author(request.author())
@@ -34,6 +35,7 @@ public class BookDtoMapper {
         return new BookResponse(
                 book.getId(),
                 book.getExternalId(),
+                book.getIsbn(),
                 book.getTitle(),
                 book.getDescripcion(),
                 book.getAuthor(),
