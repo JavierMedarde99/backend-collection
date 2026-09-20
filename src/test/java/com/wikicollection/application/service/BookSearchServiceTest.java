@@ -73,4 +73,30 @@ class BookSearchServiceTest {
         assertThatThrownBy(() -> bookSearchService.searchByIsbn("   ", PageRequest.of(0, 10)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void searchByIsbn_rejectsNull() {
+        assertThatThrownBy(() -> bookSearchService.searchByIsbn(null, PageRequest.of(0, 10)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void searchByIsbn_normalizesSpaces() {
+        when(externalBookCatalogClient.searchByIsbn("9788498382671")).thenReturn(List.of());
+
+        Page<BookSearchResult> results = bookSearchService.searchByIsbn("978 84 9838 267 1", PageRequest.of(0, 10));
+
+        assertThat(results.getContent()).isEmpty();
+        verify(externalBookCatalogClient).searchByIsbn("9788498382671");
+    }
+
+    @Test
+    void searchByIsbn_returnsEmpty_whenClientEmpty() {
+        when(externalBookCatalogClient.searchByIsbn("9788498382671")).thenReturn(List.of());
+
+        Page<BookSearchResult> results = bookSearchService.searchByIsbn("9788498382671", PageRequest.of(0, 10));
+
+        assertThat(results.getContent()).isEmpty();
+        assertThat(results.getTotalElements()).isZero();
+    }
 }
