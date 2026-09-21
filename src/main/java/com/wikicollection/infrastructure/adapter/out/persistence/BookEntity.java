@@ -51,6 +51,8 @@ public class BookEntity {
 
     private Integer start;
 
+    private Integer pagesRead;
+
     private LocalDate startDate;
 
     private LocalDate endDate;

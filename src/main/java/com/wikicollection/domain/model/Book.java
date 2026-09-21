@@ -30,6 +30,7 @@ public class Book {
     private BookState state;
     private String comment;
     private Integer start;
+    private Integer pagesRead;
     private LocalDate startDate;
     private LocalDate endDate;
     private String frontpage;
