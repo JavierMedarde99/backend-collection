@@ -9,6 +9,7 @@ import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.application.exception.ForbiddenException;
+import com.wikicollection.application.exception.InvalidProgressException;
 import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.application.exception.EmailAlreadyExistsException;
 import com.wikicollection.application.exception.UserNotFoundException;
@@ -87,6 +88,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BookConflictException.class)
     public ResponseEntity<ErrorResponse> handleBookConflict(BookConflictException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidProgressException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidProgress(InvalidProgressException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

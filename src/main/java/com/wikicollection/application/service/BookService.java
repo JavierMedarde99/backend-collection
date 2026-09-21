@@ -1,6 +1,7 @@
 package com.wikicollection.application.service;
 
 import com.wikicollection.application.exception.BookConflictException;
+import com.wikicollection.application.exception.InvalidProgressException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookSearchCriteria;
@@ -59,6 +60,7 @@ public class BookService implements BookUseCase {
         book.setOwnerId(ownerId);
         book.setUserOwned(ownerResolver.resolveOwner(ownerId));
         checkExternalIdUnique(book.getExternalId(), null);
+        validateProgress(book.getPagesRead(), book.getPages());
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return saveOrConflict(book);
     }
@@ -70,6 +72,7 @@ public class BookService implements BookUseCase {
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
+        validateProgress(existing.getPagesRead(), existing.getPages());
         dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
         return saveOrConflict(existing);
     }
@@ -79,6 +82,13 @@ public class BookService implements BookUseCase {
             return bookRepository.save(book);
         } catch (DuplicateKeyException e) {
             throw new BookConflictException("Ya existe un libro con externalId: " + book.getExternalId());
+        }
+    }
+
+    private void validateProgress(Integer pagesRead, Integer pages) {
+        if (pagesRead != null && pages != null && pages > 0 && pagesRead > pages) {
+            throw new InvalidProgressException(
+                    "Las páginas leídas (" + pagesRead + ") no pueden exceder el total de páginas (" + pages + ")");
         }
     }
 
@@ -110,6 +120,7 @@ public class BookService implements BookUseCase {
         target.setState(source.getState());
         target.setComment(source.getComment());
         target.setStart(source.getStart());
+        target.setPagesRead(source.getPagesRead());
         target.setStartDate(source.getStartDate());
         target.setEndDate(source.getEndDate());
         target.setFrontpage(source.getFrontpage());
