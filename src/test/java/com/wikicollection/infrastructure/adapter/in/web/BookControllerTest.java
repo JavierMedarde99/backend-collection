@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -475,6 +476,24 @@ class BookControllerTest {
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.status").value(503));
+    }
+
+    @Test
+    void updateProgress_updatesPagesRead() throws Exception {
+        Book book = sampleBook();
+        book.setId("b1");
+        book.setOwnerId("u1");
+        book.setPages(300);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(patch("/api/v1/books/b1/progress").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"pagesRead":80}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagesRead").value(80));
     }
 
     @Test

@@ -13,6 +13,7 @@ import com.wikicollection.domain.port.in.BookUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BookResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.ProgressUpdateRequest;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -122,6 +124,21 @@ public class BookController {
             @Parameter(description = "Identificador del libro") @PathVariable String id,
             @Valid @RequestBody BookRequest request, @CurrentUser String currentUserId) {
         return mapper.toResponse(bookUseCase.update(id, mapper.toDomain(request), currentUserId));
+    }
+
+    @PatchMapping("/{id}/progress")
+    @Operation(summary = "Actualiza solo el progreso de lectura")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Progreso actualizado"),
+            @ApiResponse(responseCode = "400", description = "Progreso inválido"),
+            @ApiResponse(responseCode = "404", description = "Libro no encontrado")
+    })
+    public BookResponse updateProgress(
+            @Parameter(description = "Identificador del libro") @PathVariable String id,
+            @Valid @RequestBody ProgressUpdateRequest request, @CurrentUser String currentUserId) {
+        var book = bookUseCase.findById(id);
+        book.setPagesRead(request.pagesRead());
+        return mapper.toResponse(bookUseCase.update(id, book, currentUserId));
     }
 
     @DeleteMapping("/{id}")
