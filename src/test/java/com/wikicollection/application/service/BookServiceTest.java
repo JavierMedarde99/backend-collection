@@ -112,6 +112,46 @@ class BookServiceTest {
     }
 
     @Test
+    void save_acceptsPagesRead_whenCreating() {
+        Book book = sampleBook();
+        book.setState(BookState.READING);
+        book.setPages(300);
+        book.setPagesRead(0);
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.save(book, "u1");
+
+        assertThat(result.getPagesRead()).isZero();
+    }
+
+    @Test
+    void save_throws_whenPagesReadExceedsPages() {
+        Book book = sampleBook();
+        book.setPages(300);
+        book.setPagesRead(350);
+
+        assertThatThrownBy(() -> bookService.save(book, "u1"))
+                .isInstanceOf(InvalidProgressException.class);
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void update_persistsPagesRead() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        existing.setOwnerId("u1");
+        Book updates = sampleBook();
+        updates.setPages(300);
+        updates.setPagesRead(120);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.update("b1", updates, "u1");
+
+        assertThat(result.getPagesRead()).isEqualTo(120);
+    }
+
+    @Test
     void save_throwsConflict_whenDuplicateKeyOnSave() {
         Book book = sampleBook();
         book.setExternalId("gb123");
