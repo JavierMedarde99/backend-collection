@@ -14,7 +14,6 @@ class BookDtoMapperTest {
 
     private final BookDtoMapper mapper = new BookDtoMapper();
 
-<<<<<<< HEAD
     @Test
     void mapsIsbn_requestToResponse() {
         BookRequest request = new BookRequest("ext1", "9788498382671", "Dune", null, "Herbert", 412,
