@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
+import com.wikicollection.application.exception.InvalidProgressException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.BookSearchCriteria;
@@ -213,6 +214,23 @@ class BookServiceTest {
 
         assertThat(result).isSameAs(book);
         verify(bookRepository).save(book);
+    }
+
+    @Test
+    void update_throws_whenPagesReadExceedsPages() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        existing.setOwnerId("u1");
+        Book updates = sampleBook();
+        updates.setPages(300);
+        updates.setPagesRead(350);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> bookService.update("b1", updates, "u1"))
+                .isInstanceOf(InvalidProgressException.class)
+                .hasMessageContaining("350")
+                .hasMessageContaining("300");
+        verify(bookRepository, never()).save(any(Book.class));
     }
 
     @Test
