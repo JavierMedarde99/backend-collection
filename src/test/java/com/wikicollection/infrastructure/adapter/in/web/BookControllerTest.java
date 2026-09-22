@@ -370,6 +370,41 @@ class BookControllerTest {
     }
 
     @Test
+    void updateBook_updatesPagesRead() throws Exception {
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Dune","author":"Herbert","state":"READING","type":"NOVEL","pages":300,"pagesRead":120}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagesRead").value(120));
+    }
+
+    @Test
+    void updateBook_returns400_whenNegativePagesRead() throws Exception {
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Dune","author":"Herbert","state":"READING","type":"NOVEL","pagesRead":-5}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getBook_returnsPagesRead() throws Exception {
+        Book book = sampleBook();
+        book.setPagesRead(100);
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(book));
+
+        mockMvc.perform(get("/api/v1/books/b1").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagesRead").value(100));
+    }
+
+    @Test
     void deleteBook_returns204_whenExists() throws Exception {
         when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
 
