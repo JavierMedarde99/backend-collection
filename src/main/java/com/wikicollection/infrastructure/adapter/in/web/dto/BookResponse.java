@@ -17,6 +17,7 @@ public record BookResponse(
         BookState state,
         String comment,
         Integer start,
+        Integer pagesRead,
         LocalDate startDate,
         LocalDate endDate,
         String frontpage,
@@ -25,6 +26,6 @@ public record BookResponse(
 
     public BookResponse withoutPrivate() {
         return new BookResponse(id, externalId, isbn, title, descripcion, author, pages, type, state,
-                null, null, null, null, frontpage, userOwned);
+                null, null, null, null, null, frontpage, userOwned);
     }
 }

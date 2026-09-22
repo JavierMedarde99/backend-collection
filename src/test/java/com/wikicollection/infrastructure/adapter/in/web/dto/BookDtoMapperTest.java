@@ -15,7 +15,7 @@ class BookDtoMapperTest {
     @Test
     void mapsIsbn_requestToResponse() {
         BookRequest request = new BookRequest("ext1", "9788498382671", "Dune", null, "Herbert", 412,
-                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null);
+                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
 
@@ -25,7 +25,7 @@ class BookDtoMapperTest {
     @Test
     void mapsNullIsbn_whenAbsent() {
         BookRequest request = new BookRequest("ext1", null, "Dune", null, "Herbert", 412,
-                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null);
+                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
 

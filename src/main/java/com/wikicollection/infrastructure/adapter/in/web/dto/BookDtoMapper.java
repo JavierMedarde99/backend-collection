@@ -22,6 +22,7 @@ public class BookDtoMapper {
                 .state(request.state())
                 .comment(request.comment())
                 .start(request.start())
+                .pagesRead(request.pagesRead())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .frontpage(request.frontpage())
@@ -44,6 +45,7 @@ public class BookDtoMapper {
                 book.getState(),
                 book.getComment(),
                 book.getStart(),
+                book.getPagesRead(),
                 book.getStartDate(),
                 book.getEndDate(),
                 book.getFrontpage(),

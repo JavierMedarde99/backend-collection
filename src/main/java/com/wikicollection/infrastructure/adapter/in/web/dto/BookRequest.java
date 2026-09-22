@@ -22,6 +22,7 @@ public record BookRequest(
         String comment,
         @Min(value = 0, message = "La puntuación mínima es 0")
         @Max(value = 5, message = "La puntuación máxima es 5") Integer start,
+        @Min(value = 0, message = "Las páginas leídas no pueden ser negativas") Integer pagesRead,
         LocalDate startDate,
         LocalDate endDate,
         String frontpage) {
