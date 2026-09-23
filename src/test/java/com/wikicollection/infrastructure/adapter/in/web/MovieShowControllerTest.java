@@ -23,6 +23,8 @@ import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.model.MovieStatus;
+import com.wikicollection.domain.model.ProviderAccessType;
+import com.wikicollection.domain.model.TmdbWatchProvider;
 import com.wikicollection.domain.port.out.MovieShowRepository;
 import com.wikicollection.infrastructure.adapter.out.tmdb.TmdbClient;
 
@@ -199,6 +201,28 @@ class MovieShowControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Se7en"));
+    }
+
+    @Test
+    void refreshProviders_returnsUpdatedShow() throws Exception {
+        when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(catalogClient.getWatchProviders(550L, MovieMediaType.MOVIE, "ES"))
+                .thenReturn(java.util.Map.of(ProviderAccessType.FLATRATE,
+                        java.util.List.of(new TmdbWatchProvider(10, "Netflix", "/netflix.jpg"))));
+
+        mockMvc.perform(post("/api/v1/movieshows/m1/refresh-providers").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.streamingProviders[0].providerName").value("Netflix"))
+                .andExpect(jsonPath("$.watchCountry").value("ES"));
+    }
+
+    @Test
+    void refreshProviders_returns404_whenMissing() throws Exception {
+        when(movieShowRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/movieshows/nope/refresh-providers").with(user("u1")))
+                .andExpect(status().isNotFound());
     }
 
     @Test

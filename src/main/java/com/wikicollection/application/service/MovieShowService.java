@@ -110,6 +110,17 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
+    @Transactional
+    public MovieShow refreshStreamingProviders(String id, String userId) {
+        MovieShow existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
+        existing.setStreamingProviders(null);
+        existing.setWatchCountry(null);
+        enrichStreamingProviders(existing);
+        return saveOrConflict(existing);
+    }
+
+    @Override
     public void delete(String id, String userId) {
         MovieShow existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);

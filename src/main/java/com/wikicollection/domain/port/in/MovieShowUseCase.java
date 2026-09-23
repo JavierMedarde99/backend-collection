@@ -18,5 +18,7 @@ public interface MovieShowUseCase {
 
     MovieShow update(String id, MovieShow updates, String userId);
 
+    MovieShow refreshStreamingProviders(String id, String userId);
+
     void delete(String id, String userId);
 }
