@@ -35,7 +35,9 @@ class MovieShowServiceOwnerFilterTest {
 
     private MovieShowService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new MovieShowService(movieShowRepository, mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
+        return new MovieShowService(movieShowRepository, mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class),
+                mock(com.wikicollection.domain.port.out.WatchProvidersClient.class),
+                mock(com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper.class));
     }
 
     @Test

@@ -23,8 +23,8 @@ import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.model.MovieStatus;
-import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
 import com.wikicollection.domain.port.out.MovieShowRepository;
+import com.wikicollection.infrastructure.adapter.out.tmdb.TmdbClient;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ class MovieShowControllerTest {
     private MovieShowRepository movieShowRepository;
 
     @MockitoBean
-    private ExternalMovieCatalogClient catalogClient;
+    private TmdbClient catalogClient;
 
     @MockitoBean
     private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
