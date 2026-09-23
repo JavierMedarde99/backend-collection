@@ -1,6 +1,10 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.util.List;
+
 import com.wikicollection.domain.model.MovieShow;
+import com.wikicollection.domain.model.ProviderAccessType;
+import com.wikicollection.domain.model.StreamingProvider;
 
 import org.springframework.stereotype.Component;
 
@@ -26,6 +30,8 @@ public class MovieShowDtoMapper {
                 .dateAdded(request.dateAdded())
                 .dateCompleted(request.dateCompleted())
                 .externalSource(request.externalSource())
+                .streamingProviders(toDomainProviders(request.streamingProviders()))
+                .watchCountry(request.watchCountry())
                 .build();
     }
 
@@ -49,6 +55,41 @@ public class MovieShowDtoMapper {
                 movieShow.getDateAdded(),
                 movieShow.getDateCompleted(),
                 movieShow.getExternalSource(),
+                toResponseProviders(movieShow.getStreamingProviders()),
+                movieShow.getWatchCountry(),
                 UserOwnedResponse.from(movieShow.getUserOwned()));
+    }
+
+    private static List<StreamingProvider> toDomainProviders(List<StreamingProviderRequest> requests) {
+        if (requests == null) {
+            return null;
+        }
+        return requests.stream()
+                .map(r -> StreamingProvider.builder()
+                        .providerId(r.providerId())
+                        .providerName(r.providerName())
+                        .logoUrl(r.logoUrl())
+                        .type(parseType(r.type()))
+                        .deepLinkUrl(r.deepLinkUrl())
+                        .build())
+                .toList();
+    }
+
+    private static List<StreamingProviderResponse> toResponseProviders(List<StreamingProvider> providers) {
+        if (providers == null) {
+            return null;
+        }
+        return providers.stream().map(StreamingProviderResponse::from).toList();
+    }
+
+    private static ProviderAccessType parseType(String type) {
+        if (type == null) {
+            return null;
+        }
+        try {
+            return ProviderAccessType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

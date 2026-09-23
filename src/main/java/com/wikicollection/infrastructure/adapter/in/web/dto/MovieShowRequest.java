@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieStatus;
@@ -24,5 +25,7 @@ public record MovieShowRequest(
         String comment,
         LocalDate dateAdded,
         LocalDate dateCompleted,
-        String externalSource) {
+        String externalSource,
+        List<StreamingProviderRequest> streamingProviders,
+        String watchCountry) {
 }

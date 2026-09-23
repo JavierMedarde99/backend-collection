@@ -19,7 +19,7 @@ class MovieShowDtoMapperTest {
         MovieShowRequest request = new MovieShowRequest("550", "Fight Club", "Overview",
                 LocalDate.of(1999, 10, 15), "http://poster", "http://backdrop", 8.4,
                 MovieMediaType.MOVIE, MovieStatus.WATCHED, 5, "Nota",
-                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 2), "TMDB");
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 2), "TMDB", null, null);
 
         MovieShow show = mapper.toDomain(request);
 
