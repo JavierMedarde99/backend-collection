@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieStatus;
@@ -63,6 +64,10 @@ public class MovieShowEntity {
     private LocalDate dateCompleted;
 
     private String externalSource;
+
+    private List<StreamingProviderEntity> streamingProviders;
+
+    private String watchCountry;
 
     @CreatedDate
     private LocalDateTime createdAt;
