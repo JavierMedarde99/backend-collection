@@ -66,4 +66,37 @@ class MovieShowDtoMapperTest {
         assertThat(mapper.toDomain(null)).isNull();
         assertThat(mapper.toResponse(null)).isNull();
     }
+
+    @Test
+    void mapsStreamingProviders_bothWays() {
+        MovieShow show = MovieShow.builder()
+                .id("m1")
+                .title("Fight Club")
+                .watchCountry("ES")
+                .streamingProviders(java.util.List.of(
+                        com.wikicollection.domain.model.StreamingProvider.builder()
+                                .providerId(10).providerName("Netflix")
+                                .logoUrl("https://image.tmdb.org/t/p/original/netflix.jpg")
+                                .type(com.wikicollection.domain.model.ProviderAccessType.FLATRATE)
+                                .deepLinkUrl("https://www.netflix.com/search?q=Fight%20Club")
+                                .build()))
+                .build();
+
+        MovieShowResponse response = mapper.toResponse(show);
+
+        assertThat(response.streamingProviders()).hasSize(1);
+        assertThat(response.streamingProviders().get(0).providerName()).isEqualTo("Netflix");
+        assertThat(response.streamingProviders().get(0).type()).isEqualTo("FLATRATE");
+        assertThat(response.watchCountry()).isEqualTo("ES");
+    }
+
+    @Test
+    void mapsEmptyProviders_whenEmptyList() {
+        MovieShow show = MovieShow.builder().id("m1").title("Fight Club")
+                .streamingProviders(java.util.List.of()).build();
+
+        MovieShowResponse response = mapper.toResponse(show);
+
+        assertThat(response.streamingProviders()).isEmpty();
+    }
 }

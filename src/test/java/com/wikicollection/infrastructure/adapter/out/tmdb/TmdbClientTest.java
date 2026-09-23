@@ -259,6 +259,29 @@ class TmdbClientTest {
         assertThat(result.values().stream().allMatch(List::isEmpty)).isTrue();
     }
 
+    @Test
+    void getWatchProviders_returnsEmpty_whenNoResults() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{}"));
+
+        var result = client.getWatchProviders(550L, MovieMediaType.TV, "ES");
+
+        assertThat(result.values().stream().allMatch(List::isEmpty)).isTrue();
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).startsWith("/tv/550/watch/providers");
+    }
+
+    @Test
+    void getWatchProviders_returnsEmpty_whenNotFound() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(404));
+
+        var result = client.getWatchProviders(999999999L, MovieMediaType.MOVIE, "ES");
+
+        assertThat(result.values().stream().allMatch(List::isEmpty)).isTrue();
+    }
+
     private String watchProvidersFixture() {
         return """
                 {
