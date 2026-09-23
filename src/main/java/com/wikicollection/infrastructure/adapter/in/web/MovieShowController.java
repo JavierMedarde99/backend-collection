@@ -127,6 +127,18 @@ public class MovieShowController {
         return mapper.toResponse(movieShowUseCase.update(id, mapper.toDomain(request), currentUserId));
     }
 
+    @PostMapping("/{id}/refresh-providers")
+    @Operation(summary = "Re-consulta los proveedores de streaming en TMDB")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Proveedores actualizados"),
+            @ApiResponse(responseCode = "404", description = "No encontrada")
+    })
+    public MovieShowResponse refreshProviders(
+            @Parameter(description = "Identificador") @PathVariable String id,
+            @CurrentUser String currentUserId) {
+        return mapper.toResponse(movieShowUseCase.refreshStreamingProviders(id, currentUserId));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Elimina una película/serie")
     @ApiResponses({
