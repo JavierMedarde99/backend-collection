@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchResult;
+import com.wikicollection.domain.model.ProviderAccessType;
 
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -225,6 +226,53 @@ class TmdbClientTest {
                     }
                   ],
                   "total_results": 1
+                }
+                """;
+    }
+
+    @Test
+    void getWatchProviders_returnsProvidersByType() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(watchProvidersFixture()));
+
+        var result = client.getWatchProviders(550L, MovieMediaType.MOVIE, "ES");
+
+        assertThat(result.get(ProviderAccessType.FLATRATE)).hasSize(1);
+        assertThat(result.get(ProviderAccessType.FLATRATE).get(0).providerName()).isEqualTo("Netflix");
+        assertThat(result.get(ProviderAccessType.BUY)).hasSize(1);
+        assertThat(result.get(ProviderAccessType.RENT)).isEmpty();
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).startsWith("/movie/550/watch/providers");
+    }
+
+    @Test
+    void getWatchProviders_returnsEmpty_whenCountryMissing() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(watchProvidersFixture()));
+
+        var result = client.getWatchProviders(550L, MovieMediaType.MOVIE, "FR");
+
+        assertThat(result.values().stream().allMatch(List::isEmpty)).isTrue();
+    }
+
+    private String watchProvidersFixture() {
+        return """
+                {
+                  "id": 550,
+                  "results": {
+                    "ES": {
+                      "flatrate": [
+                        { "provider_id": 10, "provider_name": "Netflix", "logo_path": "/netflix.jpg" }
+                      ],
+                      "buy": [
+                        { "provider_id": 121, "provider_name": "Google Play", "logo_path": "/gplay.jpg" }
+                      ]
+                    }
+                  }
                 }
                 """;
     }
