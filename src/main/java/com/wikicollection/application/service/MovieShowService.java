@@ -1,5 +1,8 @@
 package com.wikicollection.application.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.wikicollection.application.exception.MovieShowConflictException;
@@ -11,13 +14,24 @@ import com.wikicollection.domain.port.out.MovieShowRepository;
 
 import org.springframework.dao.DuplicateKeyException;
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.model.MovieMediaType;
+import com.wikicollection.domain.model.ProviderAccessType;
+import com.wikicollection.domain.model.StreamingProvider;
+import com.wikicollection.domain.model.TmdbWatchProvider;
+import com.wikicollection.domain.port.out.WatchProvidersClient;
+import com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class MovieShowService implements MovieShowUseCase {
+
+    private static final String WATCH_COUNTRY = "ES";
 
     private final MovieShowRepository movieShowRepository;
     private final DateRangeValidator dateRangeValidator;
@@ -27,16 +41,23 @@ public class MovieShowService implements MovieShowUseCase {
 
     private final OwnerResolver ownerResolver;
 
+    private final WatchProvidersClient watchProvidersClient;
+    private final ProviderUrlMapper providerUrlMapper;
+
     public MovieShowService(MovieShowRepository movieShowRepository,
                             DateRangeValidator dateRangeValidator,
                             OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
-                       OwnerResolver ownerResolver) {
+                       OwnerResolver ownerResolver,
+                       WatchProvidersClient watchProvidersClient,
+                       ProviderUrlMapper providerUrlMapper) {
         this.movieShowRepository = movieShowRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
         this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
+        this.watchProvidersClient = watchProvidersClient;
+        this.providerUrlMapper = providerUrlMapper;
     }
 
     @Override
@@ -63,6 +84,7 @@ public class MovieShowService implements MovieShowUseCase {
         movieShow.setUserOwned(ownerResolver.resolveOwner(ownerId));
         dateRangeValidator.validate(movieShow.getDateAdded(), movieShow.getDateCompleted());
         assertNoDuplicate(movieShow.getExternalId(), null);
+        enrichStreamingProviders(movieShow);
         return saveOrConflict(movieShow);
     }
 
@@ -72,6 +94,7 @@ public class MovieShowService implements MovieShowUseCase {
         MovieShow existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         copyUpdatableFields(existing, updates);
+        enrichStreamingProviders(existing);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         assertNoDuplicate(existing.getExternalId(), id);
         return saveOrConflict(existing);
@@ -120,5 +143,55 @@ public class MovieShowService implements MovieShowUseCase {
         target.setDateAdded(source.getDateAdded());
         target.setDateCompleted(source.getDateCompleted());
         target.setExternalSource(source.getExternalSource());
+        target.setStreamingProviders(source.getStreamingProviders());
+        target.setWatchCountry(source.getWatchCountry());
+    }
+
+    private void enrichStreamingProviders(MovieShow movieShow) {
+        Long tmdbId = parseTmdbId(movieShow.getExternalId());
+        MovieMediaType mediaType = movieShow.getMediaType();
+        if (tmdbId == null || mediaType == null) {
+            return;
+        }
+        Map<ProviderAccessType, List<TmdbWatchProvider>> providers;
+        try {
+            providers = watchProvidersClient.getWatchProviders(tmdbId, mediaType, WATCH_COUNTRY);
+        } catch (RuntimeException e) {
+            log.warn("Proveedores no disponibles para {}: {}", tmdbId, e.getMessage());
+            return;
+        }
+        if (providers == null) {
+            return;
+        }
+        List<StreamingProvider> flattened = new ArrayList<>();
+        for (Map.Entry<ProviderAccessType, List<TmdbWatchProvider>> entry : providers.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+            for (TmdbWatchProvider provider : entry.getValue()) {
+                flattened.add(StreamingProvider.builder()
+                        .providerId(provider.providerId())
+                        .providerName(provider.providerName())
+                        .logoUrl(providerUrlMapper.buildLogoUrl(provider.logoPath()))
+                        .type(entry.getKey())
+                        .deepLinkUrl(providerUrlMapper.buildDeepLink(provider.providerId(), movieShow.getTitle()))
+                        .build());
+            }
+        }
+        if (!flattened.isEmpty()) {
+            movieShow.setStreamingProviders(flattened);
+            movieShow.setWatchCountry(WATCH_COUNTRY);
+        }
+    }
+
+    private static Long parseTmdbId(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(externalId.strip());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

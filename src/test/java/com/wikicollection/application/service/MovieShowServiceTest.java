@@ -13,11 +13,15 @@ import java.util.Optional;
 import com.wikicollection.application.exception.MovieShowConflictException;
 import com.wikicollection.application.exception.MovieShowNotFoundException;
 import com.wikicollection.domain.model.MovieMediaType;
+import com.wikicollection.domain.model.ProviderAccessType;
+import com.wikicollection.domain.model.TmdbWatchProvider;
 import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.model.MovieStatus;
 import com.wikicollection.domain.port.out.MovieShowRepository;
+import com.wikicollection.domain.port.out.WatchProvidersClient;
+import com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +50,12 @@ class MovieShowServiceTest {
 
     @Mock
     private OwnerResolver ownerResolver;
+
+    @Mock
+    private WatchProvidersClient watchProvidersClient;
+
+    @Mock
+    private ProviderUrlMapper providerUrlMapper;
 
     @InjectMocks
     private MovieShowService movieShowService;
@@ -84,6 +94,40 @@ class MovieShowServiceTest {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(show));
 
         assertThat(movieShowService.findById("m1")).isSameAs(show);
+    }
+
+    @Test
+    void save_persistsStreamingProviders_whenTmdbHasThem() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(watchProvidersClient.getWatchProviders(550L, MovieMediaType.MOVIE, "ES"))
+                .thenReturn(java.util.Map.of(ProviderAccessType.FLATRATE,
+                        java.util.List.of(new TmdbWatchProvider(10, "Netflix", "/netflix.jpg"))));
+        when(providerUrlMapper.buildLogoUrl("/netflix.jpg")).thenReturn("https://image.tmdb.org/t/p/original/netflix.jpg");
+        when(providerUrlMapper.buildDeepLink(10, "Fight Club")).thenReturn("https://www.netflix.com/search?q=Fight%20Club");
+
+        MovieShow result = movieShowService.save(show, "u1");
+
+        assertThat(result.getWatchCountry()).isEqualTo("ES");
+        assertThat(result.getStreamingProviders()).hasSize(1);
+        assertThat(result.getStreamingProviders().get(0).getProviderName()).isEqualTo("Netflix");
+        assertThat(result.getStreamingProviders().get(0).getType()).isEqualTo(ProviderAccessType.FLATRATE);
+    }
+
+    @Test
+    void save_persists_whenTmdbFails() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(watchProvidersClient.getWatchProviders(550L, MovieMediaType.MOVIE, "ES"))
+                .thenThrow(new RuntimeException("TMDB caído"));
+
+        MovieShow result = movieShowService.save(show, "u1");
+
+        assertThat(result.getTitle()).isEqualTo("Fight Club");
     }
 
     @Test
