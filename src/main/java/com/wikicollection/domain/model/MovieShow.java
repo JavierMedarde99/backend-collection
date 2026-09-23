@@ -2,6 +2,7 @@ package com.wikicollection.domain.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,8 @@ public class MovieShow {
     private LocalDate dateAdded;
     private LocalDate dateCompleted;
     private String externalSource;
+    private List<StreamingProvider> streamingProviders;
+    private String watchCountry;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
