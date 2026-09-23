@@ -2,13 +2,18 @@ package com.wikicollection.infrastructure.adapter.out.tmdb;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieSearchResult;
+import com.wikicollection.domain.model.ProviderAccessType;
+import com.wikicollection.domain.model.TmdbWatchProvider;
 import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
+import com.wikicollection.domain.port.out.WatchProvidersClient;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,7 +29,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
 @Component("tmdbClient")
-public class TmdbClient implements ExternalMovieCatalogClient {
+public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersClient {
 
     private static final String SEARCH_MOVIE_PATH = "/search/movie";
     private static final String SEARCH_TV_PATH = "/search/tv";
@@ -101,6 +106,61 @@ public class TmdbClient implements ExternalMovieCatalogClient {
                 .toList();
     }
 
+    @Override
+    public Map<ProviderAccessType, List<TmdbWatchProvider>> getWatchProviders(
+            Long tmdbId, MovieMediaType mediaType, String country) {
+        if (tmdbId == null || country == null || country.isBlank()) {
+            return emptyProviders();
+        }
+        String path = mediaType == MovieMediaType.TV
+                ? "/tv/{id}/watch/providers"
+                : "/movie/{id}/watch/providers";
+        try {
+            WatchProvidersResponse response = executeWithRetry(() -> tmdbRestClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(path);
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            uriBuilder.queryParam("api_key", apiKey);
+                        }
+                        return uriBuilder.build(tmdbId);
+                    })
+                    .retrieve()
+                    .body(WatchProvidersResponse.class));
+            if (response == null || response.results() == null) {
+                return emptyProviders();
+            }
+            WatchProvidersByCountry byCountry = response.results().get(country);
+            if (byCountry == null) {
+                return emptyProviders();
+            }
+            Map<ProviderAccessType, List<TmdbWatchProvider>> result = new EnumMap<>(ProviderAccessType.class);
+            result.put(ProviderAccessType.FLATRATE, toProviders(byCountry.flatrate()));
+            result.put(ProviderAccessType.BUY, toProviders(byCountry.buy()));
+            result.put(ProviderAccessType.RENT, toProviders(byCountry.rent()));
+            return result;
+        } catch (RestClientException e) {
+            log.warn("TMDB watch/providers falló para {}: {}", tmdbId, e.getMessage());
+            return emptyProviders();
+        }
+    }
+
+    private static Map<ProviderAccessType, List<TmdbWatchProvider>> emptyProviders() {
+        Map<ProviderAccessType, List<TmdbWatchProvider>> result = new EnumMap<>(ProviderAccessType.class);
+        result.put(ProviderAccessType.FLATRATE, List.of());
+        result.put(ProviderAccessType.BUY, List.of());
+        result.put(ProviderAccessType.RENT, List.of());
+        return result;
+    }
+
+    private static List<TmdbWatchProvider> toProviders(List<WatchProvider> providers) {
+        if (providers == null) {
+            return List.of();
+        }
+        return providers.stream()
+                .map(p -> new TmdbWatchProvider(p.providerId(), p.providerName(), p.logoPath()))
+                .toList();
+    }
+
     private MovieSearchResult toResult(TmdbEntry entry, MovieMediaType mediaType) {
         String title = mediaType == MovieMediaType.MOVIE ? entry.title() : entry.name();
         String date = mediaType == MovieMediaType.MOVIE ? entry.releaseDate() : entry.firstAirDate();
@@ -162,6 +222,26 @@ public class TmdbClient implements ExternalMovieCatalogClient {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbSearchResponse(
             List<TmdbEntry> results) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record WatchProvidersResponse(
+            Long id,
+            Map<String, WatchProvidersByCountry> results) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record WatchProvidersByCountry(
+            List<WatchProvider> flatrate,
+            List<WatchProvider> buy,
+            List<WatchProvider> rent) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record WatchProvider(
+            @JsonProperty("provider_id") Integer providerId,
+            @JsonProperty("provider_name") String providerName,
+            @JsonProperty("logo_path") String logoPath) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
