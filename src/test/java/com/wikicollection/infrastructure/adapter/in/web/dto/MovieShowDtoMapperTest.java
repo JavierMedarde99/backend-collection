@@ -78,7 +78,6 @@ class MovieShowDtoMapperTest {
                                 .providerId(10).providerName("Netflix")
                                 .logoUrl("https://image.tmdb.org/t/p/original/netflix.jpg")
                                 .type(com.wikicollection.domain.model.ProviderAccessType.FLATRATE)
-                                .deepLinkUrl("https://www.netflix.com/search?q=Fight%20Club")
                                 .build()))
                 .build();
 

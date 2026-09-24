@@ -6,8 +6,7 @@ public record StreamingProviderResponse(
         Integer providerId,
         String providerName,
         String logoUrl,
-        String type,
-        String deepLinkUrl) {
+        String type) {
 
     public static StreamingProviderResponse from(StreamingProvider provider) {
         if (provider == null) {
@@ -17,7 +16,6 @@ public record StreamingProviderResponse(
                 provider.getProviderId(),
                 provider.getProviderName(),
                 provider.getLogoUrl(),
-                provider.getType() == null ? null : provider.getType().name(),
-                provider.getDeepLinkUrl());
+                provider.getType() == null ? null : provider.getType().name());
     }
 }

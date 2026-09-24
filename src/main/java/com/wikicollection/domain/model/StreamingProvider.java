@@ -19,5 +19,4 @@ public class StreamingProvider {
     private String providerName;
     private String logoUrl;
     private ProviderAccessType type;
-    private String deepLinkUrl;
 }
