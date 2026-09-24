@@ -9,19 +9,29 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProviderUrlMapper {
 
+    /**
+     * IDs verificados contra la doc de TMDB y TMDbLib (WatchProvider.cs, 2026-08-19).
+     * Los IDs no listados (Filmin, Movistar Plus, Star+, ...) quedan sin deep link
+     * a propósito: el frontend muestra solo el logo hasta confirmar su ID real en ES.
+     */
     private static final Map<Integer, String> PROVIDER_URLS = Map.ofEntries(
-            Map.entry(10, "https://www.netflix.com/search?q={title}"),
-            Map.entry(22, "https://www.max.com/search?q={title}"),
-            Map.entry(51, "https://www.disneyplus.com/search?q={title}"),
-            Map.entry(110, "https://www.primevideo.com/search?q={title}"),
-            Map.entry(103, "https://tv.apple.com/search?q={title}"),
-            Map.entry(121, "https://play.google.com/store/movies?q={title}"),
-            Map.entry(128, "https://www.rakuten.com/search?q={title}"),
-            Map.entry(153, "https://www.filmin.com/search?q={title}"),
-            Map.entry(136, "https://mubi.com/en/search?q={title}"),
-            Map.entry(332, "https://www.paramountplus.com/search?q={title}"),
-            Map.entry(368, "https://www.starplus.com/search?q={title}"),
-            Map.entry(449, "https://plus.movistar.es/search?q={title}"));
+            Map.entry(8, "https://www.netflix.com/search?q={title}"),
+            Map.entry(175, "https://www.netflix.com/search?q={title}"),
+            Map.entry(1796, "https://www.netflix.com/search?q={title}"),
+            Map.entry(9, "https://www.primevideo.com/search?q={title}"),
+            Map.entry(10, "https://www.primevideo.com/search?q={title}"),
+            Map.entry(119, "https://www.primevideo.com/search?q={title}"),
+            Map.entry(122, "https://www.disneyplus.com/search?q={title}"),
+            Map.entry(337, "https://www.disneyplus.com/search?q={title}"),
+            Map.entry(1899, "https://www.max.com/search?q={title}"),
+            Map.entry(2, "https://tv.apple.com/search?q={title}"),
+            Map.entry(350, "https://tv.apple.com/search?q={title}"),
+            Map.entry(3, "https://play.google.com/store/movies?q={title}"),
+            Map.entry(35, "https://www.rakuten.com/search?q={title}"),
+            Map.entry(11, "https://mubi.com/en/search?q={title}"),
+            Map.entry(531, "https://www.paramountplus.com/search?q={title}"),
+            Map.entry(2303, "https://www.paramountplus.com/search?q={title}"),
+            Map.entry(2616, "https://www.paramountplus.com/search?q={title}"));
 
     public String buildDeepLink(Integer providerId, String title) {
         String template = providerId == null ? null : PROVIDER_URLS.get(providerId);
