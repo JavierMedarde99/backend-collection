@@ -106,7 +106,6 @@ class MovieShowServiceTest {
                 .thenReturn(java.util.Map.of(ProviderAccessType.FLATRATE,
                         java.util.List.of(new TmdbWatchProvider(10, "Netflix", "/netflix.jpg"))));
         when(providerUrlMapper.buildLogoUrl("/netflix.jpg")).thenReturn("https://image.tmdb.org/t/p/original/netflix.jpg");
-        when(providerUrlMapper.buildDeepLink(10, "Fight Club")).thenReturn("https://www.netflix.com/search?q=Fight%20Club");
 
         MovieShow result = movieShowService.save(show, "u1");
 

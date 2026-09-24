@@ -79,7 +79,6 @@ public class MovieShowEntityMapper {
                         .providerName(p.getProviderName())
                         .logoUrl(p.getLogoUrl())
                         .type(p.getType() == null ? null : p.getType().name())
-                        .deepLinkUrl(p.getDeepLinkUrl())
                         .build())
                 .toList();
     }
@@ -94,7 +93,6 @@ public class MovieShowEntityMapper {
                         .providerName(e.getProviderName())
                         .logoUrl(e.getLogoUrl())
                         .type(parseType(e.getType()))
-                        .deepLinkUrl(e.getDeepLinkUrl())
                         .build())
                 .toList();
     }

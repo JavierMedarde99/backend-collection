@@ -70,7 +70,6 @@ public class MovieShowDtoMapper {
                         .providerName(r.providerName())
                         .logoUrl(r.logoUrl())
                         .type(parseType(r.type()))
-                        .deepLinkUrl(r.deepLinkUrl())
                         .build())
                 .toList();
     }

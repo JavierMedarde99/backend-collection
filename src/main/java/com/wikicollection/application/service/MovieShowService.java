@@ -185,7 +185,6 @@ public class MovieShowService implements MovieShowUseCase {
                         .providerName(provider.providerName())
                         .logoUrl(providerUrlMapper.buildLogoUrl(provider.logoPath()))
                         .type(entry.getKey())
-                        .deepLinkUrl(providerUrlMapper.buildDeepLink(provider.providerId(), movieShow.getTitle()))
                         .build());
             }
         }
