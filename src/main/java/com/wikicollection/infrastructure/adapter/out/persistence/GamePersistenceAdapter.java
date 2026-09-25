@@ -33,6 +33,15 @@ public class GamePersistenceAdapter implements GameRepository {
     }
 
     @Override
+    public List<String> distinctGenres(List<String> excludeOwnerIds) {
+        var distinct = mongoTemplate.query(GameEntity.class).distinct("genres").as(String.class);
+        if (excludeOwnerIds != null && !excludeOwnerIds.isEmpty()) {
+            return distinct.matching(new Query(Criteria.where("ownerId").nin(excludeOwnerIds))).all();
+        }
+        return distinct.all();
+    }
+
+    @Override
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable) {
         Query query = buildQuery(criteria);
         long total = mongoTemplate.count(query, GameEntity.class);

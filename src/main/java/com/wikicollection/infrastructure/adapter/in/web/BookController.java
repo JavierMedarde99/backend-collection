@@ -89,6 +89,15 @@ public class BookController {
         });
     }
 
+    @GetMapping("/genres")
+    @Operation(summary = "Catálogo de géneros en uso", description = "Géneros distintos globales, excluyendo colecciones privadas.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de géneros")
+    })
+    public java.util.List<String> genres() {
+        return bookUseCase.distinctGenres();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene un libro por su id")
     @ApiResponses({

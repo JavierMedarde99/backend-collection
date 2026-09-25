@@ -10,6 +10,8 @@ public interface BoardGameUseCase {
 
     Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable);
 
+    java.util.List<String> distinctGenres();
+
     Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
 
     BoardGame findById(String id);

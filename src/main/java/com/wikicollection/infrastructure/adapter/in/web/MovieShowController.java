@@ -88,6 +88,15 @@ public class MovieShowController {
         });
     }
 
+    @GetMapping("/genres")
+    @Operation(summary = "Catálogo de géneros en uso", description = "Géneros distintos globales, excluyendo colecciones privadas.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de géneros")
+    })
+    public java.util.List<String> genres() {
+        return movieShowUseCase.distinctGenres();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene una película/serie por su id")
     @ApiResponses({

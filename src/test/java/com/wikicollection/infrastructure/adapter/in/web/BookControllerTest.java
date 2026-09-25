@@ -135,6 +135,17 @@ class BookControllerTest {
     }
 
     @Test
+    void listGenres_returnsDistinctGenres() throws Exception {
+        when(bookRepository.distinctGenres(org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(java.util.List.of("Fantasía", "Terror"));
+
+        mockMvc.perform(get("/api/v1/books/genres"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Fantasía"))
+                .andExpect(jsonPath("$[1]").value("Terror"));
+    }
+
+    @Test
     void listBooks_filtersByGenre() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 

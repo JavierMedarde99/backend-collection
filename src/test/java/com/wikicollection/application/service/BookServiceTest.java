@@ -52,6 +52,9 @@ class BookServiceTest {
     @Mock
     private com.wikicollection.domain.port.out.ExternalBookCatalogClient catalogClient;
 
+    @Mock
+    private OwnerScopeResolver ownerScopeResolver;
+
     @InjectMocks
     private BookService bookService;
 
@@ -68,6 +71,17 @@ class BookServiceTest {
         lenient().when(ownerResolver.resolveOwner(any()))
                 .thenAnswer(invocation -> UserOwned.builder()
                         .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
+    }
+
+    @Test
+    void distinctGenres_sortsResults() {
+        when(ownerScopeResolver.excludedOwnerIds(com.wikicollection.domain.model.CollectionType.BOOKS))
+                .thenReturn(java.util.List.of("privado"));
+        when(bookRepository.distinctGenres(java.util.List.of("privado")))
+                .thenReturn(java.util.List.of("Terror", "Fantasía"));
+
+        assertThat(bookService.distinctGenres()).containsExactly("Fantasía", "Terror");
+        verify(bookRepository).distinctGenres(java.util.List.of("privado"));
     }
 
     @Test

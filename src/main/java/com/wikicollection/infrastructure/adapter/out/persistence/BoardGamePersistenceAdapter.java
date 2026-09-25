@@ -33,6 +33,15 @@ public class BoardGamePersistenceAdapter implements BoardGameRepository {
     }
 
     @Override
+    public java.util.List<String> distinctGenres(java.util.List<String> excludeOwnerIds) {
+        var distinct = mongoTemplate.query(BoardGameEntity.class).distinct("genres").as(String.class);
+        if (excludeOwnerIds != null && !excludeOwnerIds.isEmpty()) {
+            return distinct.matching(new Query(Criteria.where("ownerId").nin(excludeOwnerIds))).all();
+        }
+        return distinct.all();
+    }
+
+    @Override
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable) {
         Query query = buildQuery(criteria);
         long total = mongoTemplate.count(query, BoardGameEntity.class);

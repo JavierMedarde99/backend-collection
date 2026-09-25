@@ -1,5 +1,6 @@
 package com.wikicollection.domain.port.out;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Book;
@@ -21,4 +22,6 @@ public interface BookRepository {
     void deleteById(String id);
 
     void updateOwnerName(String ownerId, String ownerName);
+
+    List<String> distinctGenres(List<String> excludeOwnerIds);
 }

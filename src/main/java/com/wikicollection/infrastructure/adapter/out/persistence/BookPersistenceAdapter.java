@@ -33,6 +33,15 @@ public class BookPersistenceAdapter implements BookRepository {
     }
 
     @Override
+    public List<String> distinctGenres(List<String> excludeOwnerIds) {
+        var distinct = mongoTemplate.query(BookEntity.class).distinct("genres").as(String.class);
+        if (excludeOwnerIds != null && !excludeOwnerIds.isEmpty()) {
+            return distinct.matching(new Query(Criteria.where("ownerId").nin(excludeOwnerIds))).all();
+        }
+        return distinct.all();
+    }
+
+    @Override
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable) {
         Query query = buildQuery(criteria);
         long total = mongoTemplate.count(query, BookEntity.class);

@@ -96,6 +96,15 @@ public class GameController {
         });
     }
 
+    @GetMapping("/genres")
+    @Operation(summary = "Catálogo de géneros en uso", description = "Géneros distintos globales, excluyendo colecciones privadas.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de géneros")
+    })
+    public java.util.List<String> genres() {
+        return gameUseCase.distinctGenres();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene un juego por su id")
     @ApiResponses({

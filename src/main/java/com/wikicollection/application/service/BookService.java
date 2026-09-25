@@ -51,6 +51,19 @@ public class BookService implements BookUseCase {
     }
 
     @Override
+    public java.util.List<String> distinctGenres() {
+        java.util.List<String> genres = bookRepository
+                .distinctGenres(ownerScopeResolver.excludedOwnerIds(CollectionType.BOOKS));
+        if (genres == null) {
+            return java.util.List.of();
+        }
+        return genres.stream()
+                .filter(g -> g != null && !g.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    @Override
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOOKS, owner, viewerId);
         return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
