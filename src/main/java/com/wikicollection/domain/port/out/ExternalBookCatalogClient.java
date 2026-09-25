@@ -9,4 +9,6 @@ public interface ExternalBookCatalogClient {
     List<BookSearchResult> search(String query);
 
     List<BookSearchResult> searchByIsbn(String isbn);
+
+    List<String> getCategories(String volumeId);
 }

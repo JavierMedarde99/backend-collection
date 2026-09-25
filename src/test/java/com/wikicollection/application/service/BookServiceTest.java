@@ -49,6 +49,9 @@ class BookServiceTest {
     @Mock
     private OwnerResolver ownerResolver;
 
+    @Mock
+    private com.wikicollection.domain.port.out.ExternalBookCatalogClient catalogClient;
+
     @InjectMocks
     private BookService bookService;
 
@@ -97,6 +100,18 @@ class BookServiceTest {
         assertThatThrownBy(() -> bookService.findById("nope"))
                 .isInstanceOf(BookNotFoundException.class)
                 .hasMessageContaining("nope");
+    }
+
+    @Test
+    void save_fillsEmptyGenres_fromCatalog() {
+        Book book = sampleBook();
+        book.setExternalId("volume1");
+        when(catalogClient.getCategories("volume1")).thenReturn(java.util.List.of("Fiction"));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.save(book, "u1");
+
+        assertThat(result.getGenres()).containsExactly("Fiction");
     }
 
     @Test

@@ -7,4 +7,6 @@ import com.wikicollection.domain.model.GameSearchResult;
 public interface ExternalGameCatalogClient {
 
     List<GameSearchResult> search(String query);
+
+    List<String> getGenres(String externalId);
 }

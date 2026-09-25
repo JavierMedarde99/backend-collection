@@ -6,7 +6,10 @@ import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.port.in.BookUseCase;
+import java.util.List;
+
 import com.wikicollection.domain.port.out.BookRepository;
+import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
 import org.springframework.dao.DuplicateKeyException;
 import com.wikicollection.domain.model.CollectionType;
@@ -15,10 +18,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class BookService implements BookUseCase {
 
     private final BookRepository bookRepository;
+    private final ExternalBookCatalogClient catalogClient;
     private final DateRangeValidator dateRangeValidator;
     private final OwnershipValidator ownershipValidator;
 
@@ -26,11 +33,12 @@ public class BookService implements BookUseCase {
 
     private final OwnerResolver ownerResolver;
 
-    public BookService(BookRepository bookRepository, DateRangeValidator dateRangeValidator,
+    public BookService(BookRepository bookRepository, ExternalBookCatalogClient catalogClient, DateRangeValidator dateRangeValidator,
                        OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
                        OwnerResolver ownerResolver) {
         this.bookRepository = bookRepository;
+        this.catalogClient = catalogClient;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
         this.ownerResolver = ownerResolver;
@@ -61,6 +69,7 @@ public class BookService implements BookUseCase {
         book.setUserOwned(ownerResolver.resolveOwner(ownerId));
         checkExternalIdUnique(book.getExternalId(), null);
         validateProgress(book.getPagesRead(), book.getPages());
+        fillEmptyGenres(book);
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return saveOrConflict(book);
     }
@@ -73,6 +82,7 @@ public class BookService implements BookUseCase {
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
         validateProgress(existing.getPagesRead(), existing.getPages());
+        fillEmptyGenres(existing);
         dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
         return saveOrConflict(existing);
     }
@@ -82,6 +92,23 @@ public class BookService implements BookUseCase {
             return bookRepository.save(book);
         } catch (DuplicateKeyException e) {
             throw new BookConflictException("Ya existe un libro con externalId: " + book.getExternalId());
+        }
+    }
+
+    private void fillEmptyGenres(Book book) {
+        if (book.getGenres() != null && !book.getGenres().isEmpty()) {
+            return;
+        }
+        if (book.getExternalId() == null || book.getExternalId().isBlank()) {
+            return;
+        }
+        try {
+            List<String> categories = catalogClient.getCategories(book.getExternalId().strip());
+            if (categories != null && !categories.isEmpty()) {
+                book.setGenres(categories);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Categorías no disponibles para {}: {}", book.getExternalId(), e.getMessage());
         }
     }
 

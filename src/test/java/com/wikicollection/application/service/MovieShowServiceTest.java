@@ -57,6 +57,9 @@ class MovieShowServiceTest {
     @Mock
     private ProviderUrlMapper providerUrlMapper;
 
+    @Mock
+    private com.wikicollection.domain.port.out.MovieDetailsClient movieDetailsClient;
+
     @InjectMocks
     private MovieShowService movieShowService;
 
@@ -136,6 +139,20 @@ class MovieShowServiceTest {
         assertThatThrownBy(() -> movieShowService.findById("nope"))
                 .isInstanceOf(MovieShowNotFoundException.class)
                 .hasMessageContaining("nope");
+    }
+
+    @Test
+    void save_fillsEmptyGenres_fromTmdb() {
+        MovieShow show = sampleShow();
+        show.setId(null);
+        when(movieShowRepository.findByExternalId("550")).thenReturn(Optional.empty());
+        when(movieShowRepository.save(any(MovieShow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(movieDetailsClient.getGenres(550L, com.wikicollection.domain.model.MovieMediaType.MOVIE))
+                .thenReturn(java.util.List.of("Drama"));
+
+        MovieShow result = movieShowService.save(show, "u1");
+
+        assertThat(result.getGenres()).containsExactly("Drama");
     }
 
     @Test

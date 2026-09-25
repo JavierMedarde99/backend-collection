@@ -13,6 +13,7 @@ import com.wikicollection.domain.model.MovieSearchResult;
 import com.wikicollection.domain.model.ProviderAccessType;
 import com.wikicollection.domain.model.TmdbWatchProvider;
 import com.wikicollection.domain.port.out.ExternalMovieCatalogClient;
+import com.wikicollection.domain.port.out.MovieDetailsClient;
 import com.wikicollection.domain.port.out.WatchProvidersClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
 @Component("tmdbClient")
-public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersClient {
+public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersClient, MovieDetailsClient {
 
     private static final String SEARCH_MOVIE_PATH = "/search/movie";
     private static final String SEARCH_TV_PATH = "/search/tv";
@@ -161,6 +162,37 @@ public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersCli
                 .toList();
     }
 
+    @Override
+    @Cacheable(cacheNames = CacheConfig.MOVIE_SEARCH, key = "'genres:' + #tmdbId + '|' + #mediaType")
+    public List<String> getGenres(Long tmdbId, MovieMediaType mediaType) {
+        if (tmdbId == null) {
+            return List.of();
+        }
+        String path = mediaType == MovieMediaType.TV ? "/tv/{id}" : "/movie/{id}";
+        try {
+            TmdbDetails details = executeWithRetry(() -> tmdbRestClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(path).queryParam("language", "es-ES");
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            uriBuilder.queryParam("api_key", apiKey);
+                        }
+                        return uriBuilder.build(tmdbId);
+                    })
+                    .retrieve()
+                    .body(TmdbDetails.class));
+            if (details == null || details.genres() == null) {
+                return List.of();
+            }
+            return details.genres().stream()
+                    .map(TmdbGenre::name)
+                    .filter(name -> name != null && !name.isBlank())
+                    .toList();
+        } catch (RestClientException e) {
+            log.warn("TMDB detalles falló para {}: {}", tmdbId, e.getMessage());
+            return List.of();
+        }
+    }
+
     private MovieSearchResult toResult(TmdbEntry entry, MovieMediaType mediaType) {
         String title = mediaType == MovieMediaType.MOVIE ? entry.title() : entry.name();
         String date = mediaType == MovieMediaType.MOVIE ? entry.releaseDate() : entry.firstAirDate();
@@ -222,6 +254,14 @@ public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersCli
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbSearchResponse(
             List<TmdbEntry> results) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbDetails(List<TmdbGenre> genres) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbGenre(Long id, String name) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

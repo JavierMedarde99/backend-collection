@@ -56,6 +56,38 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         return searchWithRetry("isbn:" + isbn);
     }
 
+    @Override
+    @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "'volume:' + #volumeId")
+    public List<String> getCategories(String volumeId) {
+        if (volumeId == null || volumeId.isBlank()) {
+            return List.of();
+        }
+        try {
+            GoogleBookItem item = restClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(VOLUMES_PATH + "/{id}");
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            uriBuilder.queryParam("key", apiKey);
+                        }
+                        return uriBuilder.build(volumeId.strip());
+                    })
+                    .retrieve()
+                    .body(GoogleBookItem.class);
+            if (item == null || item.volumeInfo() == null || item.volumeInfo().categories() == null) {
+                return List.of();
+            }
+            return item.volumeInfo().categories().stream()
+                    .filter(c -> c != null && !c.isBlank())
+                    .toList();
+        } catch (RestClientResponseException e) {
+            log.warn("Google Books volumen devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return List.of();
+        } catch (ResourceAccessException e) {
+            log.warn("Google Books API no disponible: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     private List<BookSearchResult> searchWithRetry(String q) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;
