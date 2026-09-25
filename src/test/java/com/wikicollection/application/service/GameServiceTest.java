@@ -42,6 +42,14 @@ class GameServiceTest {
     @Mock
     private SteamCatalogueClient steamCatalogueClient;
 
+    @Mock
+    private com.wikicollection.domain.port.out.ExternalGameCatalogClient rawgClient;
+
+    @Mock
+    private com.wikicollection.domain.port.out.ExternalGameCatalogClient freeToGameClient;
+
+    private GameService gameService;
+
     @Spy
     private DateRangeValidator dateRangeValidator = new DateRangeValidator();
 
@@ -50,9 +58,6 @@ class GameServiceTest {
 
     @Mock
     private OwnerResolver ownerResolver;
-
-    @InjectMocks
-    private GameService gameService;
 
     private Game sampleGame() {
         return Game.builder()
@@ -64,6 +69,10 @@ class GameServiceTest {
 
     @BeforeEach
     void stubOwner() {
+        gameService = new GameService(gameRepository, steamCatalogueClient, dateRangeValidator,
+                ownershipValidator,
+                new OwnerScopeResolver(org.mockito.Mockito.mock(com.wikicollection.domain.port.in.UserPreferencesUseCase.class)),
+                ownerResolver, rawgClient, freeToGameClient);
         lenient().when(ownerResolver.resolveOwner(any()))
                 .thenAnswer(invocation -> UserOwned.builder()
                         .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
@@ -90,6 +99,33 @@ class GameServiceTest {
         Game result = gameService.findById("g1");
 
         assertThat(result).isSameAs(game);
+    }
+
+    @Test
+    void save_fillsEmptyGenres_fromRawg() {
+        Game game = sampleGame();
+        game.setExternalId("3328");
+        game.setExternalSource("RAWG");
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(rawgClient.getGenres("3328")).thenReturn(java.util.List.of("Action", "RPG"));
+
+        Game result = gameService.save(game, false, "u1");
+
+        assertThat(result.getGenres()).containsExactly("Action", "RPG");
+    }
+
+    @Test
+    void save_keepsUserGenres_whenPresent() {
+        Game game = sampleGame();
+        game.setExternalId("3328");
+        game.setExternalSource("RAWG");
+        game.setGenres(java.util.List.of("Mío"));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.save(game, false, "u1");
+
+        assertThat(result.getGenres()).containsExactly("Mío");
+        verify(rawgClient, org.mockito.Mockito.never()).getGenres(any());
     }
 
     @Test

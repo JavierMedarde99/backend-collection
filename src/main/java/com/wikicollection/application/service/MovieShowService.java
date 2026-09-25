@@ -18,6 +18,7 @@ import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.ProviderAccessType;
 import com.wikicollection.domain.model.StreamingProvider;
 import com.wikicollection.domain.model.TmdbWatchProvider;
+import com.wikicollection.domain.port.out.MovieDetailsClient;
 import com.wikicollection.domain.port.out.WatchProvidersClient;
 import com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper;
 
@@ -43,6 +44,7 @@ public class MovieShowService implements MovieShowUseCase {
 
     private final WatchProvidersClient watchProvidersClient;
     private final ProviderUrlMapper providerUrlMapper;
+    private final MovieDetailsClient movieDetailsClient;
 
     public MovieShowService(MovieShowRepository movieShowRepository,
                             DateRangeValidator dateRangeValidator,
@@ -50,7 +52,8 @@ public class MovieShowService implements MovieShowUseCase {
                        OwnerScopeResolver ownerScopeResolver,
                        OwnerResolver ownerResolver,
                        WatchProvidersClient watchProvidersClient,
-                       ProviderUrlMapper providerUrlMapper) {
+                       ProviderUrlMapper providerUrlMapper,
+                       MovieDetailsClient movieDetailsClient) {
         this.movieShowRepository = movieShowRepository;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
@@ -58,6 +61,7 @@ public class MovieShowService implements MovieShowUseCase {
         this.ownerScopeResolver = ownerScopeResolver;
         this.watchProvidersClient = watchProvidersClient;
         this.providerUrlMapper = providerUrlMapper;
+        this.movieDetailsClient = movieDetailsClient;
     }
 
     @Override
@@ -85,6 +89,7 @@ public class MovieShowService implements MovieShowUseCase {
         dateRangeValidator.validate(movieShow.getDateAdded(), movieShow.getDateCompleted());
         assertNoDuplicate(movieShow.getExternalId(), null);
         enrichStreamingProviders(movieShow);
+        fillEmptyGenres(movieShow);
         return saveOrConflict(movieShow);
     }
 
@@ -95,6 +100,7 @@ public class MovieShowService implements MovieShowUseCase {
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         copyUpdatableFields(existing, updates);
         enrichStreamingProviders(existing);
+        fillEmptyGenres(existing);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         assertNoDuplicate(existing.getExternalId(), id);
         return saveOrConflict(existing);
@@ -157,6 +163,25 @@ public class MovieShowService implements MovieShowUseCase {
         target.setExternalSource(source.getExternalSource());
         target.setStreamingProviders(source.getStreamingProviders());
         target.setWatchCountry(source.getWatchCountry());
+    }
+
+    private void fillEmptyGenres(MovieShow movieShow) {
+        if (movieShow.getGenres() != null && !movieShow.getGenres().isEmpty()) {
+            return;
+        }
+        Long tmdbId = parseTmdbId(movieShow.getExternalId());
+        MovieMediaType mediaType = movieShow.getMediaType();
+        if (tmdbId == null || mediaType == null) {
+            return;
+        }
+        try {
+            List<String> genres = movieDetailsClient.getGenres(tmdbId, mediaType);
+            if (genres != null && !genres.isEmpty()) {
+                movieShow.setGenres(genres);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Géneros no disponibles para {}: {}", tmdbId, e.getMessage());
+        }
     }
 
     private void enrichStreamingProviders(MovieShow movieShow) {

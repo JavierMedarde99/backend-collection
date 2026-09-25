@@ -53,6 +53,31 @@ public class FreeToGameClient implements ExternalGameCatalogClient {
         }
     }
 
+    @Override
+    public List<String> getGenres(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return List.of();
+        }
+        try {
+            FreeToGameResponse game = freeToGameClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/game")
+                            .queryParam("id", externalId.strip())
+                            .build())
+                    .retrieve()
+                    .body(FreeToGameResponse.class);
+            if (game == null || game.genre() == null || game.genre().isBlank()) {
+                return List.of();
+            }
+            return List.of(game.genre());
+        } catch (RestClientResponseException e) {
+            log.warn("FreeToGame detalle devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return List.of();
+        } catch (ResourceAccessException e) {
+            log.warn("FreeToGame no disponible: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     private List<GameSearchResult> toResults(FreeToGameResponse[] response) {
         if (response == null) {
             return List.of();

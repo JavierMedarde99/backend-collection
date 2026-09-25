@@ -67,6 +67,39 @@ public class RAWGClient implements ExternalGameCatalogClient {
         }
     }
 
+    @Override
+    @Cacheable(cacheNames = CacheConfig.GAME_SEARCH, key = "'rawg-genres:' + #externalId")
+    public List<String> getGenres(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return List.of();
+        }
+        try {
+            RawgGame game = rawgRestClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(GAMES_PATH + "/{id}");
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            uriBuilder.queryParam("key", apiKey);
+                        }
+                        return uriBuilder.build(externalId.strip());
+                    })
+                    .retrieve()
+                    .body(RawgGame.class);
+            if (game == null || game.genres() == null) {
+                return List.of();
+            }
+            return game.genres().stream()
+                    .map(RawgGenre::name)
+                    .filter(name -> name != null && !name.isBlank())
+                    .toList();
+        } catch (RestClientResponseException e) {
+            log.warn("RAWG detalles devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return List.of();
+        } catch (ResourceAccessException e) {
+            log.warn("RAWG no disponible: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     private GameSearchResult toResult(RawgGame game) {
         String genre = firstGenre(game.genres());
         String publisher = firstPublisher(game.publishers());

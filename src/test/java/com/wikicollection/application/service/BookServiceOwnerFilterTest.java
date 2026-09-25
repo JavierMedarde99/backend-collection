@@ -35,7 +35,7 @@ class BookServiceOwnerFilterTest {
 
     private BookService service() {
         OwnerScopeResolver resolver = new OwnerScopeResolver(preferencesUseCase);
-        return new BookService(bookRepository, mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
+        return new BookService(bookRepository, mock(com.wikicollection.domain.port.out.ExternalBookCatalogClient.class), mock(DateRangeValidator.class), mock(OwnershipValidator.class), new OwnerScopeResolver(preferencesUseCase), mock(OwnerResolver.class));
     }
 
     @Test

@@ -1,22 +1,31 @@
 package com.wikicollection.application.service;
 
+import java.util.List;
+
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
+import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 import com.wikicollection.domain.port.out.SteamCatalogueClient;
 
 import com.wikicollection.domain.model.CollectionType;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class GameService implements GameUseCase {
 
     private final GameRepository gameRepository;
     private final SteamCatalogueClient steamCatalogueClient;
+    private final ExternalGameCatalogClient rawgClient;
+    private final ExternalGameCatalogClient freeToGameClient;
     private final DateRangeValidator dateRangeValidator;
     private final OwnershipValidator ownershipValidator;
 
@@ -27,9 +36,13 @@ public class GameService implements GameUseCase {
     public GameService(GameRepository gameRepository, SteamCatalogueClient steamCatalogueClient, DateRangeValidator dateRangeValidator,
                        OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
-                       OwnerResolver ownerResolver) {
+                       OwnerResolver ownerResolver,
+                       @Qualifier("rawgClient") ExternalGameCatalogClient rawgClient,
+                       @Qualifier("freeToGameClient") ExternalGameCatalogClient freeToGameClient) {
         this.gameRepository = gameRepository;
         this.steamCatalogueClient = steamCatalogueClient;
+        this.rawgClient = rawgClient;
+        this.freeToGameClient = freeToGameClient;
         this.dateRangeValidator = dateRangeValidator;
         this.ownershipValidator = ownershipValidator;
         this.ownerResolver = ownerResolver;
@@ -59,6 +72,7 @@ public class GameService implements GameUseCase {
         game.setUserOwned(ownerResolver.resolveOwner(ownerId));
         dateRangeValidator.validate(game.getDateAdded(), game.getDateCompleted());
         resolveSteamAppId(game, obtainPlatinum);
+        fillEmptyGenres(game);
         return gameRepository.save(game);
     }
 
@@ -69,6 +83,7 @@ public class GameService implements GameUseCase {
         copyUpdatableFields(existing, updates);
         dateRangeValidator.validate(existing.getDateAdded(), existing.getDateCompleted());
         resolveSteamAppId(existing, obtainPlatinum);
+        fillEmptyGenres(existing);
         return gameRepository.save(existing);
     }
 
@@ -88,6 +103,28 @@ public class GameService implements GameUseCase {
         }
         Long appId = steamCatalogueClient.searchGameByName(game.getTitle());
         game.setSteamAppId(appId != null ? appId.toString() : null);
+    }
+
+    private void fillEmptyGenres(Game game) {
+        if (game.getGenres() != null && !game.getGenres().isEmpty()) {
+            return;
+        }
+        if (game.getExternalId() == null || game.getExternalId().isBlank()) {
+            return;
+        }
+        try {
+            List<String> genres = isFreeToGame(game) ? freeToGameClient.getGenres(game.getExternalId())
+                    : rawgClient.getGenres(game.getExternalId());
+            if (genres != null && !genres.isEmpty()) {
+                game.setGenres(genres);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Géneros no disponibles para {}: {}", game.getExternalId(), e.getMessage());
+        }
+    }
+
+    private static boolean isFreeToGame(Game game) {
+        return "FreeToGame".equalsIgnoreCase(game.getExternalSource());
     }
 
     private void copyUpdatableFields(Game target, Game source) {
