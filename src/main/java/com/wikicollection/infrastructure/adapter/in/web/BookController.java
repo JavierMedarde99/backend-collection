@@ -78,7 +78,7 @@ public class BookController {
             @Parameter(description = "Filtro por autor") @RequestParam(required = false) String author,
             @Parameter(description = "Filtro por tipo de libro") @RequestParam(required = false) BookType type,
             @Parameter(description = "Filtro por estado de lectura") @RequestParam(required = false) BookState state,
-            @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) String genre,
+            @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));

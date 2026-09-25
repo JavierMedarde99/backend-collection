@@ -6,7 +6,7 @@ public record GameSearchCriteria(
         String name,
         GamePlatform platform,
         GameStatus status,
-        String genre,
+        java.util.List<String> genres,
         String ownerId,
         List<String> excludeOwnerIds) {
 
@@ -14,8 +14,15 @@ public record GameSearchCriteria(
         return name != null && !name.isBlank();
     }
 
-    public boolean hasGenre() {
-        return genre != null && !genre.isBlank();
+    public boolean hasGenres() {
+        return genres != null && genres.stream().anyMatch(g -> g != null && !g.isBlank());
+    }
+
+    public java.util.List<String> effectiveGenres() {
+        if (genres == null) {
+            return java.util.List.of();
+        }
+        return genres.stream().filter(g -> g != null && !g.isBlank()).toList();
     }
 
     public boolean hasOwnerId() {

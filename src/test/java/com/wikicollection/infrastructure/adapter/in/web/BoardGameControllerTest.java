@@ -94,7 +94,7 @@ class BoardGameControllerTest {
 
         ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
         verify(boardGameRepository).search(captor.capture(), any(Pageable.class));
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("estrategia");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genres()).containsExactly("estrategia");
     }
 
     @Test

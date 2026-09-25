@@ -154,7 +154,19 @@ class BookControllerTest {
 
         ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
         verify(bookRepository).search(captor.capture(), any(Pageable.class));
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("fantasía");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genres()).containsExactly("fantasía");
+    }
+
+    @Test
+    void listBooks_filtersByMultipleGenres() throws Exception {
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("genre", "fantasía", "terror"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
+        verify(bookRepository).search(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genres()).containsExactly("fantasía", "terror");
     }
 
     @Test

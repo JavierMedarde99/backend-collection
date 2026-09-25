@@ -66,7 +66,7 @@ public class BookService implements BookUseCase {
     @Override
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOOKS, owner, viewerId);
-        return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override

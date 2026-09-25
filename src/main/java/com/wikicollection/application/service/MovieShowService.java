@@ -84,7 +84,7 @@ public class MovieShowService implements MovieShowUseCase {
     @Override
     public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MOVIESHOWS, owner, viewerId);
-        return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
