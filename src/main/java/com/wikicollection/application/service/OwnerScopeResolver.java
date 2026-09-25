@@ -21,6 +21,11 @@ public class OwnerScopeResolver {
         this.preferencesUseCase = preferencesUseCase;
     }
 
+    public java.util.List<String> excludedOwnerIds(CollectionType type) {
+        java.util.List<String> excluded = preferencesUseCase.getUserIdsWithPrivateCollection(type);
+        return excluded == null ? java.util.List.of() : excluded;
+    }
+
     public Scope resolve(CollectionType type, String owner, String viewerId) {
         String mode = owner == null ? "mine" : owner;
         return switch (mode) {

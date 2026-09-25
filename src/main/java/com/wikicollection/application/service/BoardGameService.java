@@ -37,6 +37,19 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
+    public java.util.List<String> distinctGenres() {
+        java.util.List<String> genres = boardGameRepository
+                .distinctGenres(ownerScopeResolver.excludedOwnerIds(CollectionType.BOARDGAMES));
+        if (genres == null) {
+            return java.util.List.of();
+        }
+        return genres.stream()
+                .filter(g -> g != null && !g.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    @Override
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
         return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);

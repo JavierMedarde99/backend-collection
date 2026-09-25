@@ -64,9 +64,21 @@ public class MovieShowService implements MovieShowUseCase {
         this.movieDetailsClient = movieDetailsClient;
     }
 
-    @Override
     public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable) {
         return movieShowRepository.findByCriteria(criteria, pageable);
+    }
+
+    @Override
+    public java.util.List<String> distinctGenres() {
+        java.util.List<String> genres = movieShowRepository
+                .distinctGenres(ownerScopeResolver.excludedOwnerIds(CollectionType.MOVIESHOWS));
+        if (genres == null) {
+            return java.util.List.of();
+        }
+        return genres.stream()
+                .filter(g -> g != null && !g.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     @Override

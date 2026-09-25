@@ -1,5 +1,6 @@
 package com.wikicollection.domain.port.out;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.BoardGame;
@@ -19,4 +20,6 @@ public interface BoardGameRepository {
     void deleteById(String id);
 
     void updateOwnerName(String ownerId, String ownerName);
+
+    List<String> distinctGenres(List<String> excludeOwnerIds);
 }

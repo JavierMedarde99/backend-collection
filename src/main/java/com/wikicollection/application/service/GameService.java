@@ -55,6 +55,19 @@ public class GameService implements GameUseCase {
     }
 
     @Override
+    public java.util.List<String> distinctGenres() {
+        java.util.List<String> genres = gameRepository
+                .distinctGenres(ownerScopeResolver.excludedOwnerIds(CollectionType.GAMES));
+        if (genres == null) {
+            return java.util.List.of();
+        }
+        return genres.stream()
+                .filter(g -> g != null && !g.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    @Override
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
         return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
