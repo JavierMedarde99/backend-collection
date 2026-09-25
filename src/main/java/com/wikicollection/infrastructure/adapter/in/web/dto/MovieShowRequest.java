@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 public record MovieShowRequest(
         @NotBlank(message = "El identificador externo es obligatorio") String externalId,
         @NotBlank(message = "El título es obligatorio") String title,
+        List<String> genres,
         String overview,
         LocalDate releaseDate,
         String posterUrl,

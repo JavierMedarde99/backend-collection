@@ -16,7 +16,7 @@ class BookDtoMapperTest {
 
     @Test
     void mapsIsbn_requestToResponse() {
-        BookRequest request = new BookRequest("ext1", "9788498382671", "Dune", null, "Herbert", 412,
+        BookRequest request = new BookRequest("ext1", "9788498382671", "Dune", null, "Herbert", null, 412,
                 BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
@@ -26,7 +26,7 @@ class BookDtoMapperTest {
 
     @Test
     void mapsNullIsbn_whenAbsent() {
-        BookRequest request = new BookRequest("ext1", null, "Dune", null, "Herbert", 412,
+        BookRequest request = new BookRequest("ext1", null, "Dune", null, "Herbert", null, 412,
                 BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
@@ -35,7 +35,7 @@ class BookDtoMapperTest {
     }
 
     private BookRequest sampleRequest() {
-        return new BookRequest("ext1", "9788498382671", "Dune", "Ciencia ficción", "Herbert", 412,
+        return new BookRequest("ext1", "9788498382671", "Dune", "Ciencia ficción", "Herbert", java.util.List.of("Novela"), 412,
                 BookType.NOVEL, BookState.READING, "Muy bueno", 5, 120,
                 LocalDate.of(2024, 1, 1), null, "http://front");
     }
@@ -51,6 +51,7 @@ class BookDtoMapperTest {
         assertThat(book.getState()).isEqualTo(BookState.READING);
         assertThat(book.getStart()).isEqualTo(5);
         assertThat(book.getPagesRead()).isEqualTo(120);
+        assertThat(book.getGenres()).containsExactly("Novela");
         assertThat(book.getFrontpage()).isEqualTo("http://front");
     }
 

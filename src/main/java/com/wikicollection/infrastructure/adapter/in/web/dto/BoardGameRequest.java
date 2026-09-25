@@ -14,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record BoardGameRequest(
         @NotBlank(message = "El título es obligatorio") String title,
+        List<String> genres,
         String description,
         Integer yearPublished,
         @Min(value = 1, message = "El número mínimo de jugadores es 1") Integer minPlayers,

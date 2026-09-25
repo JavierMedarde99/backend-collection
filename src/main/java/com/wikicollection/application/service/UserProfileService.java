@@ -72,7 +72,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return bookRepository.search(
-                new BookSearchCriteria(null, null, null, null, user.getId(), null), pageable);
+                new BookSearchCriteria(null, null, null, null, null, user.getId(), null), pageable);
     }
 
     @Override
@@ -82,7 +82,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return gameRepository.search(
-                new GameSearchCriteria(null, null, null, user.getId(), null), pageable);
+                new GameSearchCriteria(null, null, null, null, user.getId(), null), pageable);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return boardGameRepository.search(
-                new BoardGameSearchCriteria(null, null, user.getId(), null), pageable);
+                new BoardGameSearchCriteria(null, null, null, user.getId(), null), pageable);
     }
 
     @Override
@@ -121,7 +121,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return movieShowRepository.findByCriteria(
-                new MovieSearchCriteria(null, null, null, user.getId(), null), pageable);
+                new MovieSearchCriteria(null, null, null, null, user.getId(), null), pageable);
     }
 
     private User findUser(String username) {

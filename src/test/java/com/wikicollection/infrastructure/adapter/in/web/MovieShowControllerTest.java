@@ -127,6 +127,19 @@ class MovieShowControllerTest {
     }
 
     @Test
+    void listShows_filtersByGenre() throws Exception {
+        when(movieShowRepository.findByCriteria(any(MovieSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/movieshows").with(user("u1")).param("genre", "drama"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<MovieSearchCriteria> captor = ArgumentCaptor.forClass(MovieSearchCriteria.class);
+        verify(movieShowRepository).findByCriteria(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("drama");
+    }
+
+    @Test
     void getShow_returnsShow_whenExists() throws Exception {
         when(movieShowRepository.findById("m1")).thenReturn(Optional.of(sampleShow()));
 

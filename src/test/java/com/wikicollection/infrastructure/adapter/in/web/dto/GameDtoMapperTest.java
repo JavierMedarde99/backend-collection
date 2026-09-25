@@ -17,7 +17,7 @@ class GameDtoMapperTest {
     @Test
     void toDomain_mapsAllRequestFields() {
         GameRequest request = new GameRequest(
-                "external-1", "The Witcher 3", GamePlatform.PC,
+                "external-1", "The Witcher 3", java.util.List.of("RPG"), GamePlatform.PC,
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
                 "RAWG", "570", true);
@@ -27,6 +27,7 @@ class GameDtoMapperTest {
         assertThat(game.getExternalId()).isEqualTo("external-1");
         assertThat(game.getTitle()).isEqualTo("The Witcher 3");
         assertThat(game.getPlatform()).isEqualTo(GamePlatform.PC);
+        assertThat(game.getGenres()).containsExactly("RPG");
         assertThat(game.getThumbnailUrl()).isEqualTo("http://img");
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
         assertThat(game.getUserRating()).isEqualTo(5);

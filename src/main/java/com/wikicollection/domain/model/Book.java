@@ -1,6 +1,7 @@
 package com.wikicollection.domain.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class Book {
     private String title;
     private String descripcion;
     private String author;
+    private List<String> genres;
     private Integer pages;
     private BookType type;
     private BookState state;

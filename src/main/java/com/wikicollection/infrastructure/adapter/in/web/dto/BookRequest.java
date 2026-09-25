@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
@@ -16,6 +17,7 @@ public record BookRequest(
         @NotBlank(message = "El título es obligatorio") String title,
         String descripcion,
         @NotBlank(message = "El autor es obligatorio") String author,
+        List<String> genres,
         @Min(value = 0, message = "El número de páginas no puede ser negativo") Integer pages,
         @NotNull(message = "El tipo es obligatorio") BookType type,
         @NotNull(message = "El estado es obligatorio") BookState state,

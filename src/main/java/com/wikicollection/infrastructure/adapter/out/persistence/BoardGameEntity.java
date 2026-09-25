@@ -34,6 +34,8 @@ public class BoardGameEntity {
 
     private String title;
 
+    private List<String> genres;
+
     private String description;
 
     private Integer yearPublished;

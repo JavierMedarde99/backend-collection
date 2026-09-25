@@ -10,6 +10,7 @@ public record MovieShowResponse(
         String id,
         String externalId,
         String title,
+        List<String> genres,
         String overview,
         LocalDate releaseDate,
         String posterUrl,
@@ -28,7 +29,7 @@ public record MovieShowResponse(
 
 
     public MovieShowResponse withoutPrivate() {
-        return new MovieShowResponse(id, externalId, title, overview, releaseDate, posterUrl,
+        return new MovieShowResponse(id, externalId, title, genres, overview, releaseDate, posterUrl,
                 backdropUrl, voteAverage, mediaType, status, null, null, dateAdded, dateCompleted,
                 externalSource, streamingProviders, watchCountry, userOwned);
     }

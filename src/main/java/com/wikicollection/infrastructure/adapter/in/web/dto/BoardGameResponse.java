@@ -9,6 +9,7 @@ import com.wikicollection.domain.model.BoardGameStatus;
 public record BoardGameResponse(
         String id,
         String title,
+        List<String> genres,
         String description,
         Integer yearPublished,
         Integer minPlayers,
@@ -30,7 +31,7 @@ public record BoardGameResponse(
 
 
     public BoardGameResponse withoutPrivate() {
-        return new BoardGameResponse(id, title, description, yearPublished, minPlayers, maxPlayers,
+        return new BoardGameResponse(id, title, genres, description, yearPublished, minPlayers, maxPlayers,
                 minPlaytime, maxPlaytime, publisher, designers, categories, mechanics, imageUrl,
                 thumbnailUrl, bggRating, bggId, status, null, dateAdded, userOwned);
     }

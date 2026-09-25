@@ -127,6 +127,18 @@ class GameControllerTest {
     }
 
     @Test
+    void listGames_filtersByGenre() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("genre", "rpg"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("rpg");
+    }
+
+    @Test
     void getGame_returnsGame_whenExists() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
 

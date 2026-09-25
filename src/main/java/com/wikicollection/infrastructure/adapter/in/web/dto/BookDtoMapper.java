@@ -17,6 +17,7 @@ public class BookDtoMapper {
                 .title(request.title())
                 .descripcion(request.descripcion())
                 .author(request.author())
+                .genres(request.genres())
                 .pages(request.pages())
                 .type(request.type())
                 .state(request.state())
@@ -40,6 +41,7 @@ public class BookDtoMapper {
                 book.getTitle(),
                 book.getDescripcion(),
                 book.getAuthor(),
+                book.getGenres(),
                 book.getPages(),
                 book.getType(),
                 book.getState(),

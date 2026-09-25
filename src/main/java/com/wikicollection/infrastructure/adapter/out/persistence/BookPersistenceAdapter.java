@@ -51,6 +51,9 @@ public class BookPersistenceAdapter implements BookRepository {
         if (criteria.hasAuthor()) {
             query.addCriteria(Criteria.where("author").regex(ciPattern(criteria.author())));
         }
+        if (criteria.hasGenre()) {
+            query.addCriteria(Criteria.where("genres").regex(ciPattern(criteria.genre())));
+        }
         if (criteria.type() != null) {
             query.addCriteria(Criteria.where("type").is(criteria.type()));
         }

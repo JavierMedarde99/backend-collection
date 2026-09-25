@@ -5,11 +5,16 @@ import java.util.List;
 public record BoardGameSearchCriteria(
         String name,
         BoardGameStatus status,
+        String genre,
         String ownerId,
         List<String> excludeOwnerIds) {
 
     public boolean hasName() {
         return name != null && !name.isBlank();
+    }
+
+    public boolean hasGenre() {
+        return genre != null && !genre.isBlank();
     }
 
     public boolean hasOwnerId() {

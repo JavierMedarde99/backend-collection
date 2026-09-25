@@ -1,6 +1,7 @@
 package com.wikicollection.domain.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class Game {
     private UserOwned userOwned;
     private String externalId;
     private String title;
+    private List<String> genres;
     private GamePlatform platform;
     private String thumbnailUrl;
     private GameStatus status;

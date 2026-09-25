@@ -50,16 +50,16 @@ public class StatsService implements StatsUseCase {
         Pageable single = PageRequest.of(0, 1);
         Map<String, Long> counts = new LinkedHashMap<>();
         counts.put(CollectionType.BOOKS.getKey(), bookRepository
-                .search(new BookSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
+                .search(new BookSearchCriteria(null, null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.GAMES.getKey(), gameRepository
-                .search(new GameSearchCriteria(null, null, null, null, null), single).getTotalElements());
+                .search(new GameSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.BOARDGAMES.getKey(), boardGameRepository
-                .search(new BoardGameSearchCriteria(null, null, null, null), single).getTotalElements());
+                .search(new BoardGameSearchCriteria(null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.MAGIC.getKey(), magicCardRepository
                 .search(new MagicCardSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.DECKS.getKey(), deckRepository.findAll(single).getTotalElements());
         counts.put(CollectionType.MOVIESHOWS.getKey(), movieShowRepository
-                .findByCriteria(new MovieSearchCriteria(null, null, null, null, null), single).getTotalElements());
+                .findByCriteria(new MovieSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
         return counts;
     }
 }

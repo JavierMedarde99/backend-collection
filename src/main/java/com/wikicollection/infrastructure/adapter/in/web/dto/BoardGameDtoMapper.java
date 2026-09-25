@@ -13,6 +13,7 @@ public class BoardGameDtoMapper {
         }
         return BoardGame.builder()
                 .title(request.title())
+                .genres(request.genres())
                 .description(request.description())
                 .yearPublished(request.yearPublished())
                 .minPlayers(request.minPlayers())
@@ -40,6 +41,7 @@ public class BoardGameDtoMapper {
         return new BoardGameResponse(
                 boardGame.getId(),
                 boardGame.getTitle(),
+                boardGame.getGenres(),
                 boardGame.getDescription(),
                 boardGame.getYearPublished(),
                 boardGame.getMinPlayers(),

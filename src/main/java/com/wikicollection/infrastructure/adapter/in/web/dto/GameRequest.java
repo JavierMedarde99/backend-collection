@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 public record GameRequest(
         String externalId,
         @NotBlank(message = "El título es obligatorio") String title,
+        List<String> genres,
         @NotNull(message = "La plataforma es obligatoria") GamePlatform platform,
         String thumbnailUrl,
         @NotNull(message = "El estado es obligatorio") GameStatus status,

@@ -60,7 +60,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<Game> result = adapter.search(new GameSearchCriteria(null, null, null, null, null), pageable);
+        Page<Game> result = adapter.search(new GameSearchCriteria(null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -71,7 +71,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria("witc", null, null, null, null), pageable);
+        adapter.search(new GameSearchCriteria("witc", null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
@@ -87,7 +87,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria(null, GamePlatform.PC, GameStatus.PLAYING, null, null), pageable);
+        adapter.search(new GameSearchCriteria(null, GamePlatform.PC, GameStatus.PLAYING, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));

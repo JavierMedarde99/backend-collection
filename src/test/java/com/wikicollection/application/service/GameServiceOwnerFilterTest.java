@@ -44,7 +44,7 @@ class GameServiceOwnerFilterTest {
         when(gameRepository.search(any(GameSearchCriteria.class), any())).thenReturn(Page.empty());
         var pageable = PageRequest.of(0, 20);
 
-        service().search(new GameSearchCriteria(null, null, null, null, null), pageable, "mine", "u1");
+        service().search(new GameSearchCriteria(null, null, null, null, null, null), pageable, "mine", "u1");
 
         ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
         verify(gameRepository).search(captor.capture(), any());
@@ -57,7 +57,7 @@ class GameServiceOwnerFilterTest {
                 .thenReturn(List.of("u9"));
         when(gameRepository.search(any(GameSearchCriteria.class), any())).thenReturn(Page.empty());
 
-        service().search(new GameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "other", null);
+        service().search(new GameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "other", null);
 
         ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
         verify(gameRepository).search(captor.capture(), any());
@@ -66,13 +66,13 @@ class GameServiceOwnerFilterTest {
 
     @Test
     void anonymousMine_throws401() {
-        assertThatThrownBy(() -> service().search(new GameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "mine", null))
+        assertThatThrownBy(() -> service().search(new GameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "mine", null))
                 .isInstanceOf(UnauthenticatedException.class);
     }
 
     @Test
     void unknownMode_throws400() {
-        assertThatThrownBy(() -> service().search(new GameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "bogus", "u1"))
+        assertThatThrownBy(() -> service().search(new GameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "bogus", "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

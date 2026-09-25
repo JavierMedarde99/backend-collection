@@ -24,6 +24,7 @@ public class MovieShow {
     private UserOwned userOwned;
     private String externalId;
     private String title;
+    private List<String> genres;
     private String overview;
     private LocalDate releaseDate;
     private String posterUrl;
