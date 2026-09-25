@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
@@ -40,6 +41,8 @@ public class BookEntity {
     private String descripcion;
 
     private String author;
+
+    private List<String> genres;
 
     private Integer pages;
 

@@ -94,6 +94,9 @@ public class MovieShowPersistenceAdapter implements MovieShowRepository {
         if (criteria.mediaType() != null) {
             query.addCriteria(Criteria.where("mediaType").is(criteria.mediaType()));
         }
+        if (criteria.hasGenre()) {
+            query.addCriteria(Criteria.where("genres").regex(ciPattern(criteria.genre())));
+        }
         return query;
     }
 

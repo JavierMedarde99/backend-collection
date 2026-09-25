@@ -114,7 +114,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<Book> result = adapter.search(new BookSearchCriteria(null, null, null, null, null, null), pageable);
+        Page<Book> result = adapter.search(new BookSearchCriteria(null, null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -125,7 +125,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria("gar", null, null, null, null, null), pageable);
+        adapter.search(new BookSearchCriteria("gar", null, null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
@@ -141,7 +141,7 @@ class BookPersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria(null, "garcía", null, null, null, null), pageable);
+        adapter.search(new BookSearchCriteria(null, "garcía", null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
@@ -152,12 +152,28 @@ class BookPersistenceAdapterTest {
     }
 
     @Test
+    void search_withGenreFilter_buildsCaseInsensitiveRegexOnGenres() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
+
+        adapter.search(new BookSearchCriteria(null, null, null, null, "fantasía", null, null), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("genres");
+        assertThat(qs).contains("$regularExpression");
+        assertThat(qs).contains("fantasía");
+    }
+
+    @Test
     void search_withTypeFilter_addsExactCriteria() {
         Pageable pageable = PageRequest.of(0, 20);
         when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
 
-        adapter.search(new BookSearchCriteria(null, null, BookType.NOVEL, BookState.READING, null, null), pageable);
+        adapter.search(new BookSearchCriteria(null, null, BookType.NOVEL, BookState.READING, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));

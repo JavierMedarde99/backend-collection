@@ -40,6 +40,8 @@ public class MovieShowEntity {
     @Indexed
     private String title;
 
+    private List<String> genres;
+
     private String overview;
 
     private LocalDate releaseDate;

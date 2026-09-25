@@ -44,7 +44,7 @@ public class GameService implements GameUseCase {
     @Override
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
-        return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
@@ -93,6 +93,7 @@ public class GameService implements GameUseCase {
     private void copyUpdatableFields(Game target, Game source) {
         target.setExternalId(source.getExternalId());
         target.setTitle(source.getTitle());
+        target.setGenres(source.getGenres());
         target.setPlatform(source.getPlatform());
         target.setThumbnailUrl(source.getThumbnailUrl());
         target.setStatus(source.getStatus());

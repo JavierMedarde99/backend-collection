@@ -144,17 +144,17 @@ public class AuthService implements UserUseCase {
     public void deleteAccount(String userId) {
         getById(userId);
         Pageable all = Pageable.unpaged();
-        bookRepository.search(new BookSearchCriteria(null, null, null, null, userId, null), all)
+        bookRepository.search(new BookSearchCriteria(null, null, null, null, null, userId, null), all)
                 .forEach(book -> bookRepository.deleteById(book.getId()));
-        gameRepository.search(new GameSearchCriteria(null, null, null, userId, null), all)
+        gameRepository.search(new GameSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(game -> gameRepository.deleteById(game.getId()));
-        boardGameRepository.search(new BoardGameSearchCriteria(null, null, userId, null), all)
+        boardGameRepository.search(new BoardGameSearchCriteria(null, null, null, userId, null), all)
                 .forEach(boardGame -> boardGameRepository.deleteById(boardGame.getId()));
         magicCardRepository.search(new MagicCardSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(card -> magicCardRepository.deleteById(card.getId()));
         deckRepository.findByOwnerId(userId, all)
                 .forEach(deck -> deckRepository.deleteById(deck.getId()));
-        movieShowRepository.findByCriteria(new MovieSearchCriteria(null, null, null, userId, null), all)
+        movieShowRepository.findByCriteria(new MovieSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(movieShow -> movieShowRepository.deleteById(movieShow.getId()));
         preferencesRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);

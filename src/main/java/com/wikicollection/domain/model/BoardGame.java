@@ -23,6 +23,7 @@ public class BoardGame {
     private String ownerId;
     private UserOwned userOwned;
     private String title;
+    private List<String> genres;
     private String description;
     private Integer yearPublished;
     private Integer minPlayers;

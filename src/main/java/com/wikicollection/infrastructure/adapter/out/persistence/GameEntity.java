@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
@@ -34,6 +35,8 @@ public class GameEntity {
     private String externalId;
 
     private String title;
+
+    private List<String> genres;
 
     private GamePlatform platform;
 

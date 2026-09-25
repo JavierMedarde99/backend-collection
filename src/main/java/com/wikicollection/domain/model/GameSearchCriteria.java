@@ -6,11 +6,16 @@ public record GameSearchCriteria(
         String name,
         GamePlatform platform,
         GameStatus status,
+        String genre,
         String ownerId,
         List<String> excludeOwnerIds) {
 
     public boolean hasName() {
         return name != null && !name.isBlank();
+    }
+
+    public boolean hasGenre() {
+        return genre != null && !genre.isBlank();
     }
 
     public boolean hasOwnerId() {

@@ -39,7 +39,7 @@ public class BoardGameService implements BoardGameUseCase {
     @Override
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
-        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
@@ -72,6 +72,7 @@ public class BoardGameService implements BoardGameUseCase {
 
     private void copyUpdatableFields(BoardGame target, BoardGame source) {
         target.setTitle(source.getTitle());
+        target.setGenres(source.getGenres());
         target.setDescription(source.getDescription());
         target.setYearPublished(source.getYearPublished());
         target.setMinPlayers(source.getMinPlayers());

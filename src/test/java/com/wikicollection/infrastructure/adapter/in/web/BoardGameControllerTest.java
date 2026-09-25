@@ -85,6 +85,19 @@ class BoardGameControllerTest {
     }
 
     @Test
+    void listBoardGames_filtersByGenre() throws Exception {
+        when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1")).param("genre", "estrategia"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
+        verify(boardGameRepository).search(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("estrategia");
+    }
+
+    @Test
     void listBoardGames_returns400_whenNameTooLong() throws Exception {
         mockMvc.perform(get("/api/v1/boardgames").with(user("u1")).param("name", "a".repeat(101)))
                 .andExpect(status().isBadRequest())

@@ -68,7 +68,7 @@ public class MovieShowService implements MovieShowUseCase {
     @Override
     public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MOVIESHOWS, owner, viewerId);
-        return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
@@ -142,6 +142,7 @@ public class MovieShowService implements MovieShowUseCase {
     private void copyUpdatableFields(MovieShow target, MovieShow source) {
         target.setExternalId(source.getExternalId());
         target.setTitle(source.getTitle());
+        target.setGenres(source.getGenres());
         target.setOverview(source.getOverview());
         target.setReleaseDate(source.getReleaseDate());
         target.setPosterUrl(source.getPosterUrl());

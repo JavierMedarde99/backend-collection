@@ -18,6 +18,7 @@ public class MovieShowDtoMapper {
         return MovieShow.builder()
                 .externalId(request.externalId())
                 .title(request.title())
+                .genres(request.genres())
                 .overview(request.overview())
                 .releaseDate(request.releaseDate())
                 .posterUrl(request.posterUrl())
@@ -43,6 +44,7 @@ public class MovieShowDtoMapper {
                 movieShow.getId(),
                 movieShow.getExternalId(),
                 movieShow.getTitle(),
+                movieShow.getGenres(),
                 movieShow.getOverview(),
                 movieShow.getReleaseDate(),
                 movieShow.getPosterUrl(),

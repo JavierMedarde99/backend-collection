@@ -14,6 +14,7 @@ public class GameDtoMapper {
         return Game.builder()
                 .externalId(request.externalId())
                 .title(request.title())
+                .genres(request.genres())
                 .platform(request.platform())
                 .thumbnailUrl(request.thumbnailUrl())
                 .status(request.status())
@@ -34,6 +35,7 @@ public class GameDtoMapper {
                 game.getId(),
                 game.getExternalId(),
                 game.getTitle(),
+                game.getGenres(),
                 game.getPlatform(),
                 game.getThumbnailUrl(),
                 game.getStatus(),

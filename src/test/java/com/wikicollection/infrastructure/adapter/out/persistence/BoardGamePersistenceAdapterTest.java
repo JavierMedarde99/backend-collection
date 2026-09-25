@@ -59,7 +59,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<BoardGame> result = adapter.search(new BoardGameSearchCriteria(null, null, null, null), pageable);
+        Page<BoardGame> result = adapter.search(new BoardGameSearchCriteria(null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -70,7 +70,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
 
-        adapter.search(new BoardGameSearchCriteria("catan", null, null, null), pageable);
+        adapter.search(new BoardGameSearchCriteria("catan", null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BoardGameEntity.class));
@@ -86,7 +86,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
 
-        adapter.search(new BoardGameSearchCriteria(null, BoardGameStatus.WISHLIST, null, null), pageable);
+        adapter.search(new BoardGameSearchCriteria(null, BoardGameStatus.WISHLIST, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BoardGameEntity.class));
