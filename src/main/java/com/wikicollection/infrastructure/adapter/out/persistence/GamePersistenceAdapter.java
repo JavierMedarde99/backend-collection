@@ -60,8 +60,11 @@ public class GamePersistenceAdapter implements GameRepository {
         if (criteria.platform() != null) {
             query.addCriteria(Criteria.where("platform").is(criteria.platform()));
         }
-        if (criteria.hasGenre()) {
-            query.addCriteria(Criteria.where("genres").regex(ciPattern(criteria.genre())));
+        if (criteria.hasGenres()) {
+            Criteria[] anyGenre = criteria.effectiveGenres().stream()
+                    .map(g -> Criteria.where("genres").regex(ciPattern(g)))
+                    .toArray(Criteria[]::new);
+            query.addCriteria(new Criteria().orOperator(anyGenre));
         }
         if (criteria.status() != null) {
             query.addCriteria(Criteria.where("status").is(criteria.status()));

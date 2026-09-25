@@ -136,7 +136,7 @@ class MovieShowControllerTest {
 
         ArgumentCaptor<MovieSearchCriteria> captor = ArgumentCaptor.forClass(MovieSearchCriteria.class);
         verify(movieShowRepository).findByCriteria(captor.capture(), any(Pageable.class));
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().genre()).isEqualTo("drama");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().genres()).containsExactly("drama");
     }
 
     @Test

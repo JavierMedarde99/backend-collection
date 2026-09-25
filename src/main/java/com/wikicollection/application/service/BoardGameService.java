@@ -52,7 +52,7 @@ public class BoardGameService implements BoardGameUseCase {
     @Override
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
-        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genre(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
