@@ -12,6 +12,7 @@ import com.wikicollection.domain.port.in.UserPreferencesUseCase;
 import com.wikicollection.domain.port.out.UserPreferencesRepository;
 import com.wikicollection.domain.port.out.UserRepository;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,6 +28,7 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userPreferencesDetail", key = "#userId")
     public UserPreferences getPreferences(String userId) {
         requireUser(userId);
         return preferencesRepository.findByUserId(userId)
@@ -67,6 +69,7 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userActiveCollections", key = "#userId")
     public List<CollectionType> getActiveCollections(String userId) {
         return prefsOrDefaults(userId).getActiveCollections().entrySet().stream()
                 .filter(Map.Entry::getValue)
@@ -75,6 +78,7 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userPreferenceFlags", key = "#userId + ':' + #type")
     public boolean isCollectionActive(String userId, CollectionType type) {
         return prefsOrDefaults(userId).getActiveCollections().getOrDefault(type.getKey(), true);
     }
