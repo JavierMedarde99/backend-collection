@@ -9,6 +9,7 @@ import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -50,12 +51,14 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "boardgameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
         return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
+    @Cacheable(cacheNames = "boardgameDetail", key = "#id")
     public BoardGame findById(String id) {
         return boardGameRepository.findById(id)
                 .orElseThrow(() -> new BoardGameNotFoundException("Juego de mesa no encontrado con id: " + id));
