@@ -19,6 +19,7 @@ import com.wikicollection.domain.port.out.MovieShowRepository;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -46,6 +47,7 @@ public class StatsService implements StatsUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "stats", key = "'global'")
     public Map<String, Long> getGlobalCounts() {
         Pageable single = PageRequest.of(0, 1);
         Map<String, Long> counts = new LinkedHashMap<>();
