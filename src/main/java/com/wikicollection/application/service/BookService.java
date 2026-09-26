@@ -15,6 +15,7 @@ import org.springframework.dao.DuplicateKeyException;
 import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,12 +65,14 @@ public class BookService implements BookUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "bookList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOOKS, owner, viewerId);
         return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
+    @Cacheable(cacheNames = "bookDetail", key = "#id")
     public Book findById(String id) {
         return bookRepository.findById(id)
                 .orElseThrow(() -> new BookNotFoundException("Libro no encontrado con id: " + id));
