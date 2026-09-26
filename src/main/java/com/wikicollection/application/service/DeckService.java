@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -59,6 +60,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "deckList", key = "T(java.util.Objects).hash(#pageable, #owner, #viewerId)")
     public Page<Deck> findAll(Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
         if (scope.ownerId() != null) {
@@ -73,6 +75,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "deckList", key = "T(java.util.Objects).hash(#name, #pageable, #owner, #viewerId)")
     public Page<Deck> findByName(String name, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
         if (scope.ownerId() != null) {
@@ -82,6 +85,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "deckDetail", key = "#id")
     public Deck findById(String id) {
         return deckRepository.findById(id)
                 .orElseThrow(() -> new DeckNotFoundException("Mazo no encontrado con id: " + id));
