@@ -14,6 +14,7 @@ import com.wikicollection.domain.model.CollectionType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
@@ -68,12 +69,14 @@ public class GameService implements GameUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "gameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
         return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
+    @Cacheable(cacheNames = "gameDetail", key = "#id")
     public Game findById(String id) {
         return gameRepository.findById(id)
                 .orElseThrow(() -> new GameNotFoundException("Juego no encontrado con id: " + id));
