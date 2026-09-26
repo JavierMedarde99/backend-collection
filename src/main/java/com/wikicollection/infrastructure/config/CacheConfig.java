@@ -42,13 +42,13 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-        cacheManager.setCacheNames(CACHE_NAMES);
         for (String name : CACHE_NAMES) {
             cacheManager.registerCustomCache(name, Caffeine.newBuilder()
                     .expireAfterWrite(cacheProperties.ttlFor(PROPERTY_KEYS.get(name)))
                     .maximumSize(cacheProperties.getMaxSize())
                     .build());
         }
+        cacheManager.setCacheNames(CACHE_NAMES);
         return cacheManager;
     }
 }
