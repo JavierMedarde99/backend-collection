@@ -28,6 +28,7 @@ import com.wikicollection.domain.port.out.UserProfilePort;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,11 +62,13 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userProfileDetail", key = "#username")
     public User getPublicProfile(String username) {
         return findUser(username);
     }
 
     @Override
+    @Cacheable(cacheNames = "userBooksList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<Book> getPublicBooks(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.BOOKS)) {
@@ -76,6 +79,7 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userGamesList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<Game> getPublicGames(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.GAMES)) {
@@ -86,6 +90,7 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userBoardGamesList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<BoardGame> getPublicBoardGames(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.BOARDGAMES)) {
@@ -96,6 +101,7 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userMagicCardsList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<MagicCard> getPublicMagicCards(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.MAGIC)) {
@@ -106,6 +112,7 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userDecksList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<Deck> getPublicDecks(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.DECKS)) {
@@ -115,6 +122,7 @@ public class UserProfileService implements UserProfileUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "userMovieShowsList", key = "T(java.util.Objects).hash(#username, #pageable)")
     public Page<MovieShow> getPublicMovieShows(String username, Pageable pageable) {
         User user = findUser(username);
         if (!isVisible(user.getId(), CollectionType.MOVIESHOWS)) {
