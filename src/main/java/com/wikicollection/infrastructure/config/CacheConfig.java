@@ -20,10 +20,11 @@ public class CacheConfig {
     public static final String BOARDGAME_SEARCH = "boardgameSearch";
     public static final String MAGIC_SEARCH = "magicSearch";
     public static final String MOVIE_SEARCH = "movieSearch";
+    public static final String MOVIE_GENRES = "movieGenres";
     public static final String COMMANDER_SEARCH = "commanderSearch";
 
     public static final List<String> CACHE_NAMES = List.of(
-            BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH);
+            BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, MOVIE_GENRES, COMMANDER_SEARCH);
 
     private static final Map<String, String> PROPERTY_KEYS = Map.of(
             BOOK_SEARCH, "books",
@@ -31,6 +32,7 @@ public class CacheConfig {
             BOARDGAME_SEARCH, "boardgames",
             MAGIC_SEARCH, "magic",
             MOVIE_SEARCH, "movieshows",
+            MOVIE_GENRES, "movieshows",
             COMMANDER_SEARCH, "decks");
 
     private final CacheProperties cacheProperties;

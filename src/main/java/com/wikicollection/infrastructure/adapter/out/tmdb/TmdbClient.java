@@ -163,7 +163,7 @@ public class TmdbClient implements ExternalMovieCatalogClient, WatchProvidersCli
     }
 
     @Override
-    @Cacheable(cacheNames = CacheConfig.MOVIE_SEARCH, key = "'genres:' + #tmdbId + '|' + #mediaType")
+    @Cacheable(cacheNames = CacheConfig.MOVIE_GENRES, key = "'genres:' + #tmdbId + '|' + #mediaType")
     public List<String> getGenres(Long tmdbId, MovieMediaType mediaType) {
         if (tmdbId == null) {
             return List.of();
