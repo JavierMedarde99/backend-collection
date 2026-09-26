@@ -41,4 +41,8 @@ public class BoardGame {
     private BoardGameStatus status;
     private String notes;
     private LocalDate dateAdded;
+    private Integer personalRating;
+    private Integer playCount;
+    private LocalDate lastPlayedDate;
+    private Difficulty difficulty;
 }

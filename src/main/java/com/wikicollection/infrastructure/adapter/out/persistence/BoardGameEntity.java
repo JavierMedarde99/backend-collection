@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.Difficulty;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -69,4 +70,12 @@ public class BoardGameEntity {
     private String notes;
 
     private LocalDate dateAdded;
+
+    private Integer personalRating;
+
+    private Integer playCount;
+
+    private LocalDate lastPlayedDate;
+
+    private Difficulty difficulty;
 }
