@@ -68,7 +68,7 @@ public class RAWGClient implements ExternalGameCatalogClient {
     }
 
     @Override
-    @Cacheable(cacheNames = CacheConfig.GAME_SEARCH, key = "'rawg-genres:' + #externalId")
+    @Cacheable(cacheNames = CacheConfig.GAME_GENRES, key = "'rawg-genres:' + #externalId")
     public List<String> getGenres(String externalId) {
         if (externalId == null || externalId.isBlank()) {
             return List.of();

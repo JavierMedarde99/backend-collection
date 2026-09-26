@@ -17,17 +17,19 @@ public class CacheConfig {
 
     public static final String BOOK_SEARCH = "bookSearch";
     public static final String GAME_SEARCH = "gameSearch";
+    public static final String GAME_GENRES = "gameGenres";
     public static final String BOARDGAME_SEARCH = "boardgameSearch";
     public static final String MAGIC_SEARCH = "magicSearch";
     public static final String MOVIE_SEARCH = "movieSearch";
     public static final String COMMANDER_SEARCH = "commanderSearch";
 
     public static final List<String> CACHE_NAMES = List.of(
-            BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH);
+            BOOK_SEARCH, GAME_SEARCH, GAME_GENRES, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH);
 
     private static final Map<String, String> PROPERTY_KEYS = Map.of(
             BOOK_SEARCH, "books",
             GAME_SEARCH, "games",
+            GAME_GENRES, "games",
             BOARDGAME_SEARCH, "boardgames",
             MAGIC_SEARCH, "magic",
             MOVIE_SEARCH, "movieshows",
