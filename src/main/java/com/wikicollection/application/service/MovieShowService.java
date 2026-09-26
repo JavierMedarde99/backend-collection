@@ -25,6 +25,7 @@ import com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,12 +83,14 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "movieList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<MovieShow> search(MovieSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MOVIESHOWS, owner, viewerId);
         return movieShowRepository.findByCriteria(new MovieSearchCriteria(criteria.name(), criteria.status(), criteria.mediaType(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
+    @Cacheable(cacheNames = "movieDetail", key = "#id")
     public MovieShow findById(String id) {
         return movieShowRepository.findById(id)
                 .orElseThrow(() -> new MovieShowNotFoundException("Película/serie no encontrada con id: " + id));
