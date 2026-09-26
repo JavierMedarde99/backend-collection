@@ -34,6 +34,10 @@ public class BoardGameEntityMapper {
                 .status(boardGame.getStatus())
                 .notes(boardGame.getNotes())
                 .dateAdded(boardGame.getDateAdded())
+                .personalRating(boardGame.getPersonalRating())
+                .playCount(boardGame.getPlayCount())
+                .lastPlayedDate(boardGame.getLastPlayedDate())
+                .difficulty(boardGame.getDifficulty())
                 .build();
     }
 
@@ -64,6 +68,10 @@ public class BoardGameEntityMapper {
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
                 .dateAdded(entity.getDateAdded())
+                .personalRating(entity.getPersonalRating())
+                .playCount(entity.getPlayCount())
+                .lastPlayedDate(entity.getLastPlayedDate())
+                .difficulty(entity.getDifficulty())
                 .build();
     }
 }
