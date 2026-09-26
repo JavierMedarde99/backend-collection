@@ -31,6 +31,10 @@ public class BoardGameDtoMapper {
                 .status(request.status())
                 .notes(request.notes())
                 .dateAdded(request.dateAdded())
+                .personalRating(request.personalRating())
+                .playCount(request.playCount())
+                .lastPlayedDate(request.lastPlayedDate())
+                .difficulty(request.difficulty())
                 .build();
     }
 
@@ -59,6 +63,10 @@ public class BoardGameDtoMapper {
                 boardGame.getStatus(),
                 boardGame.getNotes(),
                 boardGame.getDateAdded(),
+                boardGame.getPersonalRating(),
+                boardGame.getPlayCount(),
+                boardGame.getLastPlayedDate(),
+                boardGame.getDifficulty(),
                 UserOwnedResponse.from(boardGame.getUserOwned()));
     }
 }

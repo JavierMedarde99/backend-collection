@@ -5,9 +5,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.Difficulty;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,5 +34,10 @@ public record BoardGameRequest(
         String bggId,
         @NotNull(message = "El estado es obligatorio") BoardGameStatus status,
         String notes,
-        LocalDate dateAdded) {
+        LocalDate dateAdded,
+        @Min(value = 1, message = "La valoración personal mínima es 1")
+        @Max(value = 5, message = "La valoración personal máxima es 5") Integer personalRating,
+        @Min(value = 0, message = "El número de jugadas no puede ser negativo") Integer playCount,
+        LocalDate lastPlayedDate,
+        Difficulty difficulty) {
 }
