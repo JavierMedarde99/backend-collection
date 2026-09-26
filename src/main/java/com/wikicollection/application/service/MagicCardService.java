@@ -11,6 +11,7 @@ import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -43,12 +44,14 @@ public class MagicCardService implements MagicCardUseCase {
     }
 
     @Override
+    @Cacheable(cacheNames = "magicList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<MagicCard> search(MagicCardSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.MAGIC, owner, viewerId);
         return magicCardRepository.search(new MagicCardSearchCriteria(criteria.name(), criteria.rarity(), criteria.color(), criteria.type(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
     }
 
     @Override
+    @Cacheable(cacheNames = "magicDetail", key = "#id")
     public MagicCard findById(String id) {
         return magicCardRepository.findById(id)
                 .orElseThrow(() -> new MagicCardNotFoundException("Carta no encontrada con id: " + id));
