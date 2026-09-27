@@ -38,6 +38,6 @@ public record BoardGameResponse(
     public BoardGameResponse withoutPrivate() {
         return new BoardGameResponse(id, title, genres, description, yearPublished, minPlayers, maxPlayers,
                 minPlaytime, maxPlaytime, publisher, designers, categories, mechanics, imageUrl,
-                thumbnailUrl, bggRating, bggId, status, null, dateAdded, personalRating, playCount, lastPlayedDate, difficulty, userOwned);
+                thumbnailUrl, bggRating, bggId, status, null, dateAdded, null, null, null, null, userOwned);
     }
 }
