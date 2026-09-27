@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
@@ -92,6 +93,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = "deckList", allEntries = true)
     public Deck save(Deck deck, String ownerId) {
         deck.setOwnerId(ownerId);
         deck.setUserOwned(ownerResolver.resolveOwner(ownerId));
@@ -102,6 +104,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"deckDetail", "deckList"}, allEntries = true)
     public Deck update(String id, Deck updates, String userId) {
         Deck existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -115,6 +118,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"deckDetail", "deckList"}, allEntries = true)
     public void delete(String id, String userId) {
         Deck existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -122,6 +126,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"deckDetail", "deckList"}, allEntries = true)
     public Deck addCard(String deckId, String scryfallId, int quantity, String userId) {
         if (quantity < 1) {
             throw new IllegalArgumentException("La cantidad mínima es 1");
@@ -155,6 +160,7 @@ public class DeckService implements DeckUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"deckDetail", "deckList"}, allEntries = true)
     public Deck removeCard(String deckId, String scryfallId, String userId) {
         Deck deck = findById(deckId);
         ownershipValidator.validateOwner(deck.getOwnerId(), userId);

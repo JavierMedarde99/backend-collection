@@ -11,6 +11,7 @@ import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
@@ -58,6 +59,7 @@ public class MagicCardService implements MagicCardUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = "magicList", allEntries = true)
     public MagicCard addFromScryfall(String scryfallId, int quantity, String ownerId) {
         if (quantity < 1) {
             throw new IllegalArgumentException("La cantidad mínima es 1");
@@ -78,6 +80,7 @@ public class MagicCardService implements MagicCardUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"magicDetail", "magicList"}, allEntries = true)
     public void delete(String id, String userId) {
         MagicCard existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);

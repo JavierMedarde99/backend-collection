@@ -15,6 +15,7 @@ import org.springframework.dao.DuplicateKeyException;
 import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,6 +81,7 @@ public class BookService implements BookUseCase {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "bookList", allEntries = true)
     public Book save(Book book, String ownerId) {
         book.setOwnerId(ownerId);
         book.setUserOwned(ownerResolver.resolveOwner(ownerId));
@@ -92,6 +94,7 @@ public class BookService implements BookUseCase {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"bookDetail", "bookList"}, allEntries = true)
     public Book update(String id, Book updates, String userId) {
         Book existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -147,6 +150,7 @@ public class BookService implements BookUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"bookDetail", "bookList"}, allEntries = true)
     public void delete(String id, String userId) {
         Book existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);

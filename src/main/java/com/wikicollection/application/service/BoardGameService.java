@@ -9,6 +9,7 @@ import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.model.CollectionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +66,7 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = "boardgameList", allEntries = true)
     public BoardGame save(BoardGame boardGame, String ownerId) {
         boardGame.setOwnerId(ownerId);
         boardGame.setUserOwned(ownerResolver.resolveOwner(ownerId));
@@ -72,6 +74,7 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"boardgameDetail", "boardgameList"}, allEntries = true)
     public BoardGame update(String id, BoardGame updates, String userId) {
         BoardGame existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -80,6 +83,7 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"boardgameDetail", "boardgameList"}, allEntries = true)
     public void delete(String id, String userId) {
         BoardGame existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);

@@ -25,6 +25,7 @@ import com.wikicollection.infrastructure.adapter.out.tmdb.ProviderUrlMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +99,7 @@ public class MovieShowService implements MovieShowUseCase {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "movieList", allEntries = true)
     public MovieShow save(MovieShow movieShow, String ownerId) {
         movieShow.setOwnerId(ownerId);
         movieShow.setUserOwned(ownerResolver.resolveOwner(ownerId));
@@ -110,6 +112,7 @@ public class MovieShowService implements MovieShowUseCase {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"movieDetail", "movieList"}, allEntries = true)
     public MovieShow update(String id, MovieShow updates, String userId) {
         MovieShow existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -132,6 +135,7 @@ public class MovieShowService implements MovieShowUseCase {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"movieDetail", "movieList"}, allEntries = true)
     public MovieShow refreshStreamingProviders(String id, String userId) {
         MovieShow existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -142,6 +146,7 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"movieDetail", "movieList"}, allEntries = true)
     public void delete(String id, String userId) {
         MovieShow existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
