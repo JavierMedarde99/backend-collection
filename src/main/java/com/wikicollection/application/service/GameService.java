@@ -14,6 +14,7 @@ import com.wikicollection.domain.model.CollectionType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -83,6 +84,7 @@ public class GameService implements GameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = "gameList", allEntries = true)
     public Game save(Game game, boolean obtainPlatinum, String ownerId) {
         game.setOwnerId(ownerId);
         game.setUserOwned(ownerResolver.resolveOwner(ownerId));
@@ -93,6 +95,7 @@ public class GameService implements GameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"gameDetail", "gameList"}, allEntries = true)
     public Game update(String id, Game updates, boolean obtainPlatinum, String userId) {
         Game existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
@@ -104,6 +107,7 @@ public class GameService implements GameUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"gameDetail", "gameList"}, allEntries = true)
     public void delete(String id, String userId) {
         Game existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
