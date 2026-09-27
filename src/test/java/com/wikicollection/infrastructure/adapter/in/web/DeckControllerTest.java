@@ -36,6 +36,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import com.wikicollection.infrastructure.config.CacheTestSupport;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
@@ -59,6 +61,14 @@ class DeckControllerTest {
 
     @MockitoBean
     private ScryfallClient scryfallClient;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    void clearCaches() {
+        CacheTestSupport.clearAll(cacheManager);
+    }
 
     private Deck sampleDeck() {
         return Deck.builder()

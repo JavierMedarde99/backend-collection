@@ -38,6 +38,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import com.wikicollection.infrastructure.config.CacheTestSupport;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.MockMvc;
@@ -62,6 +64,14 @@ class BookControllerTest {
 
     @MockitoBean
     private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    void clearCaches() {
+        CacheTestSupport.clearAll(cacheManager);
+    }
 
     private Book sampleBook() {
         return Book.builder()
