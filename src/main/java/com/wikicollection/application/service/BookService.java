@@ -172,5 +172,9 @@ public class BookService implements BookUseCase {
         target.setStartDate(source.getStartDate());
         target.setEndDate(source.getEndDate());
         target.setFrontpage(source.getFrontpage());
+        target.setPublisher(source.getPublisher());
+        target.setPublicationYear(source.getPublicationYear());
+        target.setAcquisitionDate(source.getAcquisitionDate());
+        target.setAcquisitionPrice(source.getAcquisitionPrice());
     }
 }

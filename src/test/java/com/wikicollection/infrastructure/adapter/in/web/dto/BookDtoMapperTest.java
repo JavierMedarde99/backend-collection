@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.Book;
@@ -17,7 +18,8 @@ class BookDtoMapperTest {
     @Test
     void mapsIsbn_requestToResponse() {
         BookRequest request = new BookRequest("ext1", "9788498382671", "Dune", null, "Herbert", null, 412,
-                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
+                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null,
+                null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
 
@@ -27,7 +29,8 @@ class BookDtoMapperTest {
     @Test
     void mapsNullIsbn_whenAbsent() {
         BookRequest request = new BookRequest("ext1", null, "Dune", null, "Herbert", null, 412,
-                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null);
+                BookType.NOVEL, BookState.TO_READ, null, null, null, null, null, null,
+                null, null, null, null);
 
         BookResponse response = mapper.toResponse(mapper.toDomain(request));
 
@@ -37,7 +40,8 @@ class BookDtoMapperTest {
     private BookRequest sampleRequest() {
         return new BookRequest("ext1", "9788498382671", "Dune", "Ciencia ficción", "Herbert", java.util.List.of("Novela"), 412,
                 BookType.NOVEL, BookState.READING, "Muy bueno", 5, 120,
-                LocalDate.of(2024, 1, 1), null, "http://front");
+                LocalDate.of(2024, 1, 1), null, "http://front",
+                "Editorial Acme", 1965, LocalDate.of(2024, 1, 3), new BigDecimal("9.95"));
     }
 
     @Test
@@ -56,12 +60,23 @@ class BookDtoMapperTest {
     }
 
     @Test
-    void toResponse_mapsAllFields_includingPagesRead() {
+    void toDomain_mapsPublisherPublicationYearAndAcquisition() {
+        Book book = mapper.toDomain(sampleRequest());
+
+        assertThat(book.getPublisher()).isEqualTo("Editorial Acme");
+        assertThat(book.getPublicationYear()).isEqualTo(1965);
+        assertThat(book.getAcquisitionDate()).isEqualTo(LocalDate.of(2024, 1, 3));
+        assertThat(book.getAcquisitionPrice()).isEqualByComparingTo("9.95");
+    }
+
+    @Test
+    void toResponse_mapsPublisherPublicationYearAndAcquisition() {
         BookResponse response = mapper.toResponse(mapper.toDomain(sampleRequest()));
 
-        assertThat(response.title()).isEqualTo("Dune");
-        assertThat(response.pagesRead()).isEqualTo(120);
-        assertThat(response.start()).isEqualTo(5);
+        assertThat(response.publisher()).isEqualTo("Editorial Acme");
+        assertThat(response.publicationYear()).isEqualTo(1965);
+        assertThat(response.acquisitionDate()).isEqualTo(LocalDate.of(2024, 1, 3));
+        assertThat(response.acquisitionPrice()).isEqualByComparingTo("9.95");
     }
 
     @Test
@@ -82,5 +97,17 @@ class BookDtoMapperTest {
 
         assertThat(stripped.pagesRead()).isNull();
         assertThat(stripped.title()).isEqualTo("Dune");
+    }
+
+    @Test
+    void withoutPrivate_hidesAcquisition_butKeepsBibliographicData() {
+        BookResponse response = mapper.toResponse(mapper.toDomain(sampleRequest()));
+
+        BookResponse stripped = response.withoutPrivate();
+
+        assertThat(stripped.acquisitionDate()).isNull();
+        assertThat(stripped.acquisitionPrice()).isNull();
+        assertThat(stripped.publisher()).isEqualTo("Editorial Acme");
+        assertThat(stripped.publicationYear()).isEqualTo(1965);
     }
 }

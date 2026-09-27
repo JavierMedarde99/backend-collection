@@ -61,4 +61,12 @@ public class BookEntity {
     private LocalDate endDate;
 
     private String frontpage;
+
+    private String publisher;
+
+    private Integer publicationYear;
+
+    private LocalDate acquisitionDate;
+
+    private java.math.BigDecimal acquisitionPrice;
 }

@@ -181,6 +181,27 @@ class BookServiceTest {
     }
 
     @Test
+    void update_persistsPublisherPublicationYearAndAcquisition() {
+        Book existing = sampleBook();
+        existing.setId("b1");
+        existing.setOwnerId("u1");
+        Book updates = sampleBook();
+        updates.setPublisher("Editorial Debate");
+        updates.setPublicationYear(1967);
+        updates.setAcquisitionDate(java.time.LocalDate.of(2024, 3, 15));
+        updates.setAcquisitionPrice(new java.math.BigDecimal("12.50"));
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(existing));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Book result = bookService.update("b1", updates, "u1");
+
+        assertThat(result.getPublisher()).isEqualTo("Editorial Debate");
+        assertThat(result.getPublicationYear()).isEqualTo(1967);
+        assertThat(result.getAcquisitionDate()).isEqualTo(java.time.LocalDate.of(2024, 3, 15));
+        assertThat(result.getAcquisitionPrice()).isEqualByComparingTo("12.50");
+    }
+
+    @Test
     void save_throwsConflict_whenDuplicateKeyOnSave() {
         Book book = sampleBook();
         book.setExternalId("gb123");

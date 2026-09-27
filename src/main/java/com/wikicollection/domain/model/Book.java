@@ -36,4 +36,8 @@ public class Book {
     private LocalDate startDate;
     private LocalDate endDate;
     private String frontpage;
+    private String publisher;
+    private Integer publicationYear;
+    private LocalDate acquisitionDate;
+    private java.math.BigDecimal acquisitionPrice;
 }

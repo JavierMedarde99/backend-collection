@@ -329,6 +329,53 @@ class BookControllerTest {
     }
 
     @Test
+    void createBook_returns201_withPublisherAndAcquisition() throws Exception {
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
+            Book saved = invocation.getArgument(0);
+            saved.setId("b-new");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Cien años de soledad","author":"Gabriel García Márquez",
+                                 "state":"WISHLIST","type":"NOVEL","publisher":"Editorial Debate",
+                                 "publicationYear":1967,"acquisitionDate":"2024-03-15",
+                                 "acquisitionPrice":12.50}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.state").value("WISHLIST"))
+                .andExpect(jsonPath("$.publisher").value("Editorial Debate"))
+                .andExpect(jsonPath("$.publicationYear").value(1967))
+                .andExpect(jsonPath("$.acquisitionDate").value("2024-03-15"))
+                .andExpect(jsonPath("$.acquisitionPrice").value(12.5));
+    }
+
+    @Test
+    void createBook_returns400_whenAcquisitionPriceIsNegative() throws Exception {
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Cien años de soledad","author":"Gabriel García Márquez",
+                                 "state":"TO_READ","type":"NOVEL","acquisitionPrice":-5}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listBooks_filtersByWishlistState() throws Exception {
+        Book wishlisted = sampleBook();
+        wishlisted.setState(BookState.WISHLIST);
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(wishlisted)));
+
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("state", "WISHLIST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].state").value("WISHLIST"));
+    }
+
+    @Test
     void createBook_returns400_whenInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/books").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)

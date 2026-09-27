@@ -27,6 +27,10 @@ public class BookDtoMapper {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .frontpage(request.frontpage())
+                .publisher(request.publisher())
+                .publicationYear(request.publicationYear())
+                .acquisitionDate(request.acquisitionDate())
+                .acquisitionPrice(request.acquisitionPrice())
                 .build();
     }
 
@@ -51,6 +55,10 @@ public class BookDtoMapper {
                 book.getStartDate(),
                 book.getEndDate(),
                 book.getFrontpage(),
+                book.getPublisher(),
+                book.getPublicationYear(),
+                book.getAcquisitionDate(),
+                book.getAcquisitionPrice(),
                 UserOwnedResponse.from(book.getUserOwned()));
     }
 }

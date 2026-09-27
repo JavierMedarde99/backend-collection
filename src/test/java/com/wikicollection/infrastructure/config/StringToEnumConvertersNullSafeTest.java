@@ -32,6 +32,7 @@ class StringToEnumConvertersNullSafeTest {
         assertThat(new StringToMovieStatusConverter().convert("watched")).isEqualTo(MovieStatus.WATCHED);
         assertThat(new StringToMovieMediaTypeConverter().convert("tv")).isEqualTo(MovieMediaType.TV);
         assertThat(new StringToBookStateConverter().convert("reading")).isEqualTo(BookState.READING);
+        assertThat(new StringToBookStateConverter().convert("wishlist")).isEqualTo(BookState.WISHLIST);
         assertThat(new StringToBoardGameStatusConverter().convert("owned")).isEqualTo(BoardGameStatus.OWNED);
     }
 
