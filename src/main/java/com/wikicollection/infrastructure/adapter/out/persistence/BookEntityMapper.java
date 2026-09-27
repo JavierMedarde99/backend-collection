@@ -30,6 +30,10 @@ public class BookEntityMapper {
                 .startDate(book.getStartDate())
                 .endDate(book.getEndDate())
                 .frontpage(book.getFrontpage())
+                .publisher(book.getPublisher())
+                .publicationYear(book.getPublicationYear())
+                .acquisitionDate(book.getAcquisitionDate())
+                .acquisitionPrice(book.getAcquisitionPrice())
                 .build();
     }
 
@@ -56,6 +60,10 @@ public class BookEntityMapper {
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
                 .frontpage(entity.getFrontpage())
+                .publisher(entity.getPublisher())
+                .publicationYear(entity.getPublicationYear())
+                .acquisitionDate(entity.getAcquisitionDate())
+                .acquisitionPrice(entity.getAcquisitionPrice())
                 .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,11 +24,15 @@ public record BookResponse(
         LocalDate startDate,
         LocalDate endDate,
         String frontpage,
+        String publisher,
+        Integer publicationYear,
+        LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice,
         UserOwnedResponse userOwned) {
 
 
     public BookResponse withoutPrivate() {
         return new BookResponse(id, externalId, isbn, title, descripcion, author, genres, pages, type, state,
-                null, null, null, null, null, frontpage, userOwned);
+                null, null, null, null, null, frontpage, publisher, publicationYear, null, null, userOwned);
     }
 }
