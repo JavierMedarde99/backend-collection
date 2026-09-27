@@ -144,7 +144,7 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     private BookSearchResult toResult(GoogleBookItem item) {
         VolumeInfo info = item.volumeInfo();
         if (info == null) {
-            return new BookSearchResult(item.id(), null, null, null, null, null, null, null, null, null, null);
+            return new BookSearchResult(item.id(), null, null, null, null, null, null, null, null, null, null, null);
         }
         String isbn = extractIsbn(info.industryIdentifiers());
         return new BookSearchResult(
@@ -157,8 +157,36 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
                 info.pageCount(),
                 info.publisher(),
                 info.publishedDate(),
+                extractPublicationYear(info.publishedDate()),
                 info.language(),
                 info.categories());
+    }
+
+    /**
+     * Google Books devuelve {@code publishedDate} como texto de precisión variable
+     * ("2011", "2011-05", "2011-05-03"). Se extraen los cuatro primeros dígitos
+     * para poder ofrecer el año ya normalizado, y se devuelve {@code null} cuando
+     * el valor no es un año plausible.
+     */
+    private static Integer extractPublicationYear(String publishedDate) {
+        if (publishedDate == null) {
+            return null;
+        }
+        String trimmed = publishedDate.trim();
+        if (trimmed.length() < 4) {
+            return null;
+        }
+        String head = trimmed.substring(0, 4);
+        for (int i = 0; i < head.length(); i++) {
+            if (!Character.isDigit(head.charAt(i))) {
+                return null;
+            }
+        }
+        if (trimmed.length() > 4 && Character.isDigit(trimmed.charAt(4))) {
+            return null;
+        }
+        int year = Integer.parseInt(head);
+        return year > 0 ? year : null;
     }
 
     private String extractIsbn(List<IndustryIdentifier> identifiers) {

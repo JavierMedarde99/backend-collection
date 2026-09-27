@@ -51,6 +51,7 @@ class GoogleBooksClientTest {
         assertThat(result.pageCount()).isEqualTo(417);
         assertThat(result.publisher()).isEqualTo("Vintage Español");
         assertThat(result.publishedDate()).isEqualTo("2011-05-03");
+        assertThat(result.publicationYear()).isEqualTo(2011);
         assertThat(result.language()).isEqualTo("es");
         assertThat(result.categories()).containsExactly("Literatura");
     }
@@ -121,6 +122,68 @@ class GoogleBooksClientTest {
 
         assertThat(results).hasSize(1);
         server.verify();
+    }
+
+    @Test
+    void search_derivesPublicationYear_fromFullDate() {
+        assertThat(searchWithPublishedDate("2011-05-03").publicationYear()).isEqualTo(2011);
+    }
+
+    @Test
+    void search_derivesPublicationYear_whenOnlyYearIsPublished() {
+        assertThat(searchWithPublishedDate("1967").publicationYear()).isEqualTo(1967);
+    }
+
+    @Test
+    void search_derivesPublicationYear_whenPublishedDateHasYearAndMonth() {
+        assertThat(searchWithPublishedDate("2011-05").publicationYear()).isEqualTo(2011);
+    }
+
+    @Test
+    void search_keepsPublishedDate_intact() {
+        assertThat(searchWithPublishedDate("2011-05-03").publishedDate()).isEqualTo("2011-05-03");
+    }
+
+    @Test
+    void search_returnsNullPublicationYear_whenPublishedDateMissing() {
+        assertThat(searchWithPublishedDate(null).publicationYear()).isNull();
+    }
+
+    @Test
+    void search_returnsNullPublicationYear_whenPublishedDateIsNotAYear() {
+        assertThat(searchWithPublishedDate("s. l.").publicationYear()).isNull();
+    }
+
+    @Test
+    void search_returnsNullPublicationYear_whenYearIsTooShort() {
+        assertThat(searchWithPublishedDate("201").publicationYear()).isNull();
+    }
+
+    @Test
+    void search_returnsNullPublicationYear_whenYearIsZero() {
+        assertThat(searchWithPublishedDate("0000").publicationYear()).isNull();
+    }
+
+    @Test
+    void search_returnsNullPublicationYear_whenMoreThanFourDigits() {
+        assertThat(searchWithPublishedDate("12345").publicationYear()).isNull();
+    }
+
+    private BookSearchResult searchWithPublishedDate(String publishedDate) {
+        server.expect(once(), anything())
+                .andRespond(withSuccess(fixtureWithPublishedDate(publishedDate), MediaType.APPLICATION_JSON));
+
+        List<BookSearchResult> results = client.search("cien");
+
+        assertThat(results).hasSize(1);
+        return results.get(0);
+    }
+
+    private String fixtureWithPublishedDate(String publishedDate) {
+        if (publishedDate == null) {
+            return googleBooksFixture().replace("\"publishedDate\": \"2011-05-03\",", "");
+        }
+        return googleBooksFixture().replace("2011-05-03", publishedDate);
     }
 
     private String googleBooksFixture() {

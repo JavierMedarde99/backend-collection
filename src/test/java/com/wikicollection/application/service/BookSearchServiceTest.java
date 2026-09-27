@@ -32,7 +32,7 @@ class BookSearchServiceTest {
         BookSearchResult result = new BookSearchResult(
                 "abc123", "Cien años de soledad", List.of("Gabriel García Márquez"),
                 "9780307474728", "http://thumb", "Sinopsis", 417,
-                "Vintage Español", "2011-05-03", "es", List.of("Literatura"));
+                "Vintage Español", "2011-05-03", 2011, "es", List.of("Literatura"));
         when(externalBookCatalogClient.search("cien")).thenReturn(List.of(result));
 
         Page<BookSearchResult> results = bookSearchService.search("cien", PageRequest.of(0, 10));
@@ -59,7 +59,7 @@ class BookSearchServiceTest {
         BookSearchResult result = new BookSearchResult(
                 "abc123", "Dune", List.of("Frank Herbert"),
                 "9788498382671", "http://thumb", "Sinopsis", 412,
-                "Debolsillo", "2008-01-01", "es", List.of("Novela"));
+                "Debolsillo", "2008-01-01", 2008, "es", List.of("Novela"));
         when(externalBookCatalogClient.searchByIsbn("9788498382671")).thenReturn(List.of(result));
 
         Page<BookSearchResult> results = bookSearchService.searchByIsbn("978-84-9838-267-1", PageRequest.of(0, 10));

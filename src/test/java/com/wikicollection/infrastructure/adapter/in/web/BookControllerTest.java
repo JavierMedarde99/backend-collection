@@ -519,13 +519,15 @@ class BookControllerTest {
         BookSearchResult result = new BookSearchResult(
                 "abc123", "Cien años de soledad", List.of("Gabriel García Márquez"),
                 "9780307474728", "http://thumb", "Sinopsis", 417,
-                "Vintage Español", "2011-05-03", "es", List.of("Literatura"));
+                "Vintage Español", "2011-05-03", 2011, "es", List.of("Literatura"));
         when(googleBooksClient.search("cien")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Cien años de soledad"))
                 .andExpect(jsonPath("$.content[0].isbn").value("9780307474728"))
+                .andExpect(jsonPath("$.content[0].publishedDate").value("2011-05-03"))
+                .andExpect(jsonPath("$.content[0].publicationYear").value(2011))
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
@@ -540,7 +542,7 @@ class BookControllerTest {
         BookSearchResult result = new BookSearchResult(
                 "abc123", "Dune", List.of("Frank Herbert"),
                 "9788498382671", "http://thumb", "Sinopsis", 412,
-                "Debolsillo", "2008-01-01", "es", List.of("Novela"));
+                "Debolsillo", "2008-01-01", 2008, "es", List.of("Novela"));
         when(googleBooksClient.searchByIsbn("9788498382671")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/v1/books/search").param("isbn", "978-84-9838-267-1"))
@@ -567,7 +569,7 @@ class BookControllerTest {
         BookSearchResult result = new BookSearchResult(
                 "abc123", "Dune", List.of("Frank Herbert"),
                 "9788498382671", "http://thumb", "Sinopsis", 412,
-                "Debolsillo", "2008-01-01", "es", List.of("Novela"));
+                "Debolsillo", "2008-01-01", 2008, "es", List.of("Novela"));
         when(googleBooksClient.searchByIsbn("9788498382671")).thenReturn(List.of(result));
 
         mockMvc.perform(get("/api/v1/books/search").param("isbn", "9788498382671").param("name", "dune"))

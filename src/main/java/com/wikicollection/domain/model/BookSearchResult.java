@@ -12,6 +12,7 @@ public record BookSearchResult(
         Integer pageCount,
         String publisher,
         String publishedDate,
+        Integer publicationYear,
         String language,
         List<String> categories) {
 }
