@@ -41,7 +41,7 @@ class BoardGameEntityMapperTest {
                 .id("bg-1")
                 .ownerId("owner-1")
                 .title("Catan")
-                .status(BoardGameStatus.PLAYED)
+                .status(BoardGameStatus.OWNED)
                 .personalRating(7)
                 .playCount(10)
                 .lastPlayedDate(LocalDate.of(2026, 8, 15))

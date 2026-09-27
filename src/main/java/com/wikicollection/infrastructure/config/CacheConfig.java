@@ -101,13 +101,15 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        // setCacheNames() must run BEFORE registerCustomCache(): it overwrites every
+        // entry in the manager's cache map with a default unbounded Caffeine cache.
+        cacheManager.setCacheNames(CACHE_NAMES);
         for (String name : CACHE_NAMES) {
             cacheManager.registerCustomCache(name, Caffeine.newBuilder()
                     .expireAfterWrite(cacheProperties.ttlFor(PROPERTY_KEYS.get(name)))
                     .maximumSize(cacheProperties.getMaxSize())
                     .build());
         }
-        cacheManager.setCacheNames(CACHE_NAMES);
         return cacheManager;
     }
 }
