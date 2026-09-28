@@ -50,9 +50,16 @@ class GameTest {
     }
 
     @Test
+    void gameStatus_exposesOwnedAndNoLongerExposesAbandoned() {
+        assertThat(GameStatus.values())
+                .extracting(Enum::name)
+                .containsExactly("OWNED", "PLAYING", "COMPLETED", "WISHLIST");
+    }
+
+    @Test
     void gameStatus_containsExpectedValues() {
         assertThat(GameStatus.values()).containsExactly(
-                GameStatus.PLAYING, GameStatus.COMPLETED, GameStatus.WISHLIST, GameStatus.ABANDONED);
+                GameStatus.OWNED, GameStatus.PLAYING, GameStatus.COMPLETED, GameStatus.WISHLIST);
     }
 
     @Test
