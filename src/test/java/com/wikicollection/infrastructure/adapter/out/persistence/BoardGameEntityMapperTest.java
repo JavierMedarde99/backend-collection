@@ -25,6 +25,7 @@ class BoardGameEntityMapperTest {
                 .playCount(42)
                 .lastPlayedDate(LocalDate.of(2026, 9, 20))
                 .difficulty(Difficulty.MEDIUM)
+                .acquisitionPrice(new java.math.BigDecimal("39.99"))
                 .build();
 
         BoardGameEntity entity = mapper.toEntity(boardGame);
@@ -33,6 +34,7 @@ class BoardGameEntityMapperTest {
         assertEquals(42, entity.getPlayCount());
         assertEquals(LocalDate.of(2026, 9, 20), entity.getLastPlayedDate());
         assertEquals(Difficulty.MEDIUM, entity.getDifficulty());
+        assertEquals(new java.math.BigDecimal("39.99"), entity.getAcquisitionPrice());
     }
 
     @Test
@@ -46,6 +48,7 @@ class BoardGameEntityMapperTest {
                 .playCount(10)
                 .lastPlayedDate(LocalDate.of(2026, 8, 15))
                 .difficulty(Difficulty.HARD)
+                .acquisitionPrice(new java.math.BigDecimal("24.50"))
                 .build();
 
         BoardGame boardGame = mapper.toDomain(entity);
@@ -54,6 +57,7 @@ class BoardGameEntityMapperTest {
         assertEquals(10, boardGame.getPlayCount());
         assertEquals(LocalDate.of(2026, 8, 15), boardGame.getLastPlayedDate());
         assertEquals(Difficulty.HARD, boardGame.getDifficulty());
+        assertEquals(new java.math.BigDecimal("24.50"), boardGame.getAcquisitionPrice());
     }
 
     @Test

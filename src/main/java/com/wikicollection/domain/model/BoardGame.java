@@ -45,4 +45,5 @@ public class BoardGame {
     private Integer playCount;
     private LocalDate lastPlayedDate;
     private Difficulty difficulty;
+    private BigDecimal acquisitionPrice;
 }

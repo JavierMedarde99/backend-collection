@@ -114,5 +114,6 @@ public class BoardGameService implements BoardGameUseCase {
         target.setPlayCount(source.getPlayCount());
         target.setLastPlayedDate(source.getLastPlayedDate());
         target.setDifficulty(source.getDifficulty());
+        target.setAcquisitionPrice(source.getAcquisitionPrice());
     }
 }
