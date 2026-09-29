@@ -1,5 +1,6 @@
 package com.wikicollection.domain.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -33,4 +34,6 @@ public class Game {
     private LocalDate dateCompleted;
     private String externalSource;
     private String steamAppId;
+    private LocalDate acquisitionDate;
+    private BigDecimal acquisitionPrice;
 }

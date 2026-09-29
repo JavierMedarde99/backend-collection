@@ -24,6 +24,8 @@ public class GameDtoMapper {
                 .dateCompleted(request.dateCompleted())
                 .externalSource(request.externalSource())
                 .steamAppId(request.steamAppId())
+                .acquisitionDate(request.acquisitionDate())
+                .acquisitionPrice(request.acquisitionPrice())
                 .build();
     }
 
@@ -45,6 +47,8 @@ public class GameDtoMapper {
                 game.getDateCompleted(),
                 game.getExternalSource(),
                 game.getSteamAppId(),
+                game.getAcquisitionDate(),
+                game.getAcquisitionPrice(),
                 UserOwnedResponse.from(game.getUserOwned()));
     }
 }
