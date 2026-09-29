@@ -287,6 +287,26 @@ class GameServiceTest {
     }
 
     @Test
+    void update_persistsAcquisitionDateAndPrice() {
+        Game existing = sampleGame();
+        existing.setId("g1");
+        existing.setOwnerId("u1");
+
+        Game updates = sampleGame();
+        updates.setStatus(GameStatus.COMPLETED);
+        updates.setAcquisitionDate(java.time.LocalDate.of(2024, 3, 15));
+        updates.setAcquisitionPrice(new java.math.BigDecimal("39.99"));
+
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Game result = gameService.update("g1", updates, false, "u1");
+
+        assertThat(result.getAcquisitionDate()).isEqualTo(java.time.LocalDate.of(2024, 3, 15));
+        assertThat(result.getAcquisitionPrice()).isEqualByComparingTo("39.99");
+    }
+
+    @Test
     void update_resolvesSteamAppId_whenObtainPlatinumTrueAndNoAppId() {
         Game existing = sampleGame();
         existing.setId("g1");

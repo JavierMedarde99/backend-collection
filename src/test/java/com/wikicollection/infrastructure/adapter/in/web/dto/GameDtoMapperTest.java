@@ -20,7 +20,7 @@ class GameDtoMapperTest {
                 "external-1", "The Witcher 3", java.util.List.of("RPG"), GamePlatform.PC,
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
-                "RAWG", "570", true);
+                "RAWG", "570", true, null, null);
 
         Game game = mapper.toDomain(request);
 
@@ -69,6 +69,59 @@ class GameDtoMapperTest {
         assertThat(response.dateCompleted()).isEqualTo(LocalDate.of(2024, 2, 1));
         assertThat(response.externalSource()).isEqualTo("RAWG");
         assertThat(response.steamAppId()).isEqualTo("570");
+    }
+
+    @Test
+    void toDomain_mapsAcquisitionDateAndPrice() {
+        GameRequest request = new GameRequest(
+                "external-1", "The Witcher 3", java.util.List.of("RPG"), GamePlatform.PC,
+                "http://img", GameStatus.COMPLETED, 5, "Mi comentario",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
+                "RAWG", "570", true,
+                LocalDate.of(2024, 3, 15), new java.math.BigDecimal("39.99"));
+
+        Game game = mapper.toDomain(request);
+
+        assertThat(game.getAcquisitionDate()).isEqualTo(LocalDate.of(2024, 3, 15));
+        assertThat(game.getAcquisitionPrice()).isEqualByComparingTo("39.99");
+    }
+
+    @Test
+    void toResponse_mapsAcquisitionDateAndPrice() {
+        Game game = Game.builder()
+                .id("g1")
+                .title("The Witcher 3")
+                .platform(GamePlatform.PC)
+                .status(GameStatus.COMPLETED)
+                .acquisitionDate(LocalDate.of(2024, 3, 15))
+                .acquisitionPrice(new java.math.BigDecimal("39.99"))
+                .build();
+
+        GameResponse response = mapper.toResponse(game);
+
+        assertThat(response.acquisitionDate()).isEqualTo(LocalDate.of(2024, 3, 15));
+        assertThat(response.acquisitionPrice()).isEqualByComparingTo("39.99");
+    }
+
+    @Test
+    void withoutPrivate_keepsAcquisitionFields() {
+        Game game = Game.builder()
+                .id("g1")
+                .title("The Witcher 3")
+                .platform(GamePlatform.PC)
+                .status(GameStatus.COMPLETED)
+                .userRating(5)
+                .comment("Mi comentario")
+                .acquisitionDate(LocalDate.of(2024, 3, 15))
+                .acquisitionPrice(new java.math.BigDecimal("39.99"))
+                .build();
+
+        GameResponse stripped = mapper.toResponse(game).withoutPrivate();
+
+        assertThat(stripped.userRating()).isNull();
+        assertThat(stripped.comment()).isNull();
+        assertThat(stripped.acquisitionDate()).isEqualTo(LocalDate.of(2024, 3, 15));
+        assertThat(stripped.acquisitionPrice()).isEqualByComparingTo("39.99");
     }
 
     @Test

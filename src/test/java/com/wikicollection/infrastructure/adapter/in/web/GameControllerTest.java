@@ -249,6 +249,47 @@ class GameControllerTest {
     }
 
     @Test
+    void updateGame_persistsAndReturnsAcquisitionFields() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/api/v1/games/g1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"COMPLETED",
+                                 "acquisitionDate":"2024-03-15","acquisitionPrice":39.99}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.acquisitionDate").value("2024-03-15"))
+                .andExpect(jsonPath("$.acquisitionPrice").value(39.99));
+    }
+
+    @Test
+    void updateGame_returns400_whenAcquisitionPriceIsNegative() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
+
+        mockMvc.perform(put("/api/v1/games/g1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"COMPLETED","acquisitionPrice":-5}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateGame_returns400_whenAcquisitionPriceHasTooManyDecimals() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(sampleGame()));
+
+        mockMvc.perform(put("/api/v1/games/g1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"The Witcher 3","platform":"PC","status":"COMPLETED","acquisitionPrice":39.999}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void createGame_resolvesSteamAppId_whenObtainPlatinumTrue() throws Exception {
         when(steamCatalogueClient.searchGameByName("The Witcher 3")).thenReturn(570L);
         when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));

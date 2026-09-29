@@ -1,11 +1,14 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,5 +28,9 @@ public record GameRequest(
         LocalDate dateCompleted,
         String externalSource,
         String steamAppId,
-        Boolean obtainPlatinum) {
+        Boolean obtainPlatinum,
+        LocalDate acquisitionDate,
+        @DecimalMin(value = "0", message = "El precio de adquisición no puede ser negativo")
+        @Digits(integer = 8, fraction = 2, message = "El precio admite como máximo 8 dígitos y 2 decimales")
+        BigDecimal acquisitionPrice) {
 }

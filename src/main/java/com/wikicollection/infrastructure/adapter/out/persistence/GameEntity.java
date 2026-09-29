@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -55,4 +56,8 @@ public class GameEntity {
     private String externalSource;
 
     private String steamAppId;
+
+    private LocalDate acquisitionDate;
+
+    private BigDecimal acquisitionPrice;
 }
