@@ -38,6 +38,7 @@ public class BoardGameEntityMapper {
                 .playCount(boardGame.getPlayCount())
                 .lastPlayedDate(boardGame.getLastPlayedDate())
                 .difficulty(boardGame.getDifficulty())
+                .acquisitionPrice(boardGame.getAcquisitionPrice())
                 .build();
     }
 
@@ -72,6 +73,7 @@ public class BoardGameEntityMapper {
                 .playCount(entity.getPlayCount())
                 .lastPlayedDate(entity.getLastPlayedDate())
                 .difficulty(entity.getDifficulty())
+                .acquisitionPrice(entity.getAcquisitionPrice())
                 .build();
     }
 }

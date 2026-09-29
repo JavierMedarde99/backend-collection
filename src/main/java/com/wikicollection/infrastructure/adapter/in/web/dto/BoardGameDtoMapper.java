@@ -35,6 +35,7 @@ public class BoardGameDtoMapper {
                 .playCount(request.playCount())
                 .lastPlayedDate(request.lastPlayedDate())
                 .difficulty(request.difficulty())
+                .acquisitionPrice(request.acquisitionPrice())
                 .build();
     }
 
@@ -67,6 +68,7 @@ public class BoardGameDtoMapper {
                 boardGame.getPlayCount(),
                 boardGame.getLastPlayedDate(),
                 boardGame.getDifficulty(),
+                boardGame.getAcquisitionPrice(),
                 UserOwnedResponse.from(boardGame.getUserOwned()));
     }
 }

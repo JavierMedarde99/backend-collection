@@ -231,6 +231,48 @@ class BoardGameControllerTest {
     }
 
     @Test
+    void createBoardGame_persistsAndReturnsAcquisitionPrice() throws Exception {
+        when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> {
+            BoardGame saved = invocation.getArgument(0);
+            saved.setId("bg-new");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"OWNED","acquisitionPrice":39.99}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.acquisitionPrice").value(39.99));
+
+        ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
+        verify(boardGameRepository).save(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getAcquisitionPrice())
+                .isEqualByComparingTo(new java.math.BigDecimal("39.99"));
+    }
+
+    @Test
+    void createBoardGame_returns400_whenAcquisitionPriceNegative() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"OWNED","acquisitionPrice":-5}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createBoardGame_returns400_whenAcquisitionPriceTooManyDecimals() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"OWNED","acquisitionPrice":39.999}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void updateBoardGame_returnsUpdatedGame() throws Exception {
         when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
         when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -244,6 +286,20 @@ class BoardGameControllerTest {
                 .andExpect(jsonPath("$.title").value("Nuevo título"))
                 .andExpect(jsonPath("$.status").value("WISHLIST"))
                 .andExpect(jsonPath("$.notes").value("Quiero jugarlo"));
+    }
+
+    @Test
+    void updateBoardGame_updatesAcquisitionPrice() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(sampleGame()));
+        when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/api/v1/boardgames/bg1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"OWNED","acquisitionPrice":59.99}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acquisitionPrice").value(59.99));
     }
 
     @Test

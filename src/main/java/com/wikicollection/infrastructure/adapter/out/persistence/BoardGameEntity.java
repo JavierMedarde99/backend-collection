@@ -78,4 +78,5 @@ public class BoardGameEntity {
     private LocalDate lastPlayedDate;
 
     private Difficulty difficulty;
+    private BigDecimal acquisitionPrice;
 }

@@ -9,6 +9,7 @@ import com.wikicollection.domain.model.Difficulty;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -39,5 +40,8 @@ public record BoardGameRequest(
         @Max(value = 5, message = "La valoración personal máxima es 5") Integer personalRating,
         @Min(value = 0, message = "El número de jugadas no puede ser negativo") Integer playCount,
         LocalDate lastPlayedDate,
-        Difficulty difficulty) {
+        Difficulty difficulty,
+        @DecimalMin(value = "0.0", message = "El precio de adquisición no puede ser negativo")
+        @Digits(integer = 8, fraction = 2, message = "El precio de adquisición admite como máximo 8 dígitos y 2 decimales")
+        BigDecimal acquisitionPrice) {
 }

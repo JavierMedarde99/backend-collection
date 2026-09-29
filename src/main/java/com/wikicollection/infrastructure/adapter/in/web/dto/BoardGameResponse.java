@@ -32,12 +32,13 @@ public record BoardGameResponse(
         Integer playCount,
         LocalDate lastPlayedDate,
         Difficulty difficulty,
+        BigDecimal acquisitionPrice,
         UserOwnedResponse userOwned) {
 
 
     public BoardGameResponse withoutPrivate() {
         return new BoardGameResponse(id, title, genres, description, yearPublished, minPlayers, maxPlayers,
                 minPlaytime, maxPlaytime, publisher, designers, categories, mechanics, imageUrl,
-                thumbnailUrl, bggRating, bggId, status, null, dateAdded, null, null, null, null, userOwned);
+                thumbnailUrl, bggRating, bggId, status, null, dateAdded, null, null, null, null, acquisitionPrice, userOwned);
     }
 }
