@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,7 @@ class GameDtoMapperTest {
     @Test
     void toDomain_mapsAllRequestFields() {
         GameRequest request = new GameRequest(
-                "external-1", "The Witcher 3", java.util.List.of("RPG"), GamePlatform.PC,
+                "external-1", "The Witcher 3", java.util.List.of("RPG"), "PC",
                 "http://img", GameStatus.PLAYING, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
                 "RAWG", "570", true, null, null);
@@ -26,7 +25,7 @@ class GameDtoMapperTest {
 
         assertThat(game.getExternalId()).isEqualTo("external-1");
         assertThat(game.getTitle()).isEqualTo("The Witcher 3");
-        assertThat(game.getPlatform()).isEqualTo(GamePlatform.PC);
+        assertThat(game.getPlatform()).isEqualTo("PC");
         assertThat(game.getGenres()).containsExactly("RPG");
         assertThat(game.getThumbnailUrl()).isEqualTo("http://img");
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
@@ -44,7 +43,7 @@ class GameDtoMapperTest {
                 .id("g1")
                 .externalId("external-1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .thumbnailUrl("http://img")
                 .status(GameStatus.COMPLETED)
                 .userRating(5)
@@ -60,7 +59,7 @@ class GameDtoMapperTest {
         assertThat(response.id()).isEqualTo("g1");
         assertThat(response.externalId()).isEqualTo("external-1");
         assertThat(response.title()).isEqualTo("The Witcher 3");
-        assertThat(response.platform()).isEqualTo(GamePlatform.PC);
+        assertThat(response.platform()).isEqualTo("PC");
         assertThat(response.thumbnailUrl()).isEqualTo("http://img");
         assertThat(response.status()).isEqualTo(GameStatus.COMPLETED);
         assertThat(response.userRating()).isEqualTo(5);
@@ -74,7 +73,7 @@ class GameDtoMapperTest {
     @Test
     void toDomain_mapsAcquisitionDateAndPrice() {
         GameRequest request = new GameRequest(
-                "external-1", "The Witcher 3", java.util.List.of("RPG"), GamePlatform.PC,
+                "external-1", "The Witcher 3", java.util.List.of("RPG"), "PC",
                 "http://img", GameStatus.COMPLETED, 5, "Mi comentario",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 1),
                 "RAWG", "570", true,
@@ -91,7 +90,7 @@ class GameDtoMapperTest {
         Game game = Game.builder()
                 .id("g1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.COMPLETED)
                 .acquisitionDate(LocalDate.of(2024, 3, 15))
                 .acquisitionPrice(new java.math.BigDecimal("39.99"))
@@ -108,7 +107,7 @@ class GameDtoMapperTest {
         Game game = Game.builder()
                 .id("g1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.COMPLETED)
                 .userRating(5)
                 .comment("Mi comentario")

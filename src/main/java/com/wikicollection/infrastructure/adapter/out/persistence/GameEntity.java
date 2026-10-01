@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
 import org.springframework.data.annotation.Id;
@@ -39,7 +38,7 @@ public class GameEntity {
 
     private List<String> genres;
 
-    private GamePlatform platform;
+    private String platform;
 
     private String thumbnailUrl;
 

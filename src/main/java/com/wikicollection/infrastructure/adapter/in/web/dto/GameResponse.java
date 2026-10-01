@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
 public record GameResponse(
@@ -12,7 +11,7 @@ public record GameResponse(
         String externalId,
         String title,
         List<String> genres,
-        GamePlatform platform,
+        String platform,
         String thumbnailUrl,
         GameStatus status,
         Integer userRating,

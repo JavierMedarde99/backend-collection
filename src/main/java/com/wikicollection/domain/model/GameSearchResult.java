@@ -7,7 +7,7 @@ public record GameSearchResult(
         String title,
         String description,
         String genre,
-        GamePlatform platform,
+        String platform,
         String publisher,
         String developer,
         LocalDate releaseDate,

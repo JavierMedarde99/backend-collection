@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
@@ -104,7 +103,7 @@ public class RAWGClient implements ExternalGameCatalogClient {
         String genre = firstGenre(game.genres());
         String publisher = firstPublisher(game.publishers());
         String developer = firstDeveloper(game.developers());
-        GamePlatform platform = mapPlatform(game.platforms());
+        String platform = firstPlatformName(game.platforms());
         return new GameSearchResult(
                 game.id() != null ? game.id().toString() : null,
                 game.name(),
@@ -118,33 +117,21 @@ public class RAWGClient implements ExternalGameCatalogClient {
                 "RAWG");
     }
 
-    private GamePlatform mapPlatform(List<RawgPlatformEntry> platforms) {
+    /**
+     * Devuelve el nombre de la primera plataforma con nombre. Antes esto traducía
+     * contra un enum de cinco valores y devolvía null para cualquier otra, así que un
+     * juego que solo salía en PlayStation 5 llegaba al cliente sin plataforma.
+     */
+    private String firstPlatformName(List<RawgPlatformEntry> platforms) {
         if (platforms == null || platforms.isEmpty()) {
             return null;
         }
         return platforms.stream()
-                .filter(entry -> entry.platform() != null && entry.platform().name() != null)
-                .map(entry -> parsePlatform(entry.platform().name()))
-                .filter(java.util.Objects::nonNull)
+                .filter(entry -> entry.platform() != null)
+                .map(entry -> entry.platform().name())
+                .filter(name -> name != null && !name.isBlank())
                 .findFirst()
                 .orElse(null);
-    }
-
-    private GamePlatform parsePlatform(String name) {
-        switch (name) {
-            case "PC":
-                return GamePlatform.PC;
-            case "PlayStation 2":
-                return GamePlatform.PS2;
-            case "PlayStation 3":
-                return GamePlatform.PS3;
-            case "Wii U":
-                return GamePlatform.WII_U;
-            case "Nintendo Switch":
-                return GamePlatform.SWITCH;
-            default:
-                return null;
-        }
     }
 
     private String firstGenre(List<RawgGenre> genres) {

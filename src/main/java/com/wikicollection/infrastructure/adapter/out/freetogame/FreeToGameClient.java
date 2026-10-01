@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
@@ -101,11 +100,16 @@ public class FreeToGameClient implements ExternalGameCatalogClient {
                 "FreeToGame");
     }
 
-    private GamePlatform mapPlatform(String platform) {
-        if (platform == null || !platform.toUpperCase().contains("PC")) {
+    /**
+     * FreeToGame no tiene catálogo de plataformas, así que el valor se guarda tal
+     * cual viene ("windows", "browser", ...). Antes se traducía contra un enum y
+     * devolvía null para todo lo que no fuera PC, perdiendo la plataforma.
+     */
+    private String mapPlatform(String platform) {
+        if (platform == null || platform.isBlank()) {
             return null;
         }
-        return GamePlatform.PC;
+        return platform.trim();
     }
 
     private LocalDate parseDate(String releaseDate) {

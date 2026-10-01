@@ -4,12 +4,13 @@ import java.net.URI;
 import java.util.List;
 
 import com.wikicollection.domain.model.CollectionType;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
+import com.wikicollection.domain.model.PlatformInfo;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.in.GameAchievementsUseCase;
 import com.wikicollection.domain.port.in.GameSearchUseCase;
+import com.wikicollection.domain.port.in.PlatformCatalogUseCase;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.AchievementsResponse;
@@ -55,18 +56,21 @@ public class GameController {
     private final GameUseCase gameUseCase;
     private final GameSearchUseCase gameSearchUseCase;
     private final GameAchievementsUseCase gameAchievementsUseCase;
+    private final PlatformCatalogUseCase platformCatalogUseCase;
     private final GameDtoMapper mapper;
     private final GameAchievementMapper achievementMapper;
 
     private final ResponseVisibility visibility;
 
     public GameController(GameUseCase gameUseCase, GameSearchUseCase gameSearchUseCase,
-            GameAchievementsUseCase gameAchievementsUseCase, GameDtoMapper mapper,
+            GameAchievementsUseCase gameAchievementsUseCase,
+            PlatformCatalogUseCase platformCatalogUseCase, GameDtoMapper mapper,
             GameAchievementMapper achievementMapper,
                                ResponseVisibility visibility) {
         this.gameUseCase = gameUseCase;
         this.gameSearchUseCase = gameSearchUseCase;
         this.gameAchievementsUseCase = gameAchievementsUseCase;
+        this.platformCatalogUseCase = platformCatalogUseCase;
         this.mapper = mapper;
         this.visibility = visibility;
         this.achievementMapper = achievementMapper;
@@ -83,7 +87,7 @@ public class GameController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
             @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
-            @Parameter(description = "Filtro por plataforma") @RequestParam(required = false) GamePlatform platform,
+            @Parameter(description = "Filtro por plataforma") @RequestParam(required = false)  String platform,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
@@ -103,6 +107,15 @@ public class GameController {
     })
     public java.util.List<String> genres() {
         return gameUseCase.distinctGenres();
+    }
+
+    @GetMapping("/platforms")
+    @Operation(summary = "Catálogo de plataformas", description = "Plataformas disponibles en el catálogo externo. Se sirve desde caché, así que puede ser una lista vacía si el catálogo externo falla.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de plataformas")
+    })
+    public java.util.List<PlatformInfo> platforms() {
+        return platformCatalogUseCase.getPlatforms();
     }
 
     @GetMapping("/{id}")
