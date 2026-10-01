@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
 import jakarta.validation.constraints.DecimalMin;
@@ -18,7 +17,7 @@ public record GameRequest(
         String externalId,
         @NotBlank(message = "El título es obligatorio") String title,
         List<String> genres,
-        @NotNull(message = "La plataforma es obligatoria") GamePlatform platform,
+        @NotBlank(message = "La plataforma es obligatoria") String platform,
         String thumbnailUrl,
         @NotNull(message = "El estado es obligatorio") GameStatus status,
         @Min(value = 1, message = "La puntuación mínima es 1")

@@ -4,7 +4,7 @@ import java.util.List;
 
 public record GameSearchCriteria(
         String name,
-        GamePlatform platform,
+        String platform,
         GameStatus status,
         java.util.List<String> genres,
         String ownerId,

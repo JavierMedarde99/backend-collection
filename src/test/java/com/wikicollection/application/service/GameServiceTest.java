@@ -15,7 +15,6 @@ import java.util.Optional;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.UserOwned;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.out.GameRepository;
@@ -62,7 +61,7 @@ class GameServiceTest {
     private Game sampleGame() {
         return Game.builder()
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.PLAYING)
                 .build();
     }
@@ -81,7 +80,7 @@ class GameServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        GameSearchCriteria criteria = new GameSearchCriteria("witc", GamePlatform.PC, GameStatus.PLAYING, null, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria("witc", "PC", GameStatus.PLAYING, null, null, null);
         when(gameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<Game> result = gameService.search(criteria, pageable);

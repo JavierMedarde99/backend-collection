@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchResult;
 
 import okhttp3.mockwebserver.MockResponse;
@@ -52,7 +51,7 @@ class FreeToGameClientTest {
         assertThat(result.title()).isEqualTo("Call of Duty: Warzone");
         assertThat(result.description()).isEqualTo("El battle royale gratuito");
         assertThat(result.genre()).isEqualTo("Shooter");
-        assertThat(result.platform()).isEqualTo(GamePlatform.PC);
+        assertThat(result.platform()).isEqualTo("PC (Windows)");
         assertThat(result.publisher()).isEqualTo("Activision");
         assertThat(result.developer()).isEqualTo("Infinity Ward");
         assertThat(result.releaseDate().toString()).isEqualTo("2020-03-10");
@@ -64,7 +63,7 @@ class FreeToGameClientTest {
     }
 
     @Test
-    void search_mapsWebBrowserPlatformToNull() throws Exception {
+    void search_keepsWebBrowserPlatformVerbatim() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -72,11 +71,11 @@ class FreeToGameClientTest {
 
         List<GameSearchResult> results = client.search("browser");
 
-        assertThat(results.get(0).platform()).isNull();
+        assertThat(results.get(0).platform()).isEqualTo("Web Browser");
     }
 
     @Test
-    void search_mapsPcWhenPcAndWebPresent() throws Exception {
+    void search_keepsMultiPlatformStringVerbatim() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -84,7 +83,7 @@ class FreeToGameClientTest {
 
         List<GameSearchResult> results = client.search("cross");
 
-        assertThat(results.get(0).platform()).isEqualTo(GamePlatform.PC);
+        assertThat(results.get(0).platform()).isEqualTo("PC (Windows), Web Browser");
     }
 
     @Test
@@ -149,12 +148,12 @@ class FreeToGameClientTest {
         assertThat(results).hasSize(1);
         GameSearchResult result = results.get(0);
         assertThat(result.id()).isNull();
-        assertThat(result.platform()).isNull();
+        assertThat(result.platform()).isEqualTo("Console");
         assertThat(result.releaseDate()).isNull();
     }
 
     @Test
-    void search_handlesMissingPlatformField() throws Exception {
+    void search_returnsNullPlatform_whenFieldAbsent() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)

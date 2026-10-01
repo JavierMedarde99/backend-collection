@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchResult;
 
 import okhttp3.mockwebserver.MockResponse;
@@ -51,7 +50,7 @@ class RAWGClientTest {
         assertThat(result.id()).isEqualTo("3498");
         assertThat(result.title()).isEqualTo("The Witcher 3: Wild Hunt");
         assertThat(result.genre()).isEqualTo("Action");
-        assertThat(result.platform()).isEqualTo(GamePlatform.PC);
+        assertThat(result.platform()).isEqualTo("PC");
         assertThat(result.publisher()).isEqualTo("CD Projekt Red");
         assertThat(result.developer()).isEqualTo("CD Projekt Red");
         assertThat(result.releaseDate().toString()).isEqualTo("2015-05-18");
@@ -104,7 +103,7 @@ class RAWGClientTest {
     }
 
     @Test
-    void search_mapsWebBrowserPlatformToNull() throws Exception {
+    void search_keepsWebBrowserPlatformInsteadOfDiscardingIt() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -112,11 +111,11 @@ class RAWGClientTest {
 
         List<GameSearchResult> results = client.search("web");
 
-        assertThat(results.get(0).platform()).isNull();
+        assertThat(results.get(0).platform()).isEqualTo("Web browser");
     }
 
     @Test
-    void search_mapsPcWhenPcAndWebPresent() throws Exception {
+    void search_keepsFirstPlatformWhenSeveralPresent() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -124,38 +123,38 @@ class RAWGClientTest {
 
         List<GameSearchResult> results = client.search("cross");
 
-        assertThat(results.get(0).platform()).isEqualTo(GamePlatform.PC);
+        assertThat(results.get(0).platform()).isEqualTo("PC");
     }
 
     @Test
-    void search_mapsConsolePlatforms() throws Exception {
+    void search_keepsConsolePlatformNamesVerbatim() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(rawgFixtureWithPlatform("PlayStation 2")));
-        assertThat(client.search("ps2").get(0).platform()).isEqualTo(GamePlatform.PS2);
+        assertThat(client.search("ps2").get(0).platform()).isEqualTo("PlayStation 2");
 
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(rawgFixtureWithPlatform("PlayStation 3")));
-        assertThat(client.search("ps3").get(0).platform()).isEqualTo(GamePlatform.PS3);
+        assertThat(client.search("ps3").get(0).platform()).isEqualTo("PlayStation 3");
 
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(rawgFixtureWithPlatform("Wii U")));
-        assertThat(client.search("wiiu").get(0).platform()).isEqualTo(GamePlatform.WII_U);
+        assertThat(client.search("wiiu").get(0).platform()).isEqualTo("Wii U");
 
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .setBody(rawgFixtureWithPlatform("Nintendo Switch")));
-        assertThat(client.search("switch").get(0).platform()).isEqualTo(GamePlatform.SWITCH);
+        assertThat(client.search("switch").get(0).platform()).isEqualTo("Nintendo Switch");
     }
 
     @Test
-    void search_mapsUnknownConsoleToNull() throws Exception {
+    void search_keepsPlatformOutsideTheOldFiveValuesEnum() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -163,7 +162,7 @@ class RAWGClientTest {
 
         List<GameSearchResult> results = client.search("ps5");
 
-        assertThat(results.get(0).platform()).isNull();
+        assertThat(results.get(0).platform()).isEqualTo("PlayStation 5");
     }
 
     private String rawgFixture() {

@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
@@ -21,8 +22,9 @@ import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
+import com.wikicollection.domain.model.PlatformInfo;
+import com.wikicollection.domain.port.in.PlatformCatalogUseCase;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.model.SteamAchievement;
@@ -74,12 +76,15 @@ class GameControllerTest {
     @MockitoBean
     private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
+    @MockitoBean
+    private PlatformCatalogUseCase platformCatalogUseCase;
+
     private Game sampleGame() {
         return Game.builder()
                 .id("g1")
                 .ownerId("u1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.PLAYING)
                 .build();
     }
@@ -89,6 +94,55 @@ class GameControllerTest {
         lenient().when(ownerResolver.resolveOwner(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> com.wikicollection.domain.model.UserOwned.builder()
                         .ownerId(invocation.getArgument(0)).ownerName("Javi").build());
+    }
+
+    @Test
+    void platforms_returnsCatalogFromUseCase() throws Exception {
+        when(platformCatalogUseCase.getPlatforms()).thenReturn(List.of(
+                new PlatformInfo(1L, "PlayStation 5", "ps5"),
+                new PlatformInfo(2L, "Web browser", "web")));
+
+        mockMvc.perform(get("/api/v1/games/platforms").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("PlayStation 5"))
+                .andExpect(jsonPath("$[0].slug").value("ps5"))
+                .andExpect(jsonPath("$[1].name").value("Web browser"));
+    }
+
+    @Test
+    void createGame_acceptsPlatformOutsideTheOldEnum() throws Exception {
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/v1/games").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Unusual","platform":"PlayStation 5","status":"PLAYING"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.platform").value("PlayStation 5"));
+    }
+
+    @Test
+    void createGame_returns400_whenPlatformIsBlank() throws Exception {
+        mockMvc.perform(post("/api/v1/games").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Sin plataforma","platform":"","status":"PLAYING"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listGames_filtersByPlatformString() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("platform", "Xbox Series X"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().platform()).isEqualTo("Xbox Series X");
     }
 
     @Test
@@ -122,7 +176,7 @@ class GameControllerTest {
         verify(gameRepository).search(captor.capture(), any(Pageable.class));
         GameSearchCriteria criteria = captor.getValue();
         org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("witc");
-        org.assertj.core.api.Assertions.assertThat(criteria.platform()).isEqualTo(GamePlatform.PC);
+        org.assertj.core.api.Assertions.assertThat(criteria.platform()).isEqualTo("PC");
         org.assertj.core.api.Assertions.assertThat(criteria.status()).isEqualTo(GameStatus.PLAYING);
     }
 
@@ -390,7 +444,7 @@ class GameControllerTest {
     @Test
     void search_returnsResultsThroughFallbackChain() throws Exception {
         GameSearchResult result = new GameSearchResult(
-                "3498", "The Witcher 3", "Aventura", "RPG", GamePlatform.PC,
+                "3498", "The Witcher 3", "Aventura", "RPG", "PC",
                 "CD Projekt Red", "CD Projekt Red", null, "http://img", "RAWG");
         when(rawgClient.search("witcher")).thenReturn(List.of(result));
 

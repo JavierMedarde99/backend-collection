@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
@@ -38,7 +37,7 @@ class GameSearchServiceTest {
 
     private GameSearchResult sampleResult(String title) {
         return new GameSearchResult(
-                "1", title, "Descripción", "RPG", GamePlatform.PC,
+                "1", title, "Descripción", "RPG", "PC",
                 "CD Projekt", "CD Projekt Red", LocalDate.of(2015, 5, 19),
                 "http://img", "RAWG");
     }
@@ -59,7 +58,7 @@ class GameSearchServiceTest {
     @Test
     void search_fallsBackToFreeToGame_whenRawgEmpty() {
         GameSearchResult free = new GameSearchResult(
-                "1", "The Witcher 3", "Descripción", "RPG", GamePlatform.PC,
+                "1", "The Witcher 3", "Descripción", "RPG", "PC",
                 "CD Projekt", "CD Projekt Red", LocalDate.of(2015, 5, 19),
                 "http://img", "FreeToGame");
         when(rawgClient.search("witcher")).thenReturn(List.of());

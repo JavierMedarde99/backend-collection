@@ -25,7 +25,7 @@ public class Game {
     private String externalId;
     private String title;
     private List<String> genres;
-    private GamePlatform platform;
+    private String platform;
     private String thumbnailUrl;
     private GameStatus status;
     private Integer userRating;

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 
@@ -47,7 +46,7 @@ class GamePersistenceAdapterTest {
                 .id("g1")
                 .title("The Witcher 3")
                 .status(GameStatus.PLAYING)
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .build();
     }
 
@@ -87,7 +86,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria(null, GamePlatform.PC, GameStatus.PLAYING, null, null, null), pageable);
+        adapter.search(new GameSearchCriteria(null, "PC", GameStatus.PLAYING, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
@@ -134,7 +133,7 @@ class GamePersistenceAdapterTest {
                 .id("g1")
                 .externalId("rawg-001")
                 .title("Hollow Knight")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .thumbnailUrl("http://img")
                 .status(GameStatus.COMPLETED)
                 .userRating(5)

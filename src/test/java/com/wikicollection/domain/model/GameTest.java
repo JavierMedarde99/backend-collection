@@ -14,7 +14,7 @@ class GameTest {
                 .id("g1")
                 .externalId("rawg-001")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .thumbnailUrl("http://img")
                 .status(GameStatus.PLAYING)
                 .userRating(5)
@@ -28,7 +28,7 @@ class GameTest {
         assertThat(game.getId()).isEqualTo("g1");
         assertThat(game.getExternalId()).isEqualTo("rawg-001");
         assertThat(game.getTitle()).isEqualTo("The Witcher 3");
-        assertThat(game.getPlatform()).isEqualTo(GamePlatform.PC);
+        assertThat(game.getPlatform()).isEqualTo("PC");
         assertThat(game.getThumbnailUrl()).isEqualTo("http://img");
         assertThat(game.getStatus()).isEqualTo(GameStatus.PLAYING);
         assertThat(game.getUserRating()).isEqualTo(5);
@@ -62,24 +62,19 @@ class GameTest {
                 GameStatus.OWNED, GameStatus.PLAYING, GameStatus.COMPLETED, GameStatus.WISHLIST);
     }
 
-    @Test
-    void gamePlatform_containsExpectedValues() {
-        assertThat(GamePlatform.values()).containsExactly(
-                GamePlatform.PC, GamePlatform.PS2, GamePlatform.PS3, GamePlatform.WII_U, GamePlatform.SWITCH);
-    }
 
     @Test
     void gameSearchResult_recordExposesFields() {
         GameSearchResult result = new GameSearchResult(
                 "rawg-002", "Hades", "Roguelike", "Action",
-                GamePlatform.PC, "Supergiant", "Supergiant Games",
+                "PC", "Supergiant", "Supergiant Games",
                 LocalDate.of(2020, 9, 17), "http://thumb", "RAWG");
 
         assertThat(result.id()).isEqualTo("rawg-002");
         assertThat(result.title()).isEqualTo("Hades");
         assertThat(result.description()).isEqualTo("Roguelike");
         assertThat(result.genre()).isEqualTo("Action");
-        assertThat(result.platform()).isEqualTo(GamePlatform.PC);
+        assertThat(result.platform()).isEqualTo("PC");
         assertThat(result.publisher()).isEqualTo("Supergiant");
         assertThat(result.developer()).isEqualTo("Supergiant Games");
         assertThat(result.releaseDate()).isEqualTo(LocalDate.of(2020, 9, 17));

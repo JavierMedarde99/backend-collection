@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GamePlatform;
 import com.wikicollection.domain.model.GameStatus;
 
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,7 @@ class GameEntityMapperTest {
                 .id("g-1")
                 .ownerId("owner-1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.COMPLETED)
                 .acquisitionDate(LocalDate.of(2024, 3, 15))
                 .acquisitionPrice(new BigDecimal("39.99"))
@@ -40,7 +39,7 @@ class GameEntityMapperTest {
                 .id("g-1")
                 .ownerId("owner-1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.COMPLETED)
                 .acquisitionDate(LocalDate.of(2024, 3, 15))
                 .acquisitionPrice(new BigDecimal("39.99"))
@@ -57,7 +56,7 @@ class GameEntityMapperTest {
         GameEntity entity = GameEntity.builder()
                 .id("g-1")
                 .title("The Witcher 3")
-                .platform(GamePlatform.PC)
+                .platform("PC")
                 .status(GameStatus.PLAYING)
                 .build();
 
