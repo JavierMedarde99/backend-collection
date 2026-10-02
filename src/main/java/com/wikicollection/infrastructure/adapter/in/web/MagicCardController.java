@@ -1,11 +1,13 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.model.MagicCardPrinting;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.DeckSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardSearchUseCase;
 import com.wikicollection.domain.port.in.MagicCardUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardDtoMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardPrintingResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.MagicCardSearchResponse;
 
@@ -96,6 +98,25 @@ public class MagicCardController {
         var card = magicCardUseCase.findById(id);
         var response = mapper.toResponse(card);
         return visibility.canSeePrivate(card.getOwnerId(), CollectionType.MAGIC) ? response : response.withoutPrivate();
+    }
+
+    @GetMapping("/scryfall/{scryfallId}/printings")
+    @Operation(summary = "Lista las impresiones de una carta",
+            description = "Devuelve todas las reimpresiones de la carta a la que pertenece la impresión dada, "
+                    + "ordenadas por fecha de lanzamiento descendente. El parámetro 'size' no existe porque "
+                    + "Scryfall ignora page_size: cada página trae 175 impresiones. "
+                    + "Cada elemento lleva su propio scryfallId, que es el que se puede pasar a "
+                    + "POST /api/v1/magic/scryfall/{scryfallId}.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de impresiones"),
+            @ApiResponse(responseCode = "400", description = "Página inválida"),
+            @ApiResponse(responseCode = "404", description = "Impresión no encontrada en Scryfall")
+    })
+    public Page<MagicCardPrintingResponse> printings(
+            @Parameter(description = "Identificador Scryfall de cualquier impresión de la carta") @PathVariable String scryfallId,
+            @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") @Min(0) int page) {
+        Page<MagicCardPrinting> printings = magicCardUseCase.printings(scryfallId, page);
+        return printings.map(mapper::toPrintingResponse);
     }
 
     @PostMapping("/scryfall/{scryfallId}")

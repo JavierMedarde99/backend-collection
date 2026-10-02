@@ -41,6 +41,11 @@ class CacheConfigCacheNamesTest {
         assertThat(CacheConfig.CACHE_NAMES).contains(CacheConfig.PLATFORM_SEARCH);
     }
 
+    @Test
+    void magicPrintingsIsRegistered_soItGetsATtlAndMaxSize() {
+        assertThat(CacheConfig.CACHE_NAMES).contains(CacheConfig.MAGIC_PRINTINGS);
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, String> propertyKeys() throws Exception {
         Field field = CacheConfig.class.getDeclaredField("PROPERTY_KEYS");

@@ -22,6 +22,7 @@ public class CacheConfig {
     public static final String MOVIE_SEARCH = "movieSearch";
     public static final String COMMANDER_SEARCH = "commanderSearch";
     public static final String PLATFORM_SEARCH = "platformSearch";
+    public static final String MAGIC_PRINTINGS = "magicPrintings";
 
     public static final String BOOK_DETAIL = "bookDetail";
     public static final String GAME_DETAIL = "gameDetail";
@@ -60,6 +61,7 @@ public class CacheConfig {
             USER_MOVIE_SHOWS_LIST, USER_STREAMS_LIST,
             USER_PREFERENCES_DETAIL, USER_ACTIVE_COLLECTIONS, USER_PREFERENCE_FLAGS,
             PLATFORM_SEARCH,
+            MAGIC_PRINTINGS,
             STATS);
 
     private static final Map<String, String> PROPERTY_KEYS = Map.ofEntries(
@@ -93,6 +95,7 @@ public class CacheConfig {
             Map.entry(USER_ACTIVE_COLLECTIONS, "preferences"),
             Map.entry(USER_PREFERENCE_FLAGS, "preferences"),
             Map.entry(PLATFORM_SEARCH, "games"),
+            Map.entry(MAGIC_PRINTINGS, "magic"),
             Map.entry(STATS, "stats"));
 
     private final CacheProperties cacheProperties;
