@@ -156,6 +156,93 @@ class BookControllerTest {
     }
 
     @Test
+    void listSeries_returnsDistinctSeries() throws Exception {
+        when(bookRepository.distinctSeries(org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(java.util.List.of("Harry Potter", "The Hobbit"));
+
+        mockMvc.perform(get("/api/v1/books/series"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Harry Potter"))
+                .andExpect(jsonPath("$[1]").value("The Hobbit"));
+    }
+
+    @Test
+    void listBooks_filtersBySeries() throws Exception {
+        when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("series", "potter"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BookSearchCriteria> captor = ArgumentCaptor.forClass(BookSearchCriteria.class);
+        verify(bookRepository).search(captor.capture(), any(Pageable.class));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().series()).isEqualTo("potter");
+    }
+
+    @Test
+    void listBooks_rejectsTooLongSeriesFilter() throws Exception {
+        mockMvc.perform(get("/api/v1/books").with(user("u1")).param("series", "a".repeat(101)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createBook_acceptsSeriesAndOrder() throws Exception {
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
+            Book saved = invocation.getArgument(0);
+            saved.setId("b-new");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"La piedra filosofal","author":"J. K. Rowling",
+                                 "type":"NOVEL","state":"TO_READ",
+                                 "series":"Harry Potter","seriesOrder":1}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.series").value("Harry Potter"))
+                .andExpect(jsonPath("$.seriesOrder").value(1));
+    }
+
+    @Test
+    void createBook_doesNotAcceptSeriesKeyFromTheClient() throws Exception {
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
+            Book saved = invocation.getArgument(0);
+            saved.setId("b-new");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Dune","author":"Frank Herbert",
+                                 "type":"NOVEL","state":"TO_READ",
+                                 "series":"Dune","seriesKey":"clave-falsa"}
+                                """))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<Book> captor = ArgumentCaptor.forClass(Book.class);
+        verify(bookRepository).save(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getSeries()).isEqualTo("Dune");
+        // BookRequest no tiene campo seriesKey, así que la clave llega calculada por el servicio.
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getSeriesKey())
+                .isEqualTo("dune")
+                .isNotEqualTo("clave-falsa");
+    }
+
+    @Test
+    void createBook_rejectsNegativeSeriesOrder() throws Exception {
+        mockMvc.perform(post("/api/v1/books").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Dune","author":"Frank Herbert",
+                                 "type":"NOVEL","state":"TO_READ",
+                                 "series":"Dune","seriesOrder":-1}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void listBooks_filtersByGenre() throws Exception {
         when(bookRepository.search(any(BookSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
 

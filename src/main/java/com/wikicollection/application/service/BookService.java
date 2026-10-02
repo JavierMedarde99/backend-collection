@@ -13,6 +13,7 @@ import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
 import org.springframework.dao.DuplicateKeyException;
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.model.SeriesKey;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.cache.annotation.CacheEvict;
@@ -66,10 +67,24 @@ public class BookService implements BookUseCase {
     }
 
     @Override
+    public java.util.List<String> distinctSeries() {
+        java.util.List<String> series = bookRepository
+                .distinctSeries(ownerScopeResolver.excludedOwnerIds(CollectionType.BOOKS));
+        if (series == null) {
+            return java.util.List.of();
+        }
+        return series.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    @Override
     @Cacheable(cacheNames = "bookList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOOKS, owner, viewerId);
-        return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return bookRepository.search(new BookSearchCriteria(criteria.name(), criteria.author(), criteria.type(), criteria.state(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), criteria.series()), pageable);
     }
 
     @Override
@@ -87,6 +102,7 @@ public class BookService implements BookUseCase {
         book.setUserOwned(ownerResolver.resolveOwner(ownerId));
         checkExternalIdUnique(book.getExternalId(), null);
         validateProgress(book.getPagesRead(), book.getPages());
+        normalizeSeries(book);
         fillEmptyGenres(book);
         dateRangeValidator.validate(book.getStartDate(), book.getEndDate());
         return saveOrConflict(book);
@@ -101,6 +117,7 @@ public class BookService implements BookUseCase {
         checkExternalIdUnique(updates.getExternalId(), id);
         copyUpdatableFields(existing, updates);
         validateProgress(existing.getPagesRead(), existing.getPages());
+        normalizeSeries(existing);
         fillEmptyGenres(existing);
         dateRangeValidator.validate(existing.getStartDate(), existing.getEndDate());
         return saveOrConflict(existing);
@@ -176,5 +193,22 @@ public class BookService implements BookUseCase {
         target.setPublicationYear(source.getPublicationYear());
         target.setAcquisitionDate(source.getAcquisitionDate());
         target.setAcquisitionPrice(source.getAcquisitionPrice());
+        target.setSeries(source.getSeries());
+        target.setSeriesOrder(source.getSeriesOrder());
+    }
+
+    /**
+     * Calcula seriesKey a partir de series y descarta el que venga del cliente.
+     * Sin serie no hay posición: un order suelto no significa nada.
+     */
+    private void normalizeSeries(Book book) {
+        String seriesKey = SeriesKey.normalize(book.getSeries());
+        if (seriesKey == null) {
+            book.setSeries(null);
+            book.setSeriesKey(null);
+            book.setSeriesOrder(null);
+            return;
+        }
+        book.setSeriesKey(seriesKey);
     }
 }

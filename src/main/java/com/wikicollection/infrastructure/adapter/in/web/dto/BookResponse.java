@@ -28,11 +28,14 @@ public record BookResponse(
         Integer publicationYear,
         LocalDate acquisitionDate,
         BigDecimal acquisitionPrice,
+        String series,
+        Integer seriesOrder,
         UserOwnedResponse userOwned) {
 
 
     public BookResponse withoutPrivate() {
         return new BookResponse(id, externalId, isbn, title, descripcion, author, genres, pages, type, state,
-                null, null, null, null, null, frontpage, publisher, publicationYear, null, null, userOwned);
+                null, null, null, null, null, frontpage, publisher, publicationYear, null, null,
+                series, seriesOrder, userOwned);
     }
 }

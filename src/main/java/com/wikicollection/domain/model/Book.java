@@ -40,4 +40,11 @@ public class Book {
     private Integer publicationYear;
     private LocalDate acquisitionDate;
     private java.math.BigDecimal acquisitionPrice;
+
+    /** Nombre visible de la serie, texto libre introducido por el usuario. */
+    private String series;
+    /** Clave normalizada de la serie; se calcula en el servicio, nunca desde el cliente. */
+    private String seriesKey;
+    /** Posición dentro de la serie. */
+    private Integer seriesOrder;
 }

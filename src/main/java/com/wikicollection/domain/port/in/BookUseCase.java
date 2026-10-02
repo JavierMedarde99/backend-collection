@@ -12,6 +12,8 @@ public interface BookUseCase {
 
     java.util.List<String> distinctGenres();
 
+    java.util.List<String> distinctSeries();
+
     Page<Book> search(BookSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
 
     Book findById(String id);

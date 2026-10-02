@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record BookRequest(
         String externalId,
@@ -36,5 +37,18 @@ public record BookRequest(
         LocalDate acquisitionDate,
         @Min(value = 0, message = "El precio de adquisición no puede ser negativo")
         @Digits(integer = 8, fraction = 2, message = "El precio admite como máximo 8 dígitos y 2 decimales")
-        BigDecimal acquisitionPrice) {
+        BigDecimal acquisitionPrice,
+        @Size(max = 200, message = "La serie no puede superar los 200 caracteres") String series,
+        @Min(value = 0, message = "La posición en la serie no puede ser negativa") Integer seriesOrder) {
+
+    /** Petición sin serie, que es el caso mayoritario. */
+    public BookRequest(String externalId, String isbn, String title, String descripcion, String author,
+            List<String> genres, Integer pages, BookType type, BookState state, String comment,
+            Integer start, Integer pagesRead, java.time.LocalDate startDate, java.time.LocalDate endDate,
+            String frontpage, String publisher, Integer publicationYear,
+            java.time.LocalDate acquisitionDate, BigDecimal acquisitionPrice) {
+        this(externalId, isbn, title, descripcion, author, genres, pages, type, state, comment, start,
+                pagesRead, startDate, endDate, frontpage, publisher, publicationYear, acquisitionDate,
+                acquisitionPrice, null, null);
+    }
 }

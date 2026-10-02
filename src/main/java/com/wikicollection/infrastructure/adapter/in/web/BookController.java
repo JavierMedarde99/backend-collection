@@ -79,14 +79,24 @@ public class BookController {
             @Parameter(description = "Filtro por tipo de libro") @RequestParam(required = false) BookType type,
             @Parameter(description = "Filtro por estado de lectura") @RequestParam(required = false) BookState state,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
+            @Parameter(description = "Filtro por serie (coincidencia parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La serie no puede superar los 100 caracteres") String series,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state, genre, null, null);
+        BookSearchCriteria criteria = new BookSearchCriteria(name, author, type, state, genre, null, null, series);
         return bookUseCase.search(criteria, pageable, owner, viewerId).map(book -> {
             var response = mapper.toResponse(book);
             return visibility.canSeePrivate(book.getOwnerId(), CollectionType.BOOKS) ? response : response.withoutPrivate();
         });
+    }
+
+    @GetMapping("/series")
+    @Operation(summary = "Catálogo de series en uso", description = "Series distintas globales, excluyendo colecciones privadas.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de series")
+    })
+    public java.util.List<String> series() {
+        return bookUseCase.distinctSeries();
     }
 
     @GetMapping("/genres")

@@ -44,9 +44,21 @@ There is intentionally **only one** `@EnableMongoAuditing` (in `MongoAuditConfig
 
 ## Domain model (`Book` — Mongo collection `BOOKS`)
 
-`id`, `externalId`, `title`, `descripcion`, `author` (singular String), `pages`, `type`, `state`, `comment`, `start` (Integer 0–5), `startDate` (LocalDate), `endDate` (LocalDate), `frontpage`. Enums: `BookType` (MANGA, NOVEL, GRAPHIC_NOVEL), `BookState` (TO_READ, READING, COMPLETED). Requests validate `start` 0–5.
+`id`, `externalId`, `title`, `descripcion`, `author` (singular String), `pages`, `type`, `state`, `comment`, `start` (Integer 0–5), `startDate` (LocalDate), `endDate` (LocalDate), `frontpage`, `series`, `seriesKey`, `seriesOrder`. Enums: `BookType` (MANGA, NOVEL, GRAPHIC_NOVEL), `BookState` (TO_READ, READING, COMPLETED). Requests validate `start` 0–5.
 
 Search (`GET /api/books/search`) uses query param **`name`** (not `q`) and hits Google Books with `intitle:<name>` + `langRestrict=es` + `maxResults=10`. `GET /api/books` filters by `state`; there is no `tag` filter (tags were removed with the BOOKS model).
+
+## Book series (issue #425)
+
+Three embedded fields, no `Series` entity and no migration — existing docs read `null`:
+
+- `series` — free text written by the user (`@Size(max = 200)`), public like `publisher`
+- `seriesKey` — grouping key, **never accepted from the client**; `BookService.normalizeSeries()` recomputes it from `series` via `SeriesKey.normalize()` (lowercase, collapsed whitespace) and discards any client value
+- `seriesOrder` — position in the series (`@Min(0)`); cleared to `null` together with `series`/`seriesKey` when there is no series
+
+`seriesKey` is deliberately **absent from `BookRequest` and `BookResponse`**. `GET /api/books?series=<text>` is a partial case-insensitive regex on `series` (same as `author`), so callers never need to know the key. `GET /api/books/series` returns the distinct series names in use, mirroring `GET /api/books/genres`, and respects the private-collection exclusions of `OwnerScopeResolver`.
+
+No `@Indexed` on `series`/`seriesKey`: `spring.data.mongodb.auto-index-creation=false`, and the `?series=` regex is unanchored, so Mongo could not use the index anyway (same as `title`/`author`).
 
 ## Git workflow
 

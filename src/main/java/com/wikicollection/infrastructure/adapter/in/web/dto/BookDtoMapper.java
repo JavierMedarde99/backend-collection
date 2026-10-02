@@ -31,6 +31,8 @@ public class BookDtoMapper {
                 .publicationYear(request.publicationYear())
                 .acquisitionDate(request.acquisitionDate())
                 .acquisitionPrice(request.acquisitionPrice())
+                .series(request.series())
+                .seriesOrder(request.seriesOrder())
                 .build();
     }
 
@@ -59,6 +61,8 @@ public class BookDtoMapper {
                 book.getPublicationYear(),
                 book.getAcquisitionDate(),
                 book.getAcquisitionPrice(),
+                book.getSeries(),
+                book.getSeriesOrder(),
                 UserOwnedResponse.from(book.getUserOwned()));
     }
 }

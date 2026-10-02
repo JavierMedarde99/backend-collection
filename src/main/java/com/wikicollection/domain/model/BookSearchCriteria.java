@@ -9,7 +9,14 @@ public record BookSearchCriteria(
         BookState state,
         java.util.List<String> genres,
         String ownerId,
-        List<String> excludeOwnerIds) {
+        List<String> excludeOwnerIds,
+        String series) {
+
+    /** Criterio sin filtro de serie: el caso de casi todas las llamadas existentes. */
+    public BookSearchCriteria(String name, String author, BookType type, BookState state,
+            java.util.List<String> genres, String ownerId, List<String> excludeOwnerIds) {
+        this(name, author, type, state, genres, ownerId, excludeOwnerIds, null);
+    }
 
     public boolean hasName() {
         return name != null && !name.isBlank();
@@ -28,6 +35,10 @@ public record BookSearchCriteria(
             return java.util.List.of();
         }
         return genres.stream().filter(g -> g != null && !g.isBlank()).toList();
+    }
+
+    public boolean hasSeries() {
+        return series != null && !series.isBlank();
     }
 
     public boolean hasOwnerId() {

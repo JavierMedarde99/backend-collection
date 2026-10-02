@@ -3,6 +3,8 @@ package com.wikicollection.infrastructure.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.ExecutableFindOperation;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 
@@ -37,6 +40,17 @@ class BookPersistenceAdapterTest {
 
     @Mock
     private BookEntityMapper mapper;
+
+    @Mock
+    private ExecutableFindOperation.ExecutableFind<BookEntity> findOperation;
+
+    /** distinct("series") devuelve TerminatingDistinct<Object> antes de proyectar. */
+    @Mock
+    @SuppressWarnings("rawtypes")
+    private ExecutableFindOperation.TerminatingDistinct distinctUnprojected;
+
+    @Mock
+    private ExecutableFindOperation.TerminatingDistinct<String> distinctResult;
 
     @InjectMocks
     private BookPersistenceAdapter adapter;
@@ -106,6 +120,46 @@ class BookPersistenceAdapterTest {
     }
 
     @Test
+    void distinctSeries_queriesDistinctSeries() {
+        stubDistinct(List.of("Harry Potter"));
+
+        List<String> result = adapter.distinctSeries(List.of());
+
+        assertThat(result).containsExactly("Harry Potter");
+        verify(mongoTemplate).query(BookEntity.class);
+        verify(findOperation).distinct("series");
+    }
+
+    @Test
+    void distinctSeries_excludesPrivateOwners() {
+        stubDistinct(List.of());
+
+        adapter.distinctSeries(List.of("oculto"));
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(distinctResult).matching(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("oculto");
+    }
+
+    @Test
+    void distinctSeries_treatsNullExclusionsAsNoFilter() {
+        stubDistinct(List.of());
+
+        adapter.distinctSeries(null);
+
+        verify(distinctResult, never()).matching(any(Query.class));
+    }
+
+    /** Encadena mongoTemplate.query(..).distinct("series").as(String.class). */
+    private void stubDistinct(List<String> values) {
+        lenient().when(mongoTemplate.query(BookEntity.class)).thenReturn(findOperation);
+        lenient().when(findOperation.distinct("series")).thenReturn(distinctUnprojected);
+        lenient().when(distinctUnprojected.as(String.class)).thenReturn(distinctResult);
+        lenient().when(distinctResult.matching(any(Query.class))).thenReturn(distinctResult);
+        lenient().when(distinctResult.all()).thenReturn(values);
+    }
+
+    @Test
     void search_withoutFilters_returnsAllResults() {
         Pageable pageable = PageRequest.of(0, 20);
         BookEntity entity = BookEntity.builder().id("b1").title("Cien años de soledad").build();
@@ -167,6 +221,35 @@ class BookPersistenceAdapterTest {
         assertThat(qs).contains("$regularExpression");
         assertThat(qs).contains("fantasía");
         assertThat(qs).contains("terror");
+    }
+
+    @Test
+    void search_withSeriesFilter_buildsCaseInsensitiveRegexOnSeries() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
+
+        adapter.search(new BookSearchCriteria(null, null, null, null, null, null, null, "potter"), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("series");
+        assertThat(qs).contains("$regularExpression");
+        assertThat(qs).contains("potter");
+    }
+
+    @Test
+    void search_withBlankSeriesFilter_doesNotFilter() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BookEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BookEntity.class))).thenReturn(0L);
+
+        adapter.search(new BookSearchCriteria(null, null, null, null, null, null, null, "  "), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(BookEntity.class));
+        assertThat(queryCaptor.getValue().getQueryObject()).doesNotContainKey("series");
     }
 
     @Test

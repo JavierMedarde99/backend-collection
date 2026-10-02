@@ -69,4 +69,12 @@ public class BookEntity {
     private LocalDate acquisitionDate;
 
     private java.math.BigDecimal acquisitionPrice;
+
+    /** Sin @Indexed: el filtro por serie es regex sin anclar, que Mongo no indexa (igual que title o author). */
+    private String series;
+
+    /** Clave de agrupación calculada por el servicio; se usará en la agregación de progreso. */
+    private String seriesKey;
+
+    private Integer seriesOrder;
 }

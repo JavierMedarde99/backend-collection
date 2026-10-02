@@ -24,4 +24,7 @@ public interface BookRepository {
     void updateOwnerName(String ownerId, String ownerName);
 
     List<String> distinctGenres(List<String> excludeOwnerIds);
+
+    /** Nombres de serie distintos en uso, excluyendo colecciones privadas. */
+    List<String> distinctSeries(List<String> excludeOwnerIds);
 }

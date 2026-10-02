@@ -34,6 +34,9 @@ public class BookEntityMapper {
                 .publicationYear(book.getPublicationYear())
                 .acquisitionDate(book.getAcquisitionDate())
                 .acquisitionPrice(book.getAcquisitionPrice())
+                .series(book.getSeries())
+                .seriesKey(book.getSeriesKey())
+                .seriesOrder(book.getSeriesOrder())
                 .build();
     }
 
@@ -64,6 +67,9 @@ public class BookEntityMapper {
                 .publicationYear(entity.getPublicationYear())
                 .acquisitionDate(entity.getAcquisitionDate())
                 .acquisitionPrice(entity.getAcquisitionPrice())
+                .series(entity.getSeries())
+                .seriesKey(entity.getSeriesKey())
+                .seriesOrder(entity.getSeriesOrder())
                 .build();
     }
 }
