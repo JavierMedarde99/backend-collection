@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.wikicollection.domain.model.MagicCard;
+import com.wikicollection.domain.model.MagicCardPrinting;
 import com.wikicollection.domain.model.MagicCardSearchResult;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper.ScryfallCardResponse;
@@ -15,6 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -151,6 +155,41 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
             log.warn("Scryfall no disponible al buscar carta {}: {}", name, e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Todas las impresiones de una carta. Scryfall no tiene endpoint de impresiones; la
+     * búsqueda por {@code oracleid} con {@code unique=prints} sí, y es lo que devuelve una
+     * fila por reimpresión física (una carta puede tener cientos).
+     *
+     * <p>A diferencia de {@link #search(String)} y {@link #findById(String)}, un fallo de
+     * Scryfall se propaga en lugar de convertirse en una lista vacía: aquí el vacío es un
+     * resultado con significado ("esta carta no tiene reimpresiones") y un 500 disfrazado
+     * de vacío haría creer al usuario que su carta no se reimprimió.
+     */
+    @Override
+    @Cacheable(cacheNames = CacheConfig.MAGIC_PRINTINGS, key = "#oracleId + ':' + #page",
+            unless = "#result.content.isEmpty()")
+    public Page<MagicCardPrinting> findPrintings(String oracleId, int page) {
+        if (oracleId == null || oracleId.isBlank()) {
+            // "q=oracleid:" sin valor devuelve 200 con 0 resultados, indistinguible de un
+            // catálogo vacío. Es un fallo de programación, no una consulta vacía.
+            return new PageImpl<>(java.util.List.of(),
+                    PageRequest.of(Math.max(page, 0), MagicCardPrinting.PAGE_SIZE), 0);
+        }
+        pace();
+        String uri = UriComponentsBuilder.fromUriString(baseUrl)
+                .path(SEARCH_PATH)
+                .queryParam("q", "oracleid:" + oracleId)
+                .queryParam("unique", "prints")
+                .queryParam("order", "released")
+                // Scryfall pagina en base 1; la de nuestra API es base 0.
+                .queryParam("page", Math.max(page, 0) + 1)
+                .build()
+                .toUriString();
+        MagicCardMapper.ScryfallListResponse response =
+                executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
+        return mapper.mapPrintings(response, page);
     }
 
     private <T> T executeWithRetry(IoSupplier<T> supplier) {

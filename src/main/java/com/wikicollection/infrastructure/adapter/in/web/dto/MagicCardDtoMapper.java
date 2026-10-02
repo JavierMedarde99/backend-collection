@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
 import com.wikicollection.domain.model.MagicCard;
+import com.wikicollection.domain.model.MagicCardPrinting;
 
 import org.springframework.stereotype.Component;
 
@@ -47,5 +48,30 @@ public class MagicCardDtoMapper {
                 magicCard.getNotes(),
                 magicCard.getDateAdded(),
                 UserOwnedResponse.from(magicCard.getUserOwned()));
+    }
+
+    public MagicCardPrintingResponse toPrintingResponse(MagicCardPrinting printing) {
+        if (printing == null) {
+            return null;
+        }
+        return new MagicCardPrintingResponse(
+                printing.scryfallId(),
+                printing.name(),
+                printing.setCode(),
+                printing.setName(),
+                printing.collectorNumber(),
+                printing.rarity(),
+                printing.artist(),
+                printing.releasedAt(),
+                printing.lang(),
+                printing.imageUrl(),
+                printing.artCropUrl(),
+                printing.finishes(),
+                printing.fullArt(),
+                printing.promoTypes(),
+                printing.frameEffects(),
+                printing.borderColor(),
+                printing.priceUsd(),
+                printing.priceEur());
     }
 }

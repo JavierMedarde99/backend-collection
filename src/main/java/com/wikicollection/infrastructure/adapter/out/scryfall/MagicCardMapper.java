@@ -5,8 +5,12 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wikicollection.domain.model.MagicCard;
+import com.wikicollection.domain.model.MagicCardPrinting;
 import com.wikicollection.domain.model.MagicCardSearchResult;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,6 +60,45 @@ public class MagicCardMapper {
                 .build();
     }
 
+    public MagicCardPrinting toPrinting(ScryfallCardResponse card) {
+        if (card == null) {
+            return null;
+        }
+        return new MagicCardPrinting(
+                card.id(),
+                card.name(),
+                card.set(),
+                card.setName(),
+                card.collectorNumber(),
+                card.rarity(),
+                card.artist(),
+                card.releasedAt(),
+                card.lang(),
+                card.imageUris() != null ? card.imageUris().normal() : null,
+                card.imageUris() != null ? card.imageUris().artCrop() : null,
+                card.finishes(),
+                Boolean.TRUE.equals(card.fullArt()),
+                card.promoTypes(),
+                card.frameEffects(),
+                card.borderColor(),
+                card.prices() != null ? card.prices().usd() : null,
+                card.prices() != null ? card.prices().eur() : null);
+    }
+
+    /**
+     * Convierte una pagina de impresiones de Scryfall. El {@code page} es base 0 y el
+     * tamano se fija al de Scryfall porque su API no permite pedir menos.
+     */
+    public Page<MagicCardPrinting> mapPrintings(ScryfallListResponse response, int page) {
+        List<MagicCardPrinting> printings = response == null || response.data() == null
+                ? List.of()
+                : response.data().stream().map(this::toPrinting).toList();
+        long total = response != null && response.totalCards() != null
+                ? response.totalCards()
+                : printings.size();
+        return new PageImpl<>(printings, PageRequest.of(Math.max(page, 0), MagicCardPrinting.PAGE_SIZE), total);
+    }
+
     private MagicCardSearchResult toSearchResult(ScryfallCardResponse card) {
         return new MagicCardSearchResult(
                 card.id(),
@@ -72,8 +115,12 @@ public class MagicCardMapper {
                 card.oracleText());
     }
 
+    // Scryfall añade object, has_more, next_page y warnings: sin ignorar campos
+    // desconocidos esta deserialización depende de la configuración global de Jackson.
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ScryfallListResponse(
-            @JsonProperty("data") List<ScryfallCardResponse> data) {
+            @JsonProperty("data") List<ScryfallCardResponse> data,
+            @JsonProperty("total_cards") Long totalCards) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -101,14 +148,30 @@ public class MagicCardMapper {
             @JsonProperty("layout") String layout,
             @JsonProperty("legalities") java.util.Map<String, String> legalities,
             @JsonProperty("prices") ScryfallPrices prices,
-            @JsonProperty("image_uris") ScryfallImageUris imageUris) {
+            @JsonProperty("image_uris") ScryfallImageUris imageUris,
+            @JsonProperty("collector_number") String collectorNumber,
+            @JsonProperty("lang") String lang,
+            @JsonProperty("finishes") List<String> finishes,
+            @JsonProperty("full_art") Boolean fullArt,
+            @JsonProperty("promo_types") List<String> promoTypes,
+            @JsonProperty("frame_effects") List<String> frameEffects,
+            @JsonProperty("promo_prices") ScryfallPromoPrices promoPrices) {
     }
 
+    /** Acabados especiales (foil, etched). No se exponen: el DTO solo lleva el precio simple. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ScryfallPromoPrices(
+            @JsonProperty("usd") String usd,
+            @JsonProperty("eur") String eur) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ScryfallPrices(
             @JsonProperty("usd") String usd,
             @JsonProperty("eur") String eur) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ScryfallImageUris(
             @JsonProperty("normal") String normal,
             @JsonProperty("large") String large,
