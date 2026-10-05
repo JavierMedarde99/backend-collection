@@ -162,7 +162,8 @@ Mismo puerto, dos formatos más. La detección de separador y el parseo de campo
 - `malformedJson_throws()`, `emptyArray_throws()`, `entryWithoutName_throws()`: las tres con `DeckListParseException`.
 
 `CsvDeckListParserTest`:
-- `parsesCommaSeparatedWithHeaderInAnyOrder()`: `"quantity,name,set,number\n4,\"Sol Ring\",NEO,269\n1,\"Atraxa, Grand Unifier\",ONE,32"` → 2 entradas; la segunda con `commander() == true` porque su `name` empieza por... **no**: en CSV el comandante se marca con una columna `commander` o con `isCommander`. Usa cabecera `quantity,name,commander` y fila `1,"Atraxa, Grand Unifier",true` para ese caso.
+- `parsesCommaSeparatedWithHeaderInAnyOrder()`: cabecera `name,quantity,commander` y filas `Sol Ring,4,false` y `Atraxa, Grand Unifier,1,true` → 2 entradas; la segunda con `commander() == true` porque su columna vale `true`. El orden de las columnas es libre, no tiene por qué ser el del ejemplo de la spec.
+- `parsesSetAndNumberColumns()`: cabecera `quantity,name,set,number` con la fila `4,\"Sol Ring\",NEO,269` → `setCode() == \"NEO\"` y `collectorNumber() == \"269\"`.
 - `parsesSemicolonSeparated()`: `"1;Sol Ring;NEO"` con cabecera `quantity;name;set`.
 - `parsesQuotedNameContainingComma()`: `"1,\"Sword of Fire and Ice\""` → `name() == "Sword of Fire and Ice"` (la coma va dentro de las comillas, no separa campos).
 - `parsesEscapedDoubleQuotes()`: `"1,\"Atraxa, \"\"Grand Unifier\"\"\""` → `name() == "Atraxa, \"Grand Unifier\""`.
@@ -217,7 +218,7 @@ Sin esto el import no puede resolver nada, y sin `unique=oracle` cada línea del
 
 `ScryfallClientNameSearchTest`, con el mismo arranque que `ScryfallClientTest` (MockWebServer en `setUp`, `new ScryfallClient(RestClient.builder().baseUrl(server.url("").toString()).build(), server.url("").toString(), 0, 0, new MagicCardMapper())`, `server.shutdown()` en `@AfterEach`):
 - `searchByNameExact_sendsNameQueryWithUniqueOracle()`: encola un `ScryfallListResponse` JSON real (reutiliza el shape de `searchFixture()` de `ScryfallClientTest`, no un objeto plano); llama `searchByNameExact("Sol Ring")`; assert `results` con 1 elemento y `RecordedRequest.getPath()` contiene `q=name:%22Sol%20Ring%22` y `unique=oracle`.
-- `searchSuggestions_sendsBareQueryAndLimitsResults()`: assert que la ruta contiene `q=Sol+Ring` (sin comillas), `unique=oracle` y `page_size` ausente o `page=1`; y que el `RecordedRequest.getPath()` **no** contiene `name:%22` (o sea, no es la búsqueda exacta).
+- `searchSuggestions_sendsBareQueryWithoutPageSizeAndCapsAtFive()`: encola 8 resultados; assert que la ruta contiene `q=Sol+Ring` (sin comillas) y `unique=oracle`, que **no** contiene `page_size`, `per_page` ni `limit`, y que el método devuelve 5 elementos. Assert también que la ruta **no** contiene `name:%22` (o sea, no es la búsqueda exacta).
 - `searchByNameExact_onUpstreamError_returnsEmptyList()`: encola 503 → lista vacía, sin excepción (mismo criterio que `search`, a diferencia de `findPrintings`).
 
 - [ ] **Step 2: Ejecuta y comprueba que falla**
@@ -230,19 +231,17 @@ Expected: FAIL, `cannot find symbol: method searchByNameExact`.
 En `ExternalMagicCardCatalogClient`, los dos métodos con el javadoc que explica por qué `unique=oracle` es obligatorio. En `ScryfallClient`, un helper privado que construya la URI:
 
 ```java
-private String searchUri(String query, Integer pageSize) {
-    UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl)
+private String searchUri(String query) {
+    return UriComponentsBuilder.fromUriString(baseUrl)
             .path(SEARCH_PATH)
             .queryParam("q", query)
-            .queryParam("unique", "oracle");
-    if (pageSize != null) {
-        builder.queryParam("page_size", pageSize);
-    }
-    return builder.build().toUriString();
+            .queryParam("unique", "oracle")
+            .build()
+            .toUriString();
 }
 ```
 
-`searchByNameExact` → `searchUri("name:\"" + name + "\"", null)`; `searchSuggestions` → `searchUri(name, 5)`. Ambos con `pace()` y `executeWithRetry(...)`, y con el mismo `catch (RestClientResponseException | ResourceAccessException)` que `search`, devolviendo `List.of()` y haciendo `log.warn`. Reutiliza `mapper.mapResponse(response)`.
+`searchByNameExact` → `searchUri("name:\"" + name + "\"")`; `searchSuggestions` → `searchUri(name)`, y recorta el resultado a los 5 primeros en el cliente con `stream().limit(5).toList()`. **No** mandes `page_size`, `per_page` ni `limit`: AGENTS.md documenta que Scryfall los ignora en silencio, así que no filtran nada y, además, un parámetro mal escrito devuelve 200 con 0 resultados en vez de un error. Ambos con `pace()` y `executeWithRetry(...)`, y con el mismo `catch (RestClientResponseException | ResourceAccessException)` que `search`, devolviendo `List.of()` y haciendo `log.warn`. Reutiliza `mapper.mapResponse(response)`.
 
 - [ ] **Step 4: Ejecuta y comprueba que pasa**
 
@@ -421,6 +420,8 @@ La infraestructura que el worker necesita: `@EnableAsync`, un executor con nombr
       public DeckImportJob completed(DeckStatusReport validation, String commanderName,
                                      List<String> commanderColors);
       public DeckImportJob failed(String error);
+      public static DeckImportJob pending(String jobId, String deckId, String ownerId,
+                                          DeckImportFormat format, DeckImportMode mode);
   }
 
   @Component
@@ -441,7 +442,7 @@ La infraestructura que el worker necesita: `@EnableAsync`, un executor con nombr
 - `evict_removesTheJob()`.
 - `jobCopiesCarryForwardTheImmutableFields()`: sobre un job completo, `failed("boom")` conserva `jobId`/`deckId`/`ownerId`/`format`/`mode`/`createdAt`, pone `status() == FAILED`, `error() == "boom"` y `completedAt() != null`.
 
-`AsyncConfigTest`, `@SpringBootTest` ligero que solo carga el contexto y comprueba los beans:
+`AsyncConfigTest`, `@SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.boardgame-status-migration.enabled=false"})` con **`@MockitoBean OwnerResolver`** (sin él el contexto no levanta: Mongo no está disponible y `OwnerResolver` lo necesita). Comprueba los beans:
 - `executorBeanExistsWithExpectedPool()`: `@Autowired @Qualifier("deckImportExecutor") ThreadPoolTaskExecutor` → `getCorePoolSize() == 2`, `getMaxPoolSize() == 4`.
 - `deckImportJobsCacheIsNotSpringCacheManaged()`: `@Autowired @Qualifier("deckImportJobs") Cache<String, DeckImportJob>` no es nulo, y `CacheConfigCacheNamesTest` sigue verde (el registro de jobs **no** va en `CacheConfig.CACHE_NAMES`).
 
@@ -682,7 +683,7 @@ Expected: FAIL, `cannot find symbol: class DeckImportService`.
 
 `DeckImportFormatDetector` con `@Component`: si hay `filename` con extensión `.txt`/`.json`/`.csv`, esa gana; si no, deduce del contenido: empieza por `{` o `[` tras quitar blancos → `JSON`; la primera línea no vacía contiene `,` o `;` y tiene cabecera con `name` → `CSV`; si no → `TXT`. `requireConsistent` compara lo declarado con lo deducido y lanza `IllegalArgumentException` si difieren.
 
-`DeckImportService` con `@Service`, implementando `DeckImportUseCase`, con los checks en este orden: `deckRepository.findById` → `ownershipValidator.validateOwner` → contenido en blanco → número de líneas no vacías mayor que `deck.import.max-entries` (500) → tamaño mayor que `deck.import.max-file-size` (5 MB) → `requireConsistent`. Luego `UUID.randomUUID().toString()`, `store.save(job PENDING)` y `worker.run(jobId, deckId, userId, content, format, mode)`.
+`DeckImportService` con `@Service`, implementando `DeckImportUseCase`, con los checks en este orden: `deckRepository.findById` → `ownershipValidator.validateOwner` → contenido en blanco → número de líneas no vacías mayor que `deck.import.max-entries` (500) → tamaño mayor que `deck.import.max-file-size` (5 MB) → `requireConsistent`. Luego `UUID.randomUUID().toString()`, `store.save(DeckImportJob.pending(jobId, deckId, userId, format, mode))` (usa la fabrica de la Task 6, no el constructor de 15 componentes) y `worker.run(jobId, deckId, userId, content, format, mode)`.
 
 `findJob(deckId, jobId, userId)`: `store.find(jobId)` vacío o con `deckId` distinta → `DeckImportNotFoundException` (RF4); `deckRepository.findById(deckId)` y `ownershipValidator.validateOwner` → `ForbiddenException`; si el job existe, devuélvelo.
 
@@ -789,6 +790,13 @@ En `GlobalExceptionHandler`, añade los handlers de `DeckListParseException` →
 
 Run: `mvn -o -Dtest=DeckImportControllerTest,DeckControllerTest,GlobalExceptionHandlerTest,SecurityMatrixTest test`
 Expected: PASS. `SecurityMatrixTest` y `DeckControllerTest` verdes son la prueba de que no se rompió nada.
+
+Y después, porque los beans nuevos (`DeckImportService`, el worker, los tres parsers) se
+instancian en el contexto de **todos** los `@SpringBootTest` del repo, no solo en los de mazos:
+
+Run: `mvn -o -Dtest='*ControllerTest,ResponseVisibilityTest' test`
+Expected: PASS. Si alguno falla al cargar el contexto, el problema es un bean nuevo que falta
+por mockear en ese test, no este código.
 
 - [ ] **Step 5: Añade la anotación OpenAPI** en los tres métodos: `@Operation` + `@ApiResponses` con 202/400/404/403 en los POST y 200/404/403 en el GET, en el estilo del resto del controller. Sin esto el contrato nuevo no aparece en `/v3/api-docs`.
 
