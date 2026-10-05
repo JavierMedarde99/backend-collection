@@ -1,4 +1,4 @@
-package com.wikicollection.infrastructure.adapter.in.decklist;
+package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,6 +7,9 @@ import java.util.List;
 
 import com.wikicollection.domain.model.DeckImportFormat;
 import com.wikicollection.domain.port.out.DeckListParser;
+import com.wikicollection.infrastructure.adapter.in.decklist.CsvDeckListParser;
+import com.wikicollection.infrastructure.adapter.in.decklist.JsonDeckListParser;
+import com.wikicollection.infrastructure.adapter.in.decklist.MtgoTextDeckListParser;
 
 import org.junit.jupiter.api.Test;
 

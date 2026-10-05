@@ -1,4 +1,4 @@
-package com.wikicollection.infrastructure.adapter.in.decklist;
+package com.wikicollection.application.service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
  * {@link DeckListParser} en orden indeterminado, así que el mapa se construye a partir
  * de {@code parser.format()}: pedir el parser de un formato no depende de la posición
  * en la que llegue cada bean.
+ *
+ * <p>Vive en {@code application/} y no junto a los parsers, que están en el adaptador de
+ * entrada, porque lo consume el worker de importación (#353). Si estuviera allí, el
+ * servicio tendría que importar hacia fuera de la capa.
  */
 @Component
 public class DeckListParserRegistry {
