@@ -56,7 +56,7 @@ class DeckServiceTest {
 
     private DeckService deckService() {
         return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator,
-                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)), ownerResolver);
+                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)), new DeckCardFactory(), ownerResolver);
     }
 
     private Deck sampleDeck() {
