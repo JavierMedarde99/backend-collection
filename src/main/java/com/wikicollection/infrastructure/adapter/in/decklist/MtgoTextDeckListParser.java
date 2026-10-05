@@ -50,7 +50,12 @@ public class MtgoTextDeckListParser implements DeckListParser {
 
         String[] lineas = content.split("\\R", -1);
         for (int i = 0; i < lineas.length; i++) {
+            // El BOM UTF-8 que ponen algunos exports (Arena en Windows) no es whitespace:
+            // sin quitarlo, la cabecera de zona queda con el BOM delante y no se reconoce
             String linea = lineas[i].trim();
+            if (linea.startsWith("\uFEFF")) {
+                linea = linea.substring(1);
+            }
             int numero = i + 1;
 
             // Línea vacía o comentario: se ignora
@@ -84,7 +89,15 @@ public class MtgoTextDeckListParser implements DeckListParser {
                 continue;
             }
 
-            int cantidad = Integer.parseInt(matcher.group("qty"));
+            // Una cantidad que no cabe en un int también es contenido inválido: el parser
+            // solo puede lanzar DeckListParseException, nunca un NumberFormatException del JDK
+            int cantidad;
+            try {
+                cantidad = Integer.parseInt(matcher.group("qty"));
+            } catch (NumberFormatException e) {
+                throw new DeckListParseException(
+                        "Cantidad no válida en la línea " + numero + ": " + linea);
+            }
             if (cantidad < 1) {
                 throw new DeckListParseException(
                         "Cantidad no válida en la línea " + numero + ": " + linea);

@@ -9,4 +9,9 @@ import java.util.List;
  * @param sideboardIgnored líneas de la zona SIDEBOARD descartadas (el sideboard no se importa)
  */
 public record ParsedDeckList(List<DeckListEntry> entries, int sideboardIgnored) {
+
+    /** Copia defensiva: los consumidores no pueden modificar la lista interna. */
+    public ParsedDeckList {
+        entries = List.copyOf(entries);
+    }
 }

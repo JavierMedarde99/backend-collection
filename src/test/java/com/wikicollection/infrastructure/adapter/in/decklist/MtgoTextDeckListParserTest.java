@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 import com.wikicollection.application.exception.DeckListParseException;
+import com.wikicollection.domain.model.DeckImportFormat;
 import com.wikicollection.domain.model.DeckListEntry;
 import com.wikicollection.domain.model.ParsedDeckList;
 
@@ -104,5 +105,39 @@ class MtgoTextDeckListParserTest {
     void throwsWhenQuantityIsNotPositive() {
         assertThatThrownBy(() -> parser.parse("DECK\n0 Sol Ring"))
                 .isInstanceOf(DeckListParseException.class);
+    }
+
+    @Test
+    void throwsWhenQuantityDoesNotFitInInt() {
+        assertThatThrownBy(() -> parser.parse("DECK\n2147483648 Sol Ring"))
+                .isInstanceOf(DeckListParseException.class);
+    }
+
+    @Test
+    void ignoresLinesThatAreNotCards() {
+        ParsedDeckList resultado = parser.parse("""
+                DECK
+                4 Sol Ring
+                Mazo de prueba para el Friday Night
+                1 Plains
+                """);
+
+        assertThat(resultado.entries())
+                .extracting(DeckListEntry::name)
+                .containsExactly("Sol Ring", "Plains");
+        assertThat(resultado.sideboardIgnored()).isZero();
+    }
+
+    @Test
+    void zoneHeaderAfterUtf8BomIsRecognized() {
+        ParsedDeckList resultado = parser.parse("\uFEFFCOMMANDER\n1 Atraxa, Grand Unifier\n");
+
+        assertThat(resultado.entries()).hasSize(1);
+        assertThat(resultado.entries().get(0).commander()).isTrue();
+    }
+
+    @Test
+    void format_returnsTxt() {
+        assertThat(parser.format()).isEqualTo(DeckImportFormat.TXT);
     }
 }
