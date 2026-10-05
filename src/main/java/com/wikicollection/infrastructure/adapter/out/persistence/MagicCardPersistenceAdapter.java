@@ -20,6 +20,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class MagicCardPersistenceAdapter implements MagicCardRepository {
 
+    /** Tope de nombres que se leen de golpe de la colección de un dueño (#353). */
+    private static final int OWNER_NAMES_LIMIT = 5000;
+
     private final SpringDataMagicCardRepository springDataMagicCardRepository;
     private final MongoTemplate mongoTemplate;
     private final MagicCardEntityMapper mapper;
@@ -92,5 +95,29 @@ public class MagicCardPersistenceAdapter implements MagicCardRepository {
                 new Query(Criteria.where("ownerId").is(ownerId)),
                 new Update().set("userOwned.ownerName", ownerName),
                 MagicCardEntity.class);
+    }
+
+    /**
+     * Nombres de las cartas del dueño en una sola consulta, proyectando solo {@code name} y
+     * apoyándose en el índice de {@code ownerId}.
+     *
+     * <p>El tope de {@value #OWNER_NAMES_LIMIT} nombres es un seguro: la respuesta entra
+     * entera en memoria para compararla con las del mazo, y una colección muy grande no debe
+     * poder tumbar la importación. Si se alcanzara, lo que se pierde son marcas de "ya en tu
+     * colección", no cartas.
+     */
+    @Override
+    public List<String> findNamesByOwnerId(String ownerId) {
+        if (ownerId == null || ownerId.isBlank()) {
+            return List.of();
+        }
+        Query query = Query.query(Criteria.where("ownerId").is(ownerId));
+        query.fields().include("name");
+        query.limit(OWNER_NAMES_LIMIT);
+        return mongoTemplate.find(query, MagicCardEntity.class).stream()
+                .map(MagicCardEntity::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .toList();
     }
 }
