@@ -5,16 +5,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wikicollection.domain.model.DeckImportFormat;
 import com.wikicollection.domain.port.out.DeckListParser;
 
 import org.junit.jupiter.api.Test;
 
+import tools.jackson.databind.json.JsonMapper;
+
 class DeckListParserRegistryTest {
 
     private final MtgoTextDeckListParser txt = new MtgoTextDeckListParser();
-    private final JsonDeckListParser json = new JsonDeckListParser(new ObjectMapper());
+    private final JsonDeckListParser json = new JsonDeckListParser(new JsonMapper());
     private final CsvDeckListParser csv = new CsvDeckListParser();
 
     @Test

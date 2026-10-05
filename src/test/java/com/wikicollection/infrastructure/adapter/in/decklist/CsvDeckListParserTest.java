@@ -119,6 +119,19 @@ class CsvDeckListParserTest {
     }
 
     @Test
+    void separatorIsDetectedOutsideQuotedCells() {
+        // La coma va ENTRECOMILLADA en la cabecera: no cuenta como separador, el real
+        // es ';' (con ',' la cabecera sería de un solo campo y no tendría name)
+        ParsedDeckList resultado = parser.parse("""
+                "last, name";name
+                xx;Sol Ring
+                """);
+
+        assertThat(resultado.entries()).hasSize(1);
+        assertThat(resultado.entries().get(0).name()).isEqualTo("Sol Ring");
+    }
+
+    @Test
     void ignoresRowsWithoutName() {
         ParsedDeckList resultado = parser.parse("""
                 quantity,name

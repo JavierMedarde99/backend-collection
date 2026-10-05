@@ -3,18 +3,17 @@ package com.wikicollection.infrastructure.adapter.in.decklist;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wikicollection.application.exception.DeckListParseException;
 import com.wikicollection.domain.model.DeckImportFormat;
 import com.wikicollection.domain.model.DeckListEntry;
 import com.wikicollection.domain.model.ParsedDeckList;
 import com.wikicollection.domain.port.out.DeckListParser;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Parser de listas de mazo en JSON. Acepta las tres formas de la spec: array de cartas,
@@ -24,7 +23,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Se recorre el árbol {@link JsonNode} en lugar de mapear a clases/records: así las
  * claves desconocidas de los exports ({@code foil}, {@code currency}, {@code price}…) se
- * ignoran pase lo que pase con la configuración del mapper ({@code FAIL_ON_UNKNOWN_PROPERTIES}).
+ * ignoran pase lo que pase con la configuración del mapper.
  */
 @Component
 public class JsonDeckListParser implements DeckListParser {
@@ -32,17 +31,10 @@ public class JsonDeckListParser implements DeckListParser {
     private final ObjectMapper mapper;
 
     /**
-     * Spring inyecta el ObjectMapper de la aplicación si existe. Spring Boot 4 solo
-     * autoconfigura Jackson 3 ({@code tools.jackson}), de modo que en este contexto no
-     * hay bean de Jackson 2 y se usa uno propio: el parseo es sobre el árbol, así que
-     * no depende de la configuración de ese mapper.
+     * Único constructor: Spring inyecta el {@code ObjectMapper} de la aplicación, que en
+     * Spring Boot 4 es Jackson 3 ({@code tools.jackson}). Si el bean no existiera, el
+     * contexto no arrancaría (lo comprueba {@code JsonDeckListParserContextTest}).
      */
-    @Autowired
-    public JsonDeckListParser(ObjectProvider<ObjectMapper> mapperProvider) {
-        this.mapper = mapperProvider.getIfAvailable(ObjectMapper::new);
-    }
-
-    /** Para uso directo y tests: el parser trabaja con cualquier ObjectMapper. */
     public JsonDeckListParser(ObjectMapper mapper) {
         this.mapper = mapper;
     }
@@ -60,20 +52,32 @@ public class JsonDeckListParser implements DeckListParser {
 
         JsonNode raiz;
         try {
+            // Jackson 3 comprueba que no quede ningún token tras el árbol ("Trailing
+            // token … found after value", siempre activo en readTree), así que la basura
+            // tras el primer valor es error de parseo; Jackson 2 la aceptaba. La excepción
+            // es JacksonException, unchecked en Jackson 3 (no un catch de RuntimeException
+            // amplio, que se tragaría los DeckListParseException de este parser).
             raiz = mapper.readTree(content);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new DeckListParseException("El JSON de la lista de mazo no es válido");
         }
 
         List<DeckListEntry> entradas = new ArrayList<>();
         if (raiz != null && raiz.isArray()) {
             for (JsonNode carta : raiz) {
+                // Un elemento que no es objeto no encaja con el formato: se ignora
+                if (carta == null || !carta.isObject()) {
+                    continue;
+                }
                 entradas.add(entradaDe(carta, entradas.size() + 1));
             }
         } else if (raiz != null && raiz.isObject()) {
             JsonNode cartas = nodoCartas(raiz);
             if (cartas != null) {
                 for (JsonNode carta : cartas) {
+                    if (carta == null || !carta.isObject()) {
+                        continue;
+                    }
                     entradas.add(entradaDe(carta, entradas.size() + 1));
                 }
             }
@@ -123,7 +127,8 @@ public class JsonDeckListParser implements DeckListParser {
     }
 
     private DeckListEntry entradaDe(JsonNode carta, int posicion, boolean comandante) {
-        JsonNode nombre = carta != null && carta.isObject() ? carta.get("name") : null;
+        // Todos los llamantes garantizan que es objeto (lo demás se salta en los bucles)
+        JsonNode nombre = carta.get("name");
         if (nombre == null || !nombre.isTextual() || nombre.asText().isBlank()) {
             throw new DeckListParseException(
                     "Entrada de carta sin nombre en la posición " + posicion);
@@ -144,13 +149,19 @@ public class JsonDeckListParser implements DeckListParser {
             return 1;
         }
         int valor;
-        try {
-            // También cubre números no enteros y textos: asText() no lanza, parseInt sí
-            valor = cantidad.isIntegralNumber()
-                    ? cantidad.intValue()
-                    : Integer.parseInt(cantidad.asText().trim());
-        } catch (NumberFormatException e) {
-            throw cantidadInvalida(posicion, nombreCarta);
+        if (cantidad.isIntegralNumber()) {
+            // intValue() truncaría en silencio fuera de rango (5000000000 → 705032704)
+            if (!cantidad.canConvertToInt()) {
+                throw cantidadInvalida(posicion, nombreCarta);
+            }
+            valor = cantidad.intValue();
+        } else {
+            try {
+                // Cubre textos y números no enteros: asText() no lanza, parseInt sí
+                valor = Integer.parseInt(cantidad.asText().trim());
+            } catch (NumberFormatException e) {
+                throw cantidadInvalida(posicion, nombreCarta);
+            }
         }
         if (valor < 1) {
             throw cantidadInvalida(posicion, nombreCarta);
@@ -166,7 +177,8 @@ public class JsonDeckListParser implements DeckListParser {
                 return nodo.asText().trim();
             }
             if (nodo != null && nodo.isIntegralNumber()) {
-                return String.valueOf(nodo.intValue());
+                // asText() conserva todos los dígitos; intValue() truncaría fuera de rango
+                return nodo.asText();
             }
         }
         return null;

@@ -3,7 +3,6 @@ package com.wikicollection.infrastructure.adapter.in.decklist;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wikicollection.application.exception.DeckListParseException;
 import com.wikicollection.domain.model.DeckImportFormat;
 import com.wikicollection.domain.model.DeckListEntry;
@@ -11,15 +10,17 @@ import com.wikicollection.domain.model.ParsedDeckList;
 
 import org.junit.jupiter.api.Test;
 
+import tools.jackson.databind.json.JsonMapper;
+
 class JsonDeckListParserTest {
 
     /**
-     * ObjectMapper crudo, construido a pelo: conserva la configuración por defecto de
-     * Jackson ({@code FAIL_ON_UNKNOWN_PROPERTIES} activo). Si el parser mapeara a
-     * clases/records, los tests fallarían aquí mismo: el parseo debe recorrer el árbol
-     * JsonNode y no depender de la configuración del mapper que se le pase.
+     * JsonMapper crudo, construido a pelo con la configuración por defecto de Jackson 3.
+     * Si el parser mapeara a clases/records, los tests fallarían aquí mismo: el parseo
+     * debe recorrer el árbol JsonNode y no depender de la configuración del mapper que
+     * se le pase (el de la app es un bean más de este mismo tipo).
      */
-    private final JsonDeckListParser parser = new JsonDeckListParser(new ObjectMapper());
+    private final JsonDeckListParser parser = new JsonDeckListParser(new JsonMapper());
 
     @Test
     void parsesArrayOfObjects() {
@@ -77,6 +78,16 @@ class JsonDeckListParserTest {
 
         assertThat(resultado.entries()).hasSize(1);
         assertThat(resultado.entries().get(0).quantity()).isEqualTo(1);
+    }
+
+    @Test
+    void parsesTextualQuantity() {
+        // Cantidad mandada como texto numérico: se acepta igual que si fuera número
+        ParsedDeckList resultado = parser.parse(
+                "[{\"name\":\"Sol Ring\",\"quantity\":\"4\"}]");
+
+        assertThat(resultado.entries()).hasSize(1);
+        assertThat(resultado.entries().get(0).quantity()).isEqualTo(4);
     }
 
     @Test
@@ -162,6 +173,47 @@ class JsonDeckListParserTest {
         assertThatThrownBy(() -> parser.parse("   \n\n  "))
                 .isInstanceOf(DeckListParseException.class);
         assertThatThrownBy(() -> parser.parse(null))
+                .isInstanceOf(DeckListParseException.class);
+    }
+
+    @Test
+    void ignoresNonObjectElements() {
+        // Elementos que no son objeto: no encajan con el formato y se ignoran (el
+        // throw solo lo manda un objeto sin name)
+        ParsedDeckList enArray = parser.parse("[{\"name\":\"Sol Ring\"},42,\"basura\",null]");
+        ParsedDeckList enCards = parser.parse("{\"cards\":[{\"name\":\"Sol Ring\"},42]}");
+
+        assertThat(enArray.entries()).hasSize(1);
+        assertThat(enArray.entries().get(0).name()).isEqualTo("Sol Ring");
+        assertThat(enCards.entries()).hasSize(1);
+        assertThat(enCards.entries().get(0).name()).isEqualTo("Sol Ring");
+    }
+
+    @Test
+    void throwsWhenQuantityDoesNotFitInInt() {
+        assertThatThrownBy(() -> parser.parse(
+                "[{\"name\":\"Sol Ring\",\"quantity\":5000000000}]"))
+                .isInstanceOf(DeckListParseException.class);
+    }
+
+    @Test
+    void keepsCollectorNumberBeyondIntRange() {
+        ParsedDeckList resultado = parser.parse(
+                "{\"deck\":[{\"name\":\"Sol Ring\",\"number\":5000000000}]}");
+
+        assertThat(resultado.entries().get(0).collectorNumber()).isEqualTo("5000000000");
+    }
+
+    @Test
+    void garbageAfterJsonValue_throws() {
+        // (1) Basura que ni siquiera es un token JSON: Jackson falla al leerla
+        assertThatThrownBy(() -> parser.parse(
+                "{\"cards\":[{\"name\":\"Sol Ring\"}]} basura"))
+                .isInstanceOf(DeckListParseException.class);
+        // (2) Un segundo valor JSON válido detrás del primero: readTree de Jackson 3
+        // exige que no quede ningún token tras el árbol y esto lo tiene que rechazar
+        assertThatThrownBy(() -> parser.parse(
+                "{\"cards\":[{\"name\":\"Sol Ring\"}]} 123"))
                 .isInstanceOf(DeckListParseException.class);
     }
 

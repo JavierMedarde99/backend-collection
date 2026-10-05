@@ -95,21 +95,14 @@ public class CsvDeckListParser implements DeckListParser {
         return new ParsedDeckList(entradas, 0);
     }
 
-    /** El separador es el que más aparece fuera de comillas en la cabecera (empate → coma). */
+    /**
+     * El separador es el que más veces aparece fuera de comillas en la cabecera (empate →
+     * coma). Los cuenta el propio {@link #partirCampos}, así que la regla de comillas
+     * (incluido el {@code ""} escapado) es exactamente la que luego parsea las filas.
+     */
     private char detectarSeparador(String cabecera) {
-        int comas = 0;
-        int puntoycomas = 0;
-        boolean entreComillas = false;
-        for (int i = 0; i < cabecera.length(); i++) {
-            char c = cabecera.charAt(i);
-            if (c == '"') {
-                entreComillas = !entreComillas;
-            } else if (!entreComillas && c == ',') {
-                comas++;
-            } else if (!entreComillas && c == ';') {
-                puntoycomas++;
-            }
-        }
+        int comas = partirCampos(cabecera, ',').size() - 1;
+        int puntoycomas = partirCampos(cabecera, ';').size() - 1;
         return puntoycomas > comas ? ';' : ',';
     }
 
