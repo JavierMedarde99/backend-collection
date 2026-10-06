@@ -162,7 +162,7 @@ Mismo puerto, dos formatos más. La detección de separador y el parseo de campo
 - `malformedJson_throws()`, `emptyArray_throws()`, `entryWithoutName_throws()`: las tres con `DeckListParseException`.
 
 `CsvDeckListParserTest`:
-- `parsesCommaSeparatedWithHeaderInAnyOrder()`: cabecera `name,quantity,commander` y filas `Sol Ring,4,false` y `Atraxa, Grand Unifier,1,true` → 2 entradas; la segunda con `commander() == true` porque su columna vale `true`. El orden de las columnas es libre, no tiene por qué ser el del ejemplo de la spec.
+- `parsesCommaSeparatedWithHeaderInAnyOrder()`: cabecera `name,quantity,commander` y filas `Sol Ring,4,false` y `"Atraxa, Grand Unifier",1,true` → 2 entradas; la segunda con `commander() == true` porque su columna vale `true`. El nombre va **entrecomillado**: sin comillas serían 4 campos para 3 columnas, y la spec (§6.3) también lo entrecomilla. El orden de las columnas es libre, no tiene por qué ser el del ejemplo de la spec.
 - `parsesSetAndNumberColumns()`: cabecera `quantity,name,set,number` con la fila `4,\"Sol Ring\",NEO,269` → `setCode() == \"NEO\"` y `collectorNumber() == \"269\"`.
 - `parsesSemicolonSeparated()`: `"1;Sol Ring;NEO"` con cabecera `quantity;name;set`.
 - `parsesQuotedNameContainingComma()`: `"1,\"Sword of Fire and Ice\""` → `name() == "Sword of Fire and Ice"` (la coma va dentro de las comillas, no separa campos).
