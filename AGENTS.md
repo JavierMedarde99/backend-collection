@@ -33,9 +33,10 @@ Dependencies point inward only; no cross-layer imports outward:
 - `domain/` — plain POJOs (`Book`, `BookState`, `BookType`, `BookSearchResult`) and ports:
   - `port/in`: `BookUseCase`, `BookSearchUseCase`
   - `port/out`: `BookRepository`, `ExternalBookCatalogClient`
-- `application/` — services (`BookService`, `BookSearchService`) and exceptions (`BookNotFoundException`, etc.)
+- `application/` — services (`BookService`, `BookSearchService`, `DeckService`, `DeckImportWorker`, `DeckImportService`), `DeckListParserRegistry` and exceptions (`BookNotFoundException`, etc.)
+  - `DeckListParserRegistry` lives **here**, not in `infrastructure`, because `DeckImportWorker` (an `application/` bean) consumes it; putting it under `adapter/in` would make `application` import `infrastructure`.
 - `infrastructure/` — adapters + config:
-  - `adapter/in/web`: `BookController`, `GlobalExceptionHandler`, DTOs
+  - `adapter/in/web`: `BookController`, `DeckController`, `GlobalExceptionHandler`, DTOs
   - `adapter/out/persistence`: `BookEntity`, `SpringDataBookRepository`, `BookEntityMapper`, `BookPersistenceAdapter` (Mongo collection `BOOKS`)
   - `adapter/out/google`: `GoogleBooksClient` (search via external catalog)
   - `config`: `WebConfig` (CORS for `http://localhost:5173`), `MongoAuditConfig`, `StringToBookStateConverter`, `RestClientConfig`
@@ -107,6 +108,36 @@ trae contenido** y `offset + pageSize > total`:
 Al escribir fixtures, `total_cards` tiene que ser coherente con los elementos devueltos: un
 `total_cards: 10` con 2 elementos no es una respuesta de Scryfall y hace fallar los tests por
 el recorte, no por un fallo del mapper.
+
+## Importación de mazos (issue #353)
+
+- El import es **asíncrono**: `POST /api/v1/decks/{id}/imports` (multipart) o `.../imports/text`
+  (texto plano) responden **202** + `jobId` + `Location`/`statusUrl` hacia
+  `/api/v1/decks/{id}/imports/{jobId}`; el cliente hace poll de ese GET.
+- El estado de los jobs vive **en memoria** (Caffeine, TTL 30 min): un reinicio los borra y el
+  `GET` responde `404`. Reenviar el archivo es seguro con `mode=REPLACE`.
+- `GET /api/v1/**` es `permitAll`, así que el `GET` del job **no** devuelve 401: pasa al caso de
+  uso con `currentUserId = null` y la validación de propiedad lo tumba con 403.
+- **Nunca llames a `DeckImportWorker.run()` desde dentro del mismo bean**: `@Async` se ignora en
+  silencio por auto-invocación. El worker **no lee el `SecurityContext`**; el `userId` viaja como
+  parámetro.
+- El mazo se guarda **una sola vez**, al final. Si el job falla, el mazo queda intacto y el job
+  pasa a `FAILED`.
+- Un `UPSTREAM_ERROR` (Scryfall 5xx/timeout tras los 4 reintentos) tumba el job y **no** se
+  confunde con una carta que no existe: `NOT_FOUND` es "Scryfall respondió 200 y no la conoce",
+  `UPSTREAM_ERROR` es "Scryfall no respondió". Es la lección de #451, al revés.
+- Las tierras básicas se resuelven **en local** con `typeLine` "Basic Land": sin eso el
+  `DeckValidator` las marcaría como singleton inválido.
+- `unique=oracle` es obligatorio en toda búsqueda por nombre: sin él Scryfall devuelve todas las
+  reimpresiones y cada línea del mazo parecería ambigua.
+- **`page_size` no existe en Scryfall** (son 175 siempre) — no intentes paginar las
+  reimpresiones desde este flujo.
+- El executor saturado devuelve **429** (`TaskRejectedException` en `GlobalExceptionHandler`),
+  no 500.
+- `DeckControllerTest` y `DeckImportControllerTest` limpian cachés con `CacheTestSupport.clearAll`
+  porque los mazos están cacheados.
+- El registro de jobs **no** va en `CacheConfig.CACHE_NAMES`: es un `Cache` de Caffeine consultado
+  directamente por `DeckImportJobStore`.
 
 ## Git workflow
 
