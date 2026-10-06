@@ -6,6 +6,8 @@ import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.CatboxUploadException;
+import com.wikicollection.application.exception.DeckImportNotFoundException;
+import com.wikicollection.application.exception.DeckListParseException;
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.application.exception.ForbiddenException;
@@ -20,6 +22,7 @@ import com.wikicollection.application.exception.UnauthenticatedException;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ErrorResponse;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -156,6 +159,37 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceAccessException.class)
     public ResponseEntity<ErrorResponse> handleExternalUnavailable(ResourceAccessException ex, HttpServletRequest request) {
         return build(HttpStatus.SERVICE_UNAVAILABLE, "El servicio externo no está disponible: " + ex.getMessage(), request);
+    }
+
+    // ------------------------------------------------------------ importación (#353)
+
+    /**
+     * Un archivo de lista que no se pudo leer es un problema del archivo, no del servidor:
+     * el usuario puede corregirlo y volver a subirlo, así que es un 400 con el motivo.
+     */
+    @ExceptionHandler(DeckListParseException.class)
+    public ResponseEntity<ErrorResponse> handleDeckListParse(DeckListParseException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    /**
+     * El trabajo de importación no existe o no es de este mazo. No se separan los dos casos:
+     * distinguiendo, un 403 confirmaría que un job ajeno existe.
+     */
+    @ExceptionHandler(DeckImportNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDeckImportNotFound(DeckImportNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    /**
+     * El executor de importaciones está lleno. Sin este handler un pico de importaciones
+     * subiría un 500, y el cliente no podría distinguir "has ido demasiado rápido, espera" de
+     * "el servidor está roto".
+     */
+    @ExceptionHandler(TaskRejectedException.class)
+    public ResponseEntity<ErrorResponse> handleTaskRejected(TaskRejectedException ex, HttpServletRequest request) {
+        return build(HttpStatus.TOO_MANY_REQUESTS,
+                "Hay demasiadas importaciones en curso. Inténtalo de nuevo en unos instantes.", request);
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request) {

@@ -36,6 +36,7 @@ public class DeckService implements DeckUseCase {
     private final DeckValidator validator;
     private final OwnershipValidator ownershipValidator;
     private final OwnerScopeResolver ownerScopeResolver;
+    private final DeckCardFactory cardFactory;
 
     private final OwnerResolver ownerResolver;
 
@@ -45,6 +46,7 @@ public class DeckService implements DeckUseCase {
                        DeckValidator validator,
                        OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
+                       DeckCardFactory cardFactory,
                        OwnerResolver ownerResolver) {
         this.deckRepository = deckRepository;
         this.catalogClient = catalogClient;
@@ -53,6 +55,7 @@ public class DeckService implements DeckUseCase {
         this.ownershipValidator = ownershipValidator;
         this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
+        this.cardFactory = cardFactory;
     }
 
     @Override
@@ -143,17 +146,7 @@ public class DeckService implements DeckUseCase {
                 .findFirst()
                 .ifPresentOrElse(
                         card -> card.setQuantity(card.getQuantity() + quantity),
-                        () -> cards.add(DeckCard.builder()
-                                .cardName(fetched.getName())
-                                .quantity(quantity)
-                                .inCollection(owned)
-                                .isProxy(!owned)
-                                .manaCost(fetched.getManaCost())
-                                .typeLine(fetched.getType())
-                                .colorIdentity(fetched.getColorIdentity())
-                                .imageUrl(fetched.getImageUrl())
-                                .scryfallId(fetched.getScryfallId())
-                                .build()));
+                        () -> cards.add(cardFactory.fromMagicCard(fetched, quantity, owned)));
         deck.setCards(cards);
         deck.setUpdatedAt(LocalDateTime.now());
         return deckRepository.save(deck);
