@@ -1,10 +1,21 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
+import com.wikicollection.domain.model.Deck;
+import com.wikicollection.domain.model.DeckImportFormat;
+import com.wikicollection.domain.model.DeckImportStatus;
+import com.wikicollection.domain.model.DeckImportMode;
+import com.wikicollection.domain.port.in.DeckImportUseCase;
 import com.wikicollection.domain.port.in.DeckUseCase;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckCardRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckDtoMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.DeckImportAcceptedResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.DeckImportDtoMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.DeckImportJobResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.DeckStatusResponse;
@@ -24,7 +35,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
@@ -45,10 +59,15 @@ public class DeckController {
 
     private final DeckUseCase deckUseCase;
     private final DeckDtoMapper mapper;
+    private final DeckImportUseCase deckImportUseCase;
+    private final DeckImportDtoMapper importMapper;
 
-    public DeckController(DeckUseCase deckUseCase, DeckDtoMapper mapper) {
+    public DeckController(DeckUseCase deckUseCase, DeckDtoMapper mapper,
+                          DeckImportUseCase deckImportUseCase, DeckImportDtoMapper importMapper) {
         this.deckUseCase = deckUseCase;
         this.mapper = mapper;
+        this.deckImportUseCase = deckImportUseCase;
+        this.importMapper = importMapper;
     }
 
     @GetMapping
@@ -155,6 +174,114 @@ public class DeckController {
     public DeckStatusResponse status(
             @Parameter(description = "Identificador del mazo") @PathVariable String id) {
         return mapper.toStatusResponse(deckUseCase.getStatusReport(id));
+    }
+
+    // ------------------------------------------------------- importación (#353)
+
+    /**
+     * Importa una lista de mazo a este mazo. Responde 202 con la URL del trabajo: resolver
+     * 99 nombres contra Scryfall tarda, y hacerlos en la petición dejaría al usuario mirando
+     * una pantalla en blanco sin poder hacer nada más.
+     */
+    @PostMapping(value = "/{id}/imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Importa una lista de mazo",
+            description = "Acepta el archivo y responde 202. La importación ocurre en segundo plano: "
+                    + "consulta el estado con GET /{id}/imports/{jobId}.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "Importación encolada"),
+            @ApiResponse(responseCode = "400", description = "Archivo vacío, demasiado grande o formato inconsistente"),
+            @ApiResponse(responseCode = "403", description = "El mazo no es del usuario"),
+            @ApiResponse(responseCode = "404", description = "Mazo no encontrado"),
+            @ApiResponse(responseCode = "429", description = "Demasiadas importaciones en cola")
+    })
+    public ResponseEntity<DeckImportAcceptedResponse> importDeck(
+            @Parameter(description = "Id del mazo") @PathVariable String id,
+            @Parameter(description = "Archivo de lista de mazo") @RequestPart("file") MultipartFile file,
+            @Parameter(description = "Formato declarado: TXT, JSON o CSV; si se omite se deduce") @RequestParam(required = false) String format,
+            @Parameter(description = "Qué hacer con las cartas ya guardadas: replace o merge") @RequestParam(defaultValue = "replace") String mode,
+            @CurrentUser String currentUserId,
+            UriComponentsBuilder ucb) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
+        String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+        return acceptImport(id, content, format, mode, currentUserId, ucb);
+    }
+
+    /** Igual que {@link #importDeck}, pero con el contenido pegado en vez de subido. */
+    @PostMapping(value = "/{id}/imports/text", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @Operation(summary = "Importa una lista de mazo desde texto plano",
+            description = "Variante de POST /{id}/imports con la lista en el cuerpo, para clientes "
+                    + "que ya la tienen en memoria.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "Importación encolada"),
+            @ApiResponse(responseCode = "400", description = "Contenido vacío o formato inconsistente"),
+            @ApiResponse(responseCode = "403", description = "El mazo no es del usuario"),
+            @ApiResponse(responseCode = "404", description = "Mazo no encontrado"),
+            @ApiResponse(responseCode = "429", description = "Demasiadas importaciones en cola")
+    })
+    public ResponseEntity<DeckImportAcceptedResponse> importDeckText(
+            @Parameter(description = "Id del mazo") @PathVariable String id,
+            @Parameter(description = "Contenido de la lista") @RequestBody String content,
+            @Parameter(description = "Formato declarado: TXT, JSON o CSV; si se omite se deduce") @RequestParam(required = false) String format,
+            @Parameter(description = "Qué hacer con las cartas ya guardadas: replace o merge") @RequestParam(defaultValue = "replace") String mode,
+            @CurrentUser String currentUserId,
+            UriComponentsBuilder ucb) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
+        return acceptImport(id, content, format, mode, currentUserId, ucb);
+    }
+
+    /**
+     * Estado del trabajo. El mazo solo viene cuando la importación ha terminado: mientras
+     * corre, lo que hay en Mongo es el mazo de antes, y devolverlo haría que el frontend
+     * pintara un mazo a medias como si fuera el resultado.
+     */
+    @GetMapping("/{id}/imports/{jobId}")
+    @Operation(summary = "Estado de una importación",
+            description = "Devuelve el avance del trabajo y, si ya terminó, el mazo guardado, las "
+                    + "cartas que no se pudieron resolver y el resultado de validarlo.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado del trabajo"),
+            @ApiResponse(responseCode = "403", description = "El mazo no es del usuario"),
+            @ApiResponse(responseCode = "404", description = "Mazo o trabajo no encontrado")
+    })
+    public DeckImportJobResponse getImport(
+            @Parameter(description = "Id del mazo") @PathVariable String id,
+            @Parameter(description = "Id del trabajo") @PathVariable String jobId,
+            @CurrentUser String currentUserId) {
+        var job = deckImportUseCase.findJob(id, jobId, currentUserId);
+        Deck deck = job.status() == DeckImportStatus.COMPLETED ? deckUseCase.findById(id) : null;
+        return importMapper.toJobResponse(job, deck, mapper);
+    }
+
+    private ResponseEntity<DeckImportAcceptedResponse> acceptImport(
+            String id, String content, String format, String mode, String currentUserId, UriComponentsBuilder ucb) {
+        DeckImportFormat declared = format == null || format.isBlank() ? null : parseFormat(format);
+        DeckImportMode parsedMode = parseMode(mode);
+        var job = deckImportUseCase.startImport(id, content, declared, parsedMode, currentUserId);
+        String statusUrl = "/api/v1/decks/" + id + "/imports/" + job.jobId();
+        URI location = ucb.path(statusUrl).build().toUri();
+        return ResponseEntity.accepted().location(location).body(importMapper.toAccepted(job, statusUrl));
+    }
+
+    private DeckImportFormat parseFormat(String value) {
+        try {
+            return DeckImportFormat.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Formato desconocido: " + value
+                    + ". Los válidos son TXT, JSON y CSV.");
+        }
+    }
+
+    private DeckImportMode parseMode(String value) {
+        try {
+            return DeckImportMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Modo desconocido: " + value
+                    + ". Los válidos son REPLACE y MERGE.");
+        }
     }
 
     private Sort buildSort(String sort) {
