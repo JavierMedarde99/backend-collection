@@ -27,6 +27,8 @@ import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -53,6 +55,7 @@ import org.springframework.web.client.RestClientResponseException;
  * {@link #run} no debe llamarse desde este mismo bean: la auto-invocación ignora
  * {@code @Async} en silencio y la importación se haría en el hilo del request.
  */
+@Slf4j
 @Component
 public class DeckImportWorker {
 
@@ -184,12 +187,32 @@ public class DeckImportWorker {
         current = publish(current, DeckImportPhase.SAVING, total, counters[0], counters[1], sideboardIgnored,
                 unresolved);
         try {
-            Deck saved = write(deck, mode, commanderName, commanderColors, quantities, resolutions, ownerId);
-            cacheInvalidator.afterImport();
-            DeckStatusReport report = new DeckStatusReport(validator.evaluate(saved), validator.validate(saved));
+            // Todo lo que puede fallar se hace antes de escribir. `failed()` promete que el
+            // mazo queda intacto, y con el informe y la caché después del save eso no era
+            // cierto: una excepción de las reglas o de la caché dejaba el job en FAILED con
+            // el mazo ya en Mongo.
+            Deck prepared = prepare(deck, mode, commanderName, commanderColors, quantities, resolutions, ownerId);
+            DeckStatusReport report = new DeckStatusReport(validator.evaluate(prepared), validator.validate(prepared));
+            deckRepository.save(prepared);
             store.save(current.completed(report, commanderName, commanderColors));
+            invalidateCaches();
         } catch (RuntimeException e) {
             store.save(current.failed(describe(e)));
+        }
+    }
+
+    /**
+     * Invalida la caché de mazos. Va **después** de guardar y de publicar el resultado: si
+     * se hiciera antes, un GET entrante repopularía la caché con los datos viejos y ya no
+     * habría quien los borrara. Y no puede tumbar un trabajo que ya está importado, porque
+     * el mazo está escrito y el job completado; lo peor que pasa es que el mazo anterior se
+     * siga sirviendo hasta que la caché caduque.
+     */
+    private void invalidateCaches() {
+        try {
+            cacheInvalidator.afterImport();
+        } catch (RuntimeException e) {
+            log.warn("No se pudo invalidar la caché de mazos tras la importación: {}", e.getMessage());
         }
     }
 
@@ -276,8 +299,14 @@ public class DeckImportWorker {
 
     // ------------------------------------------------------------------ guardado
 
-    private Deck write(Deck deck, DeckImportMode mode, String commanderName, List<String> commanderColors,
-                       Map<String, Integer> quantities, Map<String, Resolution> resolutions, String ownerId) {
+    /**
+     * Monta el mazo en memoria, **sin escribirlo**: aquí solo se muta el objeto que ya está
+     * cargado. El guardado es el último paso del proceso y solo se llega a él si el informe
+     * de validación se ha podido calcular, que es lo que hace cierta la promesa de
+     * {@code failed()} de que el mazo no se ha tocado.
+     */
+    private Deck prepare(Deck deck, DeckImportMode mode, String commanderName, List<String> commanderColors,
+                         Map<String, Integer> quantities, Map<String, Resolution> resolutions, String ownerId) {
         Set<String> owned = normalizer.normalizeAll(magicCardRepository.findNamesByOwnerId(ownerId));
 
         Map<String, DeckCard> cards = new LinkedHashMap<>();
@@ -302,7 +331,7 @@ public class DeckImportWorker {
             deck.setCommanderColors(commanderColors);
         }
         deck.setUpdatedAt(LocalDateTime.now());
-        return deckRepository.save(deck);
+        return deck;
     }
 
     /**

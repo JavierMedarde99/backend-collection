@@ -470,6 +470,47 @@ class DeckImportWorkerTest {
 
         assertThat(finalJob().status()).isEqualTo(DeckImportStatus.FAILED);
         assertThat(finalJob().error()).contains("mongo caído");
+        // El guardado es lo último que se toca: un fallo posterior no puede dejar el mazo
+        // ya escrito bajo un job que dice "el mazo no se ha tocado".
+        verify(deckRepository).save(any(Deck.class));
+    }
+
+    /**
+     * `DeckImportJob.failed` promete "el mazo no se ha tocado". Esa promesa solo se puede
+     * cumplir si el informe de validación se calcula sobre el mazo **en memoria**, antes de
+     * escribirlo: con el orden inverso, una excepción de las reglas dejaría el job en FAILED
+     * con el mazo ya guardado en Mongo.
+     */
+    @Test
+    void aValidationFailureLeavesTheJobFailedAndTheDeckUntouched() {
+        givenEntries(0, entry(3, 1, "Sol Ring", false));
+        givenExact("Sol Ring", card("sr", "Sol Ring"));
+        when(validator.evaluate(any())).thenThrow(new IllegalStateException("reglas caídas"));
+
+        run();
+
+        DeckImportJob job = finalJob();
+        assertThat(job.status()).isEqualTo(DeckImportStatus.FAILED);
+        assertThat(job.error()).contains("reglas caídas");
+        verify(deckRepository, never()).save(any());
+    }
+
+    /**
+     * Invalidar la caché después de guardar es lo correcto (si se hiciera antes, un GET
+     * entrante repopularía con los datos viejos y ya no habría quien los borrara), pero no
+     * puede tumbar un job que ya está importado: lo peor que puede pasar es que el mazo
+     * antiguo se sirva un rato más hasta que la caché caduque.
+     */
+    @Test
+    void aCacheEvictionFailureStillCompletesTheJob() {
+        givenEntries(0, entry(3, 1, "Sol Ring", false));
+        givenExact("Sol Ring", card("sr", "Sol Ring"));
+        doThrow(new IllegalStateException("evict caído")).when(cacheInvalidator).afterImport();
+
+        run();
+
+        assertThat(finalJob().status()).isEqualTo(DeckImportStatus.COMPLETED);
+        verify(deckRepository).save(any(Deck.class));
     }
 
     // ------------------------------------------------------- informe y progreso
