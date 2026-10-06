@@ -1,4 +1,4 @@
-package com.wikicollection.infrastructure.adapter.in.decklist;
+package com.wikicollection.application.service;
 
 import java.util.Locale;
 

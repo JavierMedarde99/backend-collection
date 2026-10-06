@@ -44,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 
 /**
  * El worker de importación de mazos (#353).
@@ -199,6 +200,26 @@ class DeckImportWorkerTest {
         // El typeLine es lo que DeckValidator mira para exceptuar la regla de singleton.
         assertThat(land.getTypeLine()).contains("Basic Land");
         assertThat(land.getQuantity()).isEqualTo(20);
+    }
+
+    /**
+     * Una no básica (Wasteland, Tundra, Llanowar Elves...) tiene que pasar por Scryfall y
+     * quedarse con su tipo real. Si se resolviera en local como "Basic Land", el validador
+     * la exceptuaría de la regla de singleton y el usuario podría guardar cuatro copias en un
+     * mazo Commander sin que nadie lo marcara.
+     */
+    @Test
+    void nonBasicLandsAreResolvedInScryfallAndKeepTheirRealType() {
+        givenEntries(0, entry(3, 4, "Wasteland", false));
+        givenExact("Wasteland", new MagicCardSearchResult("w1", "Wasteland", null, "Land", "rare",
+                "tmp", "Test", null, null, List.of(), List.of(), null));
+
+        run();
+
+        verify(catalog).searchByNameExact("Wasteland");
+        DeckCard land = savedDeck().getCards().get(0);
+        assertThat(land.getTypeLine()).doesNotContainIgnoringCase("basic land");
+        assertThat(land.getQuantity()).isEqualTo(4);
     }
 
     @Test
@@ -384,6 +405,26 @@ class DeckImportWorkerTest {
 
         assertThat(finalJob().status()).isEqualTo(DeckImportStatus.FAILED);
         verify(deckRepository, never()).save(any());
+    }
+
+    /**
+     * Un fallo que nadie previó (Jackson no entiende la respuesta, la URI no se puede
+     * construir, cualquier NPE del mapeo) no puede dejar el job en RUNNING: el hilo de
+     * {@code @Async} se traga la excepción, no hay {@code AsyncUncaughtExceptionHandler} y
+     * nadie la ve, así que el usuario haría poll durante 30 minutos de un trabajo que solo
+     * desaparece al caducar el TTL. Todo camino tiene que acabar en FAILED.
+     */
+    @Test
+    void anUnexpectedFailureStillLeavesTheJobFailed() {
+        givenEntries(0, entry(3, 4, "Sol Ring", false));
+        when(catalog.searchByNameExact("Sol Ring")).thenThrow(new RestClientException("respuesta ilegible"));
+
+        run();
+
+        assertThat(finalJob().status()).isEqualTo(DeckImportStatus.FAILED);
+        assertThat(finalJob().error()).contains("ilegible");
+        verify(deckRepository, never()).save(any());
+        verify(cacheInvalidator, never()).afterImport();
     }
 
     @Test

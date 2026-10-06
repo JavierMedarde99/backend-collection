@@ -20,19 +20,21 @@ import org.springframework.stereotype.Component;
 public class DeckNameNormalizer {
 
     /**
-     * Tierras básicas. No hacen falta ni id de Scryfall ni búsqueda para meterlas en un mazo,
-     * y su {@code type_line} es lo que {@code DeckValidator} usa para exceptuarlas de la
-     * regla de singleton (salvo una, un singleton básico es siempre un error del archivo).
+     * Solo las cinco tierras básicas de verdad.
      *
-     * <p>Solo las que se ven en mazos Commander. Las tierras básicas duplicadas que sí
-     * existen en Scryfall (Tawny Port, elustered City) no están: para esas la búsqueda
-     * funciona igual, solo que es una llamada de más.
+     * <p>No sirve de nada meter aquí nada más: lo que hace esta lista es saltarse la búsqueda
+     * y dar por bueno el nombre, y el {@code type_line} con el que se guarda la carta es
+     * "Basic Land". Ese tipo es el que {@code DeckValidator} usa para exceptuar la carta de
+     * la regla de singleton, así que listar aquí una no básica (Wasteland, Tundra, Llanowar
+     * Elves...) significaría inventarle un tipo y permitir cuatro copias en un mazo
+     * Commander. Las no básicas se buscan en Scryfall como cualquier otra carta y traen su
+     * tipo real; solo cuesta una llamada más.
+     *
+     * <p>Las variantes (Snow-Covered Plains, Wastes) tampoco están: resuelven contra
+     * Scryfall sin problema y así no hay que mantener aquí una lista de nombres.
      */
     private static final Set<String> BASIC_LANDS = Set.of(
-            "plains", "island", "swamp", "mountain", "forest",
-            "wasteland", "dryad arbor",
-            "arctic plains", "badlands", "bayou", "coastal plains", "jungle",
-            "llanowar elves", "scrubland", "tundra", "underground sea", "volcanic island");
+            "plains", "island", "swamp", "mountain", "forest");
 
     /**
      * Forma de comparar dos nombres de carta.

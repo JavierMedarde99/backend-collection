@@ -47,17 +47,19 @@ public record DeckImportJob(
     public DeckImportJob progress(DeckImportStatus status, DeckImportPhase phase,
                                   DeckImportProgress progress, List<UnresolvedCardEntry> unresolved) {
         return new DeckImportJob(jobId, deckId, ownerId, format, mode, status, phase,
-                progress, commanderName, commanderColors, unresolved, validation, error,
+                progress, commanderName, commanderColors, copyOf(unresolved), validation, error,
                 createdAt, Instant.now(), completedAt);
     }
 
     /**
      * El comandante se resuelve antes que el resto del mazo: se anota en cuanto se sabe, y de
      * él dependen los colores con los que {@code DeckValidator} juzga la identidad de color.
+     * La lista de colores es la que trae la respuesta de Scryfall, compartida con la caché de
+     * búsquedas: se copia por el mismo motivo que {@link #progress}.
      */
     public DeckImportJob commander(String commanderName, List<String> commanderColors) {
         return new DeckImportJob(jobId, deckId, ownerId, format, mode, status, phase,
-                progress, commanderName, commanderColors, unresolved, validation, error,
+                progress, commanderName, copyOf(commanderColors), unresolved, validation, error,
                 createdAt, Instant.now(), completedAt);
     }
 
@@ -67,7 +69,7 @@ public record DeckImportJob(
         Instant now = Instant.now();
         return new DeckImportJob(jobId, deckId, ownerId, format, mode,
                 DeckImportStatus.COMPLETED, DeckImportPhase.DONE,
-                progress, commanderName, commanderColors, unresolved, validation, null,
+                progress, commanderName, copyOf(commanderColors), unresolved, validation, null,
                 createdAt, now, now);
     }
 
@@ -78,5 +80,15 @@ public record DeckImportJob(
                 DeckImportStatus.FAILED, DeckImportPhase.DONE,
                 progress, commanderName, commanderColors, unresolved, validation, error,
                 createdAt, now, now);
+    }
+
+    /**
+     * Fotografía de una lista que viene de fuera del job. El worker sigue añadiendo entradas
+     * a la suya después de publicar el job en la caché, así que guardar la referencia haría
+     * que el {@code GET} de estado leyera una lista que está cambiando debajo;
+     * {@code List.copyOf} deja además esa lista de solo lectura.
+     */
+    private static <T> List<T> copyOf(List<T> list) {
+        return list == null ? null : List.copyOf(list);
     }
 }

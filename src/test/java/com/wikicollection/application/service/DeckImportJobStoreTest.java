@@ -1,8 +1,10 @@
 package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -132,6 +134,35 @@ class DeckImportJobStoreTest {
 
         assertThat(copy.unresolved()).containsExactlyElementsOf(unresolved);
         assertThat(pending().unresolved()).isEmpty();
+    }
+
+    /**
+     * El worker sigue añadiendo entradas a su lista *después* de publicar el job. Si el
+     * record guardara esa referencia, cada add mutaría el job que ya está en la caché y un
+     * GET concurrente de estado leería la lista mientras se modifica. El job tiene que ser
+     * una fotografía, no una ventana al hilo que trabaja.
+     */
+    @Test
+    void progressTakesASnapshotOfAMutableListThatKeepsGrowing() {
+        List<UnresolvedCardEntry> unresolved = new ArrayList<>();
+
+        DeckImportJob copy = pending().progress(DeckImportStatus.RUNNING, DeckImportPhase.RESOLVING,
+                new DeckImportProgress(2, 1, 0, 0), unresolved);
+        unresolved.add(new UnresolvedCardEntry(1, "Llanuras", 4, "Llanuras", UnresolvedReason.NOT_FOUND, List.of()));
+
+        assertThat(copy.unresolved()).isEmpty();
+        assertThatThrownBy(() -> copy.unresolved().add(unresolved.get(0)))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void commanderTakesASnapshotOfTheColorIdentityComingFromScryfall() {
+        List<String> colors = new ArrayList<>(List.of("G", "W"));
+
+        DeckImportJob copy = pending().commander("Atraxa, Grand Unifier", colors);
+        colors.clear();
+
+        assertThat(copy.commanderColors()).containsExactly("G", "W");
     }
 
     private DeckImportJob pending() {

@@ -22,13 +22,13 @@ import com.wikicollection.domain.model.DeckImportJob;
 import com.wikicollection.domain.model.DeckImportMode;
 import com.wikicollection.domain.model.DeckImportStatus;
 import com.wikicollection.domain.port.out.DeckRepository;
-import com.wikicollection.infrastructure.adapter.in.decklist.DeckImportFormatDetector;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskRejectedException;
 
 /**
  * El borde síncrono de la importación (#353): qué se acepta y qué se rechaza con 400 antes de
@@ -83,6 +83,25 @@ class DeckImportServiceTest {
         verify(store).save(job);
         verify(worker).run(eq(job.jobId()), eq("deck-1"), eq("user-1"), eq(TXT_CONTENT),
                 eq(DeckImportFormat.TXT), eq(DeckImportMode.REPLACE));
+    }
+
+    /**
+     * Si el executor está lleno, {@code worker.run} lanza {@code TaskRejectedException} y el
+     * 429 sale por la puerta principal. Ese job ya guardado no va a correr nunca: dejarlo
+     * sería un PENDING huérfano que el usuario vería eterno hasta que la TTL lo borrara a los
+     * 30 minutos, contradiciendo lo que promete la clase.
+     */
+    @Test
+    void startImport_whenTheExecutorRejects_leavesNoOrphanJob() {
+        givenDeck();
+        doThrow(new TaskRejectedException("lleno")).when(worker)
+                .run(anyString(), anyString(), anyString(), anyString(), any(), any());
+
+        assertThatThrownBy(() -> service.startImport("deck-1", TXT_CONTENT, DeckImportFormat.TXT,
+                DeckImportMode.REPLACE, "user-1")).isInstanceOf(TaskRejectedException.class);
+
+        verify(store).save(any(DeckImportJob.class));
+        verify(store).evict(anyString());
     }
 
     @Test

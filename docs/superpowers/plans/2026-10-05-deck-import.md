@@ -588,7 +588,16 @@ Expected: FAIL, `cannot find symbol: class DeckImportWorker`.
 3. Parsear con `parsers.forFormat(format).parse(content)`.
 4. Commander primero: si hay entradas `commander() == true`, resolver su nombre con el mismo algoritmo de dos fases; guardar `commanderName` y `commanderColors` (el `colorIdentity` del candidato). Si ninguna resolvió, nombres sin resolver.
 5. Para cada entrada no comandante, **deduplicar por nombre normalizado** en un `LinkedHashMap<String, DeckListEntry>` **sumando cantidades** (RF1). Saltar las entradas cuyo nombre normalizado sea tierra básica de las 19 (*Plains, Island, Swamp, Mountain, Forest, Wasteland, Dryad Arbor, Llanowar Elves, Bayou, Arctic Plains, Scrubland, Tropical Island, Jungle, Badlands, Volcanic Island, Tundra, Underground Sea, Coastal Plains, Ancient Tomb*): resueltas en local con `DeckCard` de `cardFactory.fromSearchResult(new MagicCardSearchResult(null, nombreOriginal, null, "Basic Land", null, null, null, null, null, List.of(), List.of(), null), cantidad, owned)`.
+
+   > **Corrección (2026-10-06):** la lista se reduce a las cinco de verdad (*Plains, Island,
+   > Swamp, Mountain, Forest*). Las otras catorce son no básicas: guardarlas con `typeLine`
+   > "Basic Land" hacía que `DeckValidator` las exentara de singleton y permitía cuatro
+   > Wastelands en Commander. `DeckNameNormalizer.BASIC_LANDS` es la única fuente de verdad.
 6. Por cada nombre único restante, dos fases: `searchByNameExact(nombreOriginal)`; si hay exactamente un candidato cuyo `normalize(candidate.name()).equals(normalize(nombreOriginal))` → resuelta; si hay varios → `AMBIGUOUS` con todos; si hay cero → `searchSuggestions(nombreOriginal)` y según el resultado lo de arriba (RF3). En cada rama, `store.save(job.progress(RUNNING, RESOLVING, progresoActualizado, unresolved))` para que el poll vea el avance.
+
+   > **Nota (2026-10-06):** `/cards/search` devuelve **404** cuando no hay coincidencias, no
+   > 200 con lista vacía. `executeNameSearch` lo traduce en `List.of()` (sin reintentos: un
+   > 4xx es la respuesta, no una caída), así que el paso "cero resultados" es alcanzable.
 7. `catch (RestClientResponseException | ResourceAccessException e)` por carta → `UPSTREAM_ERROR` en `unresolved`, `store.save(job.failed("Scryfall falló: " + e.getMessage()))` y `return`, **sin** tocar el mazo.
 8. `store.save(job.progress(RUNNING, SAVING, ...))`.
 9. `Set<String> ownedNames = normalizer-normalizados de magicCardRepository.findNamesByOwnerId(ownerId)`.

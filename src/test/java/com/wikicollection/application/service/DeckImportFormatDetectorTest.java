@@ -1,4 +1,4 @@
-package com.wikicollection.infrastructure.adapter.in.decklist;
+package com.wikicollection.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

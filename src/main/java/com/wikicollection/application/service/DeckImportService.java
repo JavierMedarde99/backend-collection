@@ -10,9 +10,9 @@ import com.wikicollection.domain.model.DeckImportJob;
 import com.wikicollection.domain.model.DeckImportMode;
 import com.wikicollection.domain.port.in.DeckImportUseCase;
 import com.wikicollection.domain.port.out.DeckRepository;
-import com.wikicollection.infrastructure.adapter.in.decklist.DeckImportFormatDetector;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -81,7 +81,14 @@ public class DeckImportService implements DeckImportUseCase {
                 UUID.randomUUID().toString(), deckId, userId, resolvedFormat,
                 mode == null ? DeckImportMode.REPLACE : mode);
         store.save(job);
-        worker.run(job.jobId(), deckId, userId, content, resolvedFormat, job.mode());
+        try {
+            worker.run(job.jobId(), deckId, userId, content, resolvedFormat, job.mode());
+        } catch (TaskRejectedException e) {
+            // El executor está lleno y este job no va a correr nunca: sin este evict quedaría
+            // un PENDING huérfano que el usuario vería eterno hasta que la TTL lo borrara.
+            store.evict(job.jobId());
+            throw e;
+        }
         return job;
     }
 

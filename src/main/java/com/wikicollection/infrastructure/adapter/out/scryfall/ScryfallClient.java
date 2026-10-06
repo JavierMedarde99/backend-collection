@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -205,7 +206,9 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
      * <p>Un fallo de Scryfall se propaga en lugar de convertirse en una lista vacía, al
      * contrario que {@link #search(String)}: aquí el vacío significa "no existe" y un 500
      * disfrazado de vacío haría que la importación guardara el mazo sin esa carta y le
-     * dijera al usuario que no existe.
+     * dijera al usuario que no existe. La única excepción es el 404, que Scryfall devuelve
+     * cuando no hay coincidencias y que por tanto se traduce en vacío: ver
+     * {@link #executeNameSearch(String)}.
      */
     @Override
     public List<MagicCardSearchResult> searchByNameExact(String name) {
@@ -213,10 +216,7 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
             return List.of();
         }
         pace();
-        String uri = searchByNameUri("name:\"" + name.trim() + "\"");
-        MagicCardMapper.ScryfallListResponse response =
-                executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
-        return mapper.mapResponse(response);
+        return executeNameSearch(searchByNameUri("name:\"" + name.trim() + "\""));
     }
 
     /**
@@ -232,10 +232,28 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
             return List.of();
         }
         pace();
-        String uri = searchByNameUri(name.trim());
-        MagicCardMapper.ScryfallListResponse response =
-                executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
-        return mapper.mapResponse(response).stream().limit(MAX_SUGGESTIONS).toList();
+        return executeNameSearch(searchByNameUri(name.trim())).stream().limit(MAX_SUGGESTIONS).toList();
+    }
+
+    /**
+     * Ejecuta una búsqueda por nombre y distingue "no existe" de "Scryfall ha fallado".
+     *
+     * <p>Scryfall contesta **404** cuando la consulta no tiene resultados, no 200 con la
+     * lista vacía (verificado contra la API real). Ese 404 es la respuesta, no una incidencia:
+     * se devuelve vacío y sin reintentar, porque repetir la consulta no va a cambiar la
+     * respuesta. Cualquier otro error (5xx, timeout, 400) se propaga: convertirlo en una
+     * lista vacía haría que la importación guardara el mazo sin esas cartas y le dijera al
+     * usuario que no existen.
+     */
+    private List<MagicCardSearchResult> executeNameSearch(String uri) {
+        try {
+            MagicCardMapper.ScryfallListResponse response =
+                    executeWithRetry(() -> scryfallRestClient.get().uri(uri).retrieve().body(MagicCardMapper.ScryfallListResponse.class));
+            return mapper.mapResponse(response);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Scryfall no tiene ninguna carta para {}", uri);
+            return List.of();
+        }
     }
 
     private String searchByNameUri(String query) {
@@ -254,6 +272,11 @@ public class ScryfallClient implements ExternalMagicCardCatalogClient {
             try {
                 return supplier.get();
             } catch (RestClientResponseException e) {
+                if (e.getStatusCode().is4xxClientError()) {
+                    // Un 4xx es la respuesta a esta consulta, no una caída transitoria:
+                    // reintentar cuatro veces lo mismo solo retrasa el error.
+                    throw e;
+                }
                 last = e;
                 if (i < attempts - 1) {
                     log.info("Scryfall devolvió {}, reintentando ({}/{})", e.getStatusCode(), i + 1, attempts);

@@ -33,8 +33,8 @@ Dependencies point inward only; no cross-layer imports outward:
 - `domain/` — plain POJOs (`Book`, `BookState`, `BookType`, `BookSearchResult`) and ports:
   - `port/in`: `BookUseCase`, `BookSearchUseCase`
   - `port/out`: `BookRepository`, `ExternalBookCatalogClient`
-- `application/` — services (`BookService`, `BookSearchService`, `DeckService`, `DeckImportWorker`, `DeckImportService`), `DeckListParserRegistry` and exceptions (`BookNotFoundException`, etc.)
-  - `DeckListParserRegistry` lives **here**, not in `infrastructure`, because `DeckImportWorker` (an `application/` bean) consumes it; putting it under `adapter/in` would make `application` import `infrastructure`.
+- `application/` — services (`BookService`, `BookSearchService`, `DeckService`, `DeckImportWorker`, `DeckImportService`), `DeckListParserRegistry`, `DeckImportFormatDetector` and exceptions (`BookNotFoundException`, etc.)
+  - `DeckListParserRegistry` and `DeckImportFormatDetector` live **here**, not in `infrastructure`, because `DeckImportWorker` and `DeckImportService` (both `application/` beans) consume them; putting them under `adapter/in` would make `application` import `infrastructure`.
 - `infrastructure/` — adapters + config:
   - `adapter/in/web`: `BookController`, `DeckController`, `GlobalExceptionHandler`, DTOs
   - `adapter/out/persistence`: `BookEntity`, `SpringDataBookRepository`, `BookEntityMapper`, `BookPersistenceAdapter` (Mongo collection `BOOKS`)
@@ -79,6 +79,7 @@ devolvería siempre 0 resultados. Un `oracle_id` ausente produce una página vac
 | `order=released` | Ya sale descendente, sin necesidad de `dir` |
 | `unique=prints` | Una fila por reimpresión física (`art` = 389, `set` = 1, `none` = 1) |
 | El total es `total_cards` | No hay `total` ni `count` |
+| **404, no lista vacía** | `/cards/search` devuelve **404** cuando la consulta no tiene coincidencias (verificado con `curl`: `q=name:"Sol Ringg"` → 404, `q=name:"Sol Ring"` → 200). `searchByNameExact`/`searchSuggestions` lo traducen en lista vacía y `executeWithRetry` no reintenta en 4xx; un 404 tratado como error tumbaría cualquier importación con una carta que Scryfall no conoce |
 
 Cuidado con los parámetros mal escritos: Scryfall devuelve **200 con 0 resultados**, así que
 un `direction=` o un `q=` mal construido no falla, parece un catálogo vacío.
@@ -124,10 +125,15 @@ el recorte, no por un fallo del mapper.
 - El mazo se guarda **una sola vez**, al final. Si el job falla, el mazo queda intacto y el job
   pasa a `FAILED`.
 - Un `UPSTREAM_ERROR` (Scryfall 5xx/timeout tras los 4 reintentos) tumba el job y **no** se
-  confunde con una carta que no existe: `NOT_FOUND` es "Scryfall respondió 200 y no la conoce",
-  `UPSTREAM_ERROR` es "Scryfall no respondió". Es la lección de #451, al revés.
-- Las tierras básicas se resuelven **en local** con `typeLine` "Basic Land": sin eso el
-  `DeckValidator` las marcaría como singleton inválido.
+  confunde con una carta que no existe: `NOT_FOUND` es que Scryfall contestó (200 con
+  coincidencias que no encajan, o 404 por no conocer el nombre) y `UPSTREAM_ERROR` es que no
+  pudo contestar. Es la lección de #451, al revés.
+- Solo las **cinco tierras básicas** (Plains, Island, Swamp, Mountain, Forest) se resuelven
+  **en local** con `typeLine` "Basic Land": sin eso el `DeckValidator` las marca como singleton
+  inválido. Nada más entra en esa lista, porque el tipo que se inventa es el que el validador
+  usa para exentar de singleton: una no básica ahí (Wasteland, Tundra, Llanowar Elves...)
+  permitiría cuatro copias en un mazo Commander. Las variantes van a Scryfall como cualquier
+  otra carta.
 - `unique=oracle` es obligatorio en toda búsqueda por nombre: sin él Scryfall devuelve todas las
   reimpresiones y cada línea del mazo parecería ambigua.
 - **`page_size` no existe en Scryfall** (son 175 siempre) — no intentes paginar las

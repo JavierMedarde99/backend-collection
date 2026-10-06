@@ -311,6 +311,13 @@ Algoritmo por nombre único:
    → resuelta **localmente**, sin llamar a Scryfall. Motivo doble: son las únicas cartas
    con cantidad > 1 en un mazo Commander, y el validador solo las exonera del singleton
    si el `DeckCard` trae `typeLine` con "Basic Land".
+
+   > **Corrección (2026-10-06, tras la revisión del PR):** de las 19 solo cinco son tierras
+   > básicas de verdad (Plains, Island, Swamp, Mountain, Forest). Wasteland, Tundra,
+   > Underground Sea, Bayou, Dryad Arbor, Llanowar Elves... son no básicas, y guardarlas con
+   > `typeLine` "Basic Land" de mentira hacía que `DeckValidator` las exentara de singleton
+   > (cuatro Wastelands válidos en Commander). La lista local se redujo a las cinco; el resto
+   > va a Scryfall como cualquier otra carta, que es donde sale su tipo real.
 2. `searchByNameExact(nombre)`:
    - 1 candidato cuyo nombre normalizado coincide → **resuelta**.
    - >1 candidatos → `AMBIGUOUS` con la lista.

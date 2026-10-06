@@ -170,6 +170,15 @@ public class DeckImportWorker {
                     sideboardIgnored, unresolved);
             store.save(current.failed(e.getMessage()));
             return;
+        } catch (RuntimeException e) {
+            // Red final de esta fase. Sin ella, cualquier fallo que no fuera Scryfall (una
+            // respuesta que Jackson no entiende, un nombre con el que no se puede construir
+            // la URI) escaparía de run(): @Async se traga la excepción, no hay
+            // AsyncUncaughtExceptionHandler configurado y el job se quedaría en RUNNING
+            // hasta que el TTL lo borrara a los 30 minutos, sin que el usuario llegara a
+            // ver un solo FAILED.
+            store.save(current.failed(describe(e)));
+            return;
         }
 
         current = publish(current, DeckImportPhase.SAVING, total, counters[0], counters[1], sideboardIgnored,
