@@ -25,8 +25,8 @@ public class JwtService {
 
     public JwtService(
             @Value("${app.jwt.secret:clave-cambiar-en-produccion-min-256-bits}") String secret,
-            @Value("${app.jwt.access-token-expiration:900000}") long accessExpirationMillis,
-            @Value("${app.jwt.refresh-token-expiration:604800000}") long refreshExpirationMillis,
+            @Value("${app.jwt.access-token-expiration:86400000}") long accessExpirationMillis,
+            @Value("${app.jwt.refresh-token-expiration:86400000}") long refreshExpirationMillis,
             @Value("${app.admin.username:admin}") String adminUsername) {
         this.key = toKey(secret);
         this.accessExpirationMillis = accessExpirationMillis;
