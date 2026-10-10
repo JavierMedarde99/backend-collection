@@ -18,7 +18,6 @@ import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.model.DeckStatusReport;
 import com.wikicollection.domain.model.MagicCard;
-import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.UserPreferencesUseCase;
 import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
@@ -29,8 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -56,12 +53,14 @@ class DeckServiceTest {
 
     private DeckService deckService() {
         return new DeckService(deckRepository, catalogClient, magicCardRepository, validator, ownershipValidator,
-                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)), new DeckCardFactory(), ownerResolver);
+                new OwnerScopeResolver(mock(UserPreferencesUseCase.class)), new DeckCardFactory(),
+                new DeckNameNormalizer(), ownerResolver);
     }
 
     private Deck sampleDeck() {
         return Deck.builder()
                 .id("d1")
+                .ownerId("u1")
                 .name("Mi Commander")
                 .commander("Atraxa, Praetors' Voice")
                 .commanderColors(List.of("W", "U", "B", "G"))
@@ -84,6 +83,59 @@ class DeckServiceTest {
         assertThatThrownBy(() -> deckService().findById("nope"))
                 .isInstanceOf(DeckNotFoundException.class)
                 .hasMessageContaining("nope");
+    }
+
+    @Test
+    void findById_marksCardInCollection_whenOwnerHasIt() {
+        Deck deck = Deck.builder()
+                .id("d1").ownerId("u1")
+                .cards(new java.util.ArrayList<>(List.of(
+                        DeckCard.builder().cardName("Sol Ring").quantity(1)
+                                .inCollection(false).isProxy(true).build())))
+                .build();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1")).thenReturn(List.of("Sol Ring"));
+
+        Deck result = deckService().findById("d1");
+
+        DeckCard card = result.getCards().get(0);
+        assertThat(card.getInCollection()).isTrue();
+        assertThat(card.getIsProxy()).isFalse();
+    }
+
+    @Test
+    void findById_marksCardAsProxy_whenOwnerLacksIt() {
+        Deck deck = Deck.builder()
+                .id("d1").ownerId("u1")
+                .cards(new java.util.ArrayList<>(List.of(
+                        DeckCard.builder().cardName("Black Lotus").quantity(1)
+                                .inCollection(true).isProxy(false).build())))
+                .build();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1")).thenReturn(List.of("Sol Ring"));
+
+        Deck result = deckService().findById("d1");
+
+        DeckCard card = result.getCards().get(0);
+        assertThat(card.getInCollection()).isFalse();
+        assertThat(card.getIsProxy()).isTrue();
+    }
+
+    @Test
+    void findById_matchesCollectionIgnoringCaseAndAccents() {
+        Deck deck = Deck.builder()
+                .id("d1").ownerId("u1")
+                .cards(new java.util.ArrayList<>(List.of(
+                        DeckCard.builder().cardName("Kongou, Keeper of the Deep")
+                                .quantity(1).build())))
+                .build();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1"))
+                .thenReturn(List.of("Kóngou, keeper of the deep"));
+
+        Deck result = deckService().findById("d1");
+
+        assertThat(result.getCards().get(0).getInCollection()).isTrue();
     }
 
     @Test
@@ -138,8 +190,6 @@ class DeckServiceTest {
                 .build();
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
-        when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Deck result = deckService().addCard("d1", "sf-1", 1, "u1");
@@ -158,11 +208,9 @@ class DeckServiceTest {
         MagicCard fetched = MagicCard.builder()
                 .scryfallId("sf-1").name("Sol Ring").colorIdentity(List.of())
                 .build();
-        MagicCard owned = MagicCard.builder().id("mc1").name("Sol Ring").build();
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
-        when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(owned)));
+        when(magicCardRepository.findNamesByOwnerId("u1")).thenReturn(List.of("Sol Ring"));
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Deck result = deckService().addCard("d1", "sf-1", 1, "u1");
@@ -254,8 +302,6 @@ class DeckServiceTest {
                 .build();
         when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
         when(catalogClient.findById("sf-1")).thenReturn(fetched);
-        when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         deckService().addCard("d1", "sf-1", 1, "u1");

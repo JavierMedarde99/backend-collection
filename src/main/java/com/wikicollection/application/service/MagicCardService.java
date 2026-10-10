@@ -30,16 +30,20 @@ public class MagicCardService implements MagicCardUseCase {
 
     private final OwnerResolver ownerResolver;
 
+    private final DeckCacheInvalidator deckCacheInvalidator;
+
     public MagicCardService(MagicCardRepository magicCardRepository,
                             ExternalMagicCardCatalogClient catalogClient,
                             OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
-                       OwnerResolver ownerResolver) {
+                       OwnerResolver ownerResolver,
+                       DeckCacheInvalidator deckCacheInvalidator) {
         this.magicCardRepository = magicCardRepository;
         this.catalogClient = catalogClient;
         this.ownershipValidator = ownershipValidator;
         this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
+        this.deckCacheInvalidator = deckCacheInvalidator;
     }
 
     @Override
@@ -79,7 +83,10 @@ public class MagicCardService implements MagicCardUseCase {
         fetched.setQuantity(quantity);
         fetched.setOwnerId(ownerId);
         fetched.setUserOwned(ownerResolver.resolveOwner(ownerId));
-        return magicCardRepository.save(fetched);
+        MagicCard saved = magicCardRepository.save(fetched);
+        // La carta ya está en la colección: los mazos cacheados dejan de ser válidos.
+        deckCacheInvalidator.afterCollectionChange();
+        return saved;
     }
 
     @Override
@@ -119,5 +126,7 @@ public class MagicCardService implements MagicCardUseCase {
         MagicCard existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
         magicCardRepository.deleteById(id);
+        // Al salir de la colección, las cartas de mazo que la referencian vuelven a ser proxy.
+        deckCacheInvalidator.afterCollectionChange();
     }
 }

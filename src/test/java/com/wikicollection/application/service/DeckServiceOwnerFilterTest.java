@@ -39,7 +39,7 @@ class DeckServiceOwnerFilterTest {
     private DeckService service() {
         return new DeckService(deckRepository, null, null, new DeckValidator(),
                 ownershipValidator, new OwnerScopeResolver(preferencesUseCase), new DeckCardFactory(),
-                mock(OwnerResolver.class));
+                new DeckNameNormalizer(), mock(OwnerResolver.class));
     }
 
     @Test

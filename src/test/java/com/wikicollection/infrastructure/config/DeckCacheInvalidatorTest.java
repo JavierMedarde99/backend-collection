@@ -54,6 +54,19 @@ class DeckCacheInvalidatorTest {
         assertThat(deckList.get(new SimpleKey(0))).isNull();
     }
 
+    @Test
+    void afterCollectionChange_viaProxy_clearsTheDeckCaches() {
+        Cache deckDetail = cacheManager.getCache(CacheConfig.DECK_DETAIL);
+        Cache deckList = cacheManager.getCache(CacheConfig.DECK_LIST);
+        deckDetail.put(new SimpleKey("deck-1"), "mazo viejo");
+        deckList.put(new SimpleKey(0), "lista vieja");
+
+        invalidator.afterCollectionChange();
+
+        assertThat(deckDetail.get(new SimpleKey("deck-1"))).isNull();
+        assertThat(deckList.get(new SimpleKey(0))).isNull();
+    }
+
     @Configuration
     @EnableCaching
     static class TestConfig {

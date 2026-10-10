@@ -2,7 +2,10 @@ package com.wikicollection.application.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.wikicollection.application.exception.DeckNotFoundException;
 import com.wikicollection.application.exception.MagicCardNotFoundException;
@@ -12,14 +15,12 @@ import com.wikicollection.domain.model.DeckCard;
 import com.wikicollection.domain.model.DeckStatus;
 import com.wikicollection.domain.model.DeckStatusReport;
 import com.wikicollection.domain.model.MagicCard;
-import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.in.DeckUseCase;
 import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.ExternalMagicCardCatalogClient;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.cache.annotation.CacheEvict;
@@ -37,6 +38,7 @@ public class DeckService implements DeckUseCase {
     private final OwnershipValidator ownershipValidator;
     private final OwnerScopeResolver ownerScopeResolver;
     private final DeckCardFactory cardFactory;
+    private final DeckNameNormalizer normalizer;
 
     private final OwnerResolver ownerResolver;
 
@@ -47,6 +49,7 @@ public class DeckService implements DeckUseCase {
                        OwnershipValidator ownershipValidator,
                        OwnerScopeResolver ownerScopeResolver,
                        DeckCardFactory cardFactory,
+                       DeckNameNormalizer normalizer,
                        OwnerResolver ownerResolver) {
         this.deckRepository = deckRepository;
         this.catalogClient = catalogClient;
@@ -56,6 +59,7 @@ public class DeckService implements DeckUseCase {
         this.ownerResolver = ownerResolver;
         this.ownerScopeResolver = ownerScopeResolver;
         this.cardFactory = cardFactory;
+        this.normalizer = normalizer;
     }
 
     @Override
@@ -67,10 +71,10 @@ public class DeckService implements DeckUseCase {
     @Cacheable(cacheNames = "deckList", key = "T(java.util.Objects).hash(#pageable, #owner, #viewerId)")
     public Page<Deck> findAll(Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
-        if (scope.ownerId() != null) {
-            return deckRepository.findByOwnerId(scope.ownerId(), pageable);
-        }
-        return deckRepository.findByOwnerIdNotIn(scope.excludeOwnerIds(), pageable);
+        Page<Deck> decks = scope.ownerId() != null
+                ? deckRepository.findByOwnerId(scope.ownerId(), pageable)
+                : deckRepository.findByOwnerIdNotIn(scope.excludeOwnerIds(), pageable);
+        return markCollectionStatus(decks);
     }
 
     @Override
@@ -82,15 +86,19 @@ public class DeckService implements DeckUseCase {
     @Cacheable(cacheNames = "deckList", key = "T(java.util.Objects).hash(#name, #pageable, #owner, #viewerId)")
     public Page<Deck> findByName(String name, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.DECKS, owner, viewerId);
-        if (scope.ownerId() != null) {
-            return deckRepository.findByNameAndOwnerId(name, scope.ownerId(), pageable);
-        }
-        return deckRepository.findByNameAndOwnerIdNotIn(name, scope.excludeOwnerIds(), pageable);
+        Page<Deck> decks = scope.ownerId() != null
+                ? deckRepository.findByNameAndOwnerId(name, scope.ownerId(), pageable)
+                : deckRepository.findByNameAndOwnerIdNotIn(name, scope.excludeOwnerIds(), pageable);
+        return markCollectionStatus(decks);
     }
 
     @Override
     @Cacheable(cacheNames = "deckDetail", key = "#id")
     public Deck findById(String id) {
+        return markCollectionStatus(loadDeck(id), new HashMap<>());
+    }
+
+    private Deck loadDeck(String id) {
         return deckRepository.findById(id)
                 .orElseThrow(() -> new DeckNotFoundException("Mazo no encontrado con id: " + id));
     }
@@ -134,22 +142,19 @@ public class DeckService implements DeckUseCase {
         if (quantity < 1) {
             throw new IllegalArgumentException("La cantidad mínima es 1");
         }
-        Deck deck = findById(deckId);
+        Deck deck = loadDeck(deckId);
         ownershipValidator.validateOwner(deck.getOwnerId(), userId);
         MagicCard fetched = fetchFromCatalog(scryfallId);
-        boolean owned = !magicCardRepository
-                .search(new MagicCardSearchCriteria(fetched.getName()), PageRequest.of(0, 1))
-                .isEmpty();
         List<DeckCard> cards = deck.getCards() == null ? new ArrayList<>() : new ArrayList<>(deck.getCards());
         cards.stream()
                 .filter(card -> scryfallId.equals(card.getScryfallId()))
                 .findFirst()
                 .ifPresentOrElse(
                         card -> card.setQuantity(card.getQuantity() + quantity),
-                        () -> cards.add(cardFactory.fromMagicCard(fetched, quantity, owned)));
+                        () -> cards.add(cardFactory.fromMagicCard(fetched, quantity, false)));
         deck.setCards(cards);
         deck.setUpdatedAt(LocalDateTime.now());
-        return deckRepository.save(deck);
+        return deckRepository.save(markCollectionStatus(deck, new HashMap<>()));
     }
 
     @Override
@@ -193,5 +198,45 @@ public class DeckService implements DeckUseCase {
         if (deck.getName() == null || deck.getName().isBlank()) {
             throw new IllegalArgumentException("El nombre del mazo es obligatorio");
         }
+    }
+
+    // ------------------------------------------------------ estado "en colección"
+
+    /**
+     * El estado "en colección" de una carta de mazo no es un dato del mazo: se deriva de la
+     * colección de Magic de su dueño. La importación (#353) y {@link #addCard} lo guardan como
+     * pista, pero la colección cambia por su cuenta (añadir una carta proxy desde el mazo o
+     * borrarla), así que al servir un mazo hay que recalcularlo contra el inventario actual.
+     * Sin esto, una carta añadida a la colección seguiría marcada como proxy al recargar.
+     */
+    private Page<Deck> markCollectionStatus(Page<Deck> decks) {
+        Map<String, Set<String>> ownedByOwner = new HashMap<>();
+        decks.getContent().forEach(deck -> markCollectionStatus(deck, ownedByOwner));
+        return decks;
+    }
+
+    private Deck markCollectionStatus(Deck deck, Map<String, Set<String>> ownedByOwner) {
+        if (deck == null || deck.getCards() == null || deck.getCards().isEmpty()) {
+            return deck;
+        }
+        Set<String> owned = ownedNames(deck.getOwnerId(), ownedByOwner);
+        for (DeckCard card : deck.getCards()) {
+            boolean inCollection = owned.contains(normalizer.normalize(card.getCardName()));
+            card.setInCollection(inCollection);
+            card.setIsProxy(!inCollection);
+        }
+        return deck;
+    }
+
+    /**
+     * Nombres de la colección del dueño, normalizados y leídos una sola vez por dueño y
+     * llamada: una página de mazos suele compartir dueño y no debe repetir la consulta.
+     */
+    private Set<String> ownedNames(String ownerId, Map<String, Set<String>> ownedByOwner) {
+        if (ownerId == null || ownerId.isBlank()) {
+            return Set.of();
+        }
+        return ownedByOwner.computeIfAbsent(ownerId,
+                id -> normalizer.normalizeAll(magicCardRepository.findNamesByOwnerId(id)));
     }
 }
