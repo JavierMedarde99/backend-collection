@@ -26,4 +26,16 @@ public class DeckCacheInvalidator {
     public void afterImport() {
         // El cuerpo está vacío a propósito: lo que importa es que el advisor de caché lo vea.
     }
+
+    /**
+     * Se llama desde {@code MagicCardService} al añadir o borrar una carta de la colección.
+     *
+     * <p>El estado "en colección" de las cartas de un mazo se deriva de la colección de Magic,
+     * así que en cuanto ésta cambia los mazos cacheados quedan obsoletos: sin esto, una carta
+     * recién añadida a la colección seguiría leyéndose como proxy hasta que caducara la caché.
+     */
+    @CacheEvict(cacheNames = {"deckDetail", "deckList"}, allEntries = true)
+    public void afterCollectionChange() {
+        // El cuerpo está vacío a propósito: lo que importa es que el advisor de caché lo vea.
+    }
 }

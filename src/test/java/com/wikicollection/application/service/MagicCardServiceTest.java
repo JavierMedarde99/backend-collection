@@ -44,6 +44,9 @@ class MagicCardServiceTest {
     @Mock
     private OwnerResolver ownerResolver;
 
+    @Mock
+    private DeckCacheInvalidator deckCacheInvalidator;
+
     @InjectMocks
     private MagicCardService magicCardService;
 
@@ -160,6 +163,18 @@ class MagicCardServiceTest {
     }
 
     @Test
+    void addFromScryfall_invalidatesDeckCaches() {
+        MagicCard fetched = MagicCard.builder().scryfallId("sf-1").name("Lightning Bolt").build();
+        when(catalogClient.findById("sf-1")).thenReturn(fetched);
+        when(magicCardRepository.save(fetched)).thenReturn(fetched);
+
+        magicCardService.addFromScryfall("sf-1", 1, "u1");
+
+        // El estado "en colección"/"proxy" de las cartas de mazo se deriva de la colección.
+        verify(deckCacheInvalidator).afterCollectionChange();
+    }
+
+    @Test
     void delete_deletesCard_whenExists() {
         MagicCard card = sampleCard("mc1", "Lightning Bolt");
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
@@ -167,6 +182,16 @@ class MagicCardServiceTest {
         magicCardService.delete("mc1", "u1");
 
         verify(magicCardRepository).deleteById("mc1");
+    }
+
+    @Test
+    void delete_invalidatesDeckCaches() {
+        MagicCard card = sampleCard("mc1", "Lightning Bolt");
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+
+        magicCardService.delete("mc1", "u1");
+
+        verify(deckCacheInvalidator).afterCollectionChange();
     }
 
     @Test

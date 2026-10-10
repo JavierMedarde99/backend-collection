@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.MagicCard;
-import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.port.out.DeckRepository;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.infrastructure.adapter.out.scryfall.ScryfallClient;
@@ -161,6 +160,22 @@ class DeckControllerTest {
     }
 
     @Test
+    void getDeck_marksCardInCollection_whenOwnerHasIt() throws Exception {
+        Deck deck = sampleDeck();
+        deck.setCards(new java.util.ArrayList<>(List.of(
+                com.wikicollection.domain.model.DeckCard.builder()
+                        .cardName("Sol Ring").quantity(1).scryfallId("sf-1")
+                        .inCollection(false).isProxy(true).build())));
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1")).thenReturn(List.of("Sol Ring"));
+
+        mockMvc.perform(get("/api/v1/decks/d1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cards[0].inCollection").value(true))
+                .andExpect(jsonPath("$.cards[0].isProxy").value(false));
+    }
+
+    @Test
     void getDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
@@ -247,8 +262,6 @@ class DeckControllerTest {
                 .build();
         when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
         when(scryfallClient.findById("sf-1")).thenReturn(fetched);
-        when(magicCardRepository.search(any(MagicCardSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(Page.empty());
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/api/v1/decks/d1/cards").with(user("u1"))
