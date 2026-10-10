@@ -202,4 +202,58 @@ class MagicCardServiceTest {
                 .isInstanceOf(MagicCardNotFoundException.class)
                 .hasMessageContaining("nope");
     }
+
+    @Test
+    void addCopies_incrementsExistingQuantity() {
+        MagicCard card = sampleCard("mc1", "Lightning Bolt");
+        card.setOwnerId("u1");
+        card.setQuantity(2);
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        when(magicCardRepository.save(card)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MagicCard result = magicCardService.addCopies("mc1", 3, "u1");
+
+        assertThat(result.getQuantity()).isEqualTo(5);
+        verify(magicCardRepository).save(card);
+    }
+
+    @Test
+    void addCopies_treatsNullQuantityAsZero() {
+        MagicCard card = sampleCard("mc1", "Lightning Bolt");
+        card.setOwnerId("u1");
+        card.setQuantity(null);
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        when(magicCardRepository.save(card)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MagicCard result = magicCardService.addCopies("mc1", 4, "u1");
+
+        assertThat(result.getQuantity()).isEqualTo(4);
+    }
+
+    @Test
+    void addCopies_validatesOwnership() {
+        MagicCard card = sampleCard("mc1", "Lightning Bolt");
+        card.setOwnerId("otro");
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        when(magicCardRepository.save(card)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        magicCardService.addCopies("mc1", 1, "u1");
+
+        verify(ownershipValidator).validateOwner("otro", "u1");
+    }
+
+    @Test
+    void addCopies_rejectsInvalidQuantity() {
+        assertThatThrownBy(() -> magicCardService.addCopies("mc1", 0, "u1"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void addCopies_throwsNotFound_whenMissing() {
+        when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> magicCardService.addCopies("nope", 1, "u1"))
+                .isInstanceOf(MagicCardNotFoundException.class)
+                .hasMessageContaining("nope");
+    }
 }

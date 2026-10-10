@@ -26,4 +26,14 @@ public interface MagicCardUseCase {
     Page<MagicCardPrinting> printings(String scryfallId, int page);
 
     void delete(String id, String userId);
+
+    /**
+     * Suma copias a una carta existente de la colección del usuario.
+     *
+     * @param id       identificador de la carta
+     * @param quantity copias a añadir (mínimo 1)
+     * @param userId   usuario que realiza la operación; debe ser el dueño
+     * @return la carta con la cantidad actualizada
+     */
+    MagicCard addCopies(String id, int quantity, String userId);
 }

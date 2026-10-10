@@ -129,4 +129,19 @@ public class MagicCardService implements MagicCardUseCase {
         // Al salir de la colección, las cartas de mazo que la referencian vuelven a ser proxy.
         deckCacheInvalidator.afterCollectionChange();
     }
+
+    @Override
+    @CacheEvict(cacheNames = {"magicDetail", "magicList"}, allEntries = true)
+    public MagicCard addCopies(String id, int quantity, String userId) {
+        if (quantity < 1) {
+            throw new IllegalArgumentException("La cantidad mínima es 1");
+        }
+        MagicCard existing = findById(id);
+        ownershipValidator.validateOwner(existing.getOwnerId(), userId);
+        int current = existing.getQuantity() == null ? 0 : existing.getQuantity();
+        existing.setQuantity(current + quantity);
+        // Añadir copias no cambia la pertenencia (sigue siendo la misma carta), así que
+        // el estado "en colección"/"proxy" de los mazos no se ve afectado.
+        return magicCardRepository.save(existing);
+    }
 }

@@ -279,4 +279,30 @@ class MagicCardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
+
+    @Test
+    void addCopies_returns200_withUpdatedQuantity() throws Exception {
+        MagicCard card = sampleCard();
+        when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(card));
+        when(magicCardRepository.save(card)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/v1/magic/mc1/copies").with(user("u1")).param("quantity", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("mc1"))
+                .andExpect(jsonPath("$.quantity").value(3));
+    }
+
+    @Test
+    void addCopies_returns404_whenMissing() throws Exception {
+        when(magicCardRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/magic/nope/copies").with(user("u1")).param("quantity", "2"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addCopies_returns400_whenQuantityInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/magic/mc1/copies").with(user("u1")).param("quantity", "0"))
+                .andExpect(status().isBadRequest());
+    }
 }
