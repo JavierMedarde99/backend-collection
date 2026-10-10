@@ -216,14 +216,26 @@ public class DeckService implements DeckUseCase {
     }
 
     private Deck markCollectionStatus(Deck deck, Map<String, Set<String>> ownedByOwner) {
-        if (deck == null || deck.getCards() == null || deck.getCards().isEmpty()) {
+        if (deck == null) {
+            return deck;
+        }
+        List<DeckCard> cards = deck.getCards();
+        boolean hasCommander = deck.getCommander() != null && !deck.getCommander().isBlank();
+        if ((cards == null || cards.isEmpty()) && !hasCommander) {
             return deck;
         }
         Set<String> owned = ownedNames(deck.getOwnerId(), ownedByOwner);
-        for (DeckCard card : deck.getCards()) {
-            boolean inCollection = owned.contains(normalizer.normalize(card.getCardName()));
-            card.setInCollection(inCollection);
-            card.setIsProxy(!inCollection);
+        if (cards != null) {
+            for (DeckCard card : cards) {
+                boolean inCollection = owned.contains(normalizer.normalize(card.getCardName()));
+                card.setInCollection(inCollection);
+                card.setIsProxy(!inCollection);
+            }
+        }
+        if (hasCommander) {
+            boolean commanderInCollection = owned.contains(normalizer.normalize(deck.getCommander()));
+            deck.setCommanderInCollection(commanderInCollection);
+            deck.setCommanderIsProxy(!commanderInCollection);
         }
         return deck;
     }

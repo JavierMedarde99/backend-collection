@@ -139,6 +139,55 @@ class DeckServiceTest {
     }
 
     @Test
+    void findById_marksCommanderInCollection_whenOwnerHasIt() {
+        Deck deck = sampleDeck();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1"))
+                .thenReturn(List.of("Atraxa, Praetors' Voice"));
+
+        Deck result = deckService().findById("d1");
+
+        assertThat(result.getCommanderInCollection()).isTrue();
+        assertThat(result.getCommanderIsProxy()).isFalse();
+    }
+
+    @Test
+    void findById_marksCommanderAsProxy_whenOwnerLacksIt() {
+        Deck deck = sampleDeck();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1")).thenReturn(List.of("Sol Ring"));
+
+        Deck result = deckService().findById("d1");
+
+        assertThat(result.getCommanderInCollection()).isFalse();
+        assertThat(result.getCommanderIsProxy()).isTrue();
+    }
+
+    @Test
+    void findById_matchesCommanderIgnoringCaseAndAccents() {
+        Deck deck = sampleDeck();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+        when(magicCardRepository.findNamesByOwnerId("u1"))
+                .thenReturn(List.of("ATRAXA, praetors' voice"));
+
+        Deck result = deckService().findById("d1");
+
+        assertThat(result.getCommanderInCollection()).isTrue();
+        assertThat(result.getCommanderIsProxy()).isFalse();
+    }
+
+    @Test
+    void findById_leavesCommanderStatusNull_whenDeckHasNoCommander() {
+        Deck deck = Deck.builder().id("d1").ownerId("u1").name("Sin comandante").build();
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(deck));
+
+        Deck result = deckService().findById("d1");
+
+        assertThat(result.getCommanderInCollection()).isNull();
+        assertThat(result.getCommanderIsProxy()).isNull();
+    }
+
+    @Test
     void save_setsTimestamps() {
         Deck deck = Deck.builder().name("Nuevo").build();
         when(deckRepository.save(any(Deck.class))).thenAnswer(invocation -> invocation.getArgument(0));

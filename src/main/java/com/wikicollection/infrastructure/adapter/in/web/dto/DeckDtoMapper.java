@@ -36,6 +36,8 @@ public class DeckDtoMapper {
                 deck.getDescription(),
                 deck.getCommander(),
                 deck.getCommanderColors(),
+                deck.getCommanderInCollection(),
+                deck.getCommanderIsProxy(),
                 cards,
                 deck.getCreatedAt(),
                 deck.getUpdatedAt(),

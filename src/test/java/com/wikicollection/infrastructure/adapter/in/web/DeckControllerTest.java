@@ -176,6 +176,18 @@ class DeckControllerTest {
     }
 
     @Test
+    void getDeck_marksCommanderInCollection_whenOwnerHasIt() throws Exception {
+        when(deckRepository.findById("d1")).thenReturn(Optional.of(sampleDeck()));
+        when(magicCardRepository.findNamesByOwnerId("u1"))
+                .thenReturn(List.of("Atraxa, Praetors' Voice"));
+
+        mockMvc.perform(get("/api/v1/decks/d1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.commanderInCollection").value(true))
+                .andExpect(jsonPath("$.commanderIsProxy").value(false));
+    }
+
+    @Test
     void getDeck_returns404_whenMissing() throws Exception {
         when(deckRepository.findById("nope")).thenReturn(Optional.empty());
 
