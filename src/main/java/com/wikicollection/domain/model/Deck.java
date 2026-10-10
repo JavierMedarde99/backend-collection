@@ -25,6 +25,8 @@ public class Deck {
     private String description;
     private String commander;
     private List<String> commanderColors;
+    private Boolean commanderInCollection;
+    private Boolean commanderIsProxy;
     private List<DeckCard> cards;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -9,6 +9,8 @@ public record DeckResponse(
         String description,
         String commander,
         List<String> commanderColors,
+        Boolean commanderInCollection,
+        Boolean commanderIsProxy,
         List<DeckCardResponse> cards,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,

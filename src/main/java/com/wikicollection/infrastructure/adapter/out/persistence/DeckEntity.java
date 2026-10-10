@@ -37,6 +37,10 @@ public class DeckEntity {
 
     private List<String> commanderColors;
 
+    private Boolean commanderInCollection;
+
+    private Boolean commanderIsProxy;
+
     private List<DeckCardEntity> cards;
 
     private LocalDateTime createdAt;
