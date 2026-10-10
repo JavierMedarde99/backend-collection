@@ -147,6 +147,22 @@ public class MagicCardController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/copies")
+    @Operation(summary = "Añade copias a una carta Magic",
+            description = "Suma copias al número que ya tiene una carta de la colección del usuario.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Copias añadidas"),
+            @ApiResponse(responseCode = "400", description = "Cantidad inválida"),
+            @ApiResponse(responseCode = "403", description = "La carta no pertenece al usuario"),
+            @ApiResponse(responseCode = "404", description = "Carta no encontrada")
+    })
+    public MagicCardResponse addCopies(
+            @Parameter(description = "Identificador de la carta") @PathVariable String id,
+            @Parameter(description = "Número de copias a añadir (mínimo 1)") @RequestParam(defaultValue = "1") @Min(1) int quantity,
+            @CurrentUser String currentUserId) {
+        return mapper.toResponse(magicCardUseCase.addCopies(id, quantity, currentUserId));
+    }
+
     @GetMapping("/search")
     @Operation(summary = "Busca cartas Magic en el catálogo externo", description = "Busca en Scryfall por nombre.")
     @ApiResponses({
