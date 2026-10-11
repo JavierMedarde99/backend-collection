@@ -19,6 +19,11 @@ public class RestClientConfig {
     }
 
     @Bean
+    public RestClient openLibraryRestClient() {
+        return httpClientProperties.restClientBuilder("https://openlibrary.org").build();
+    }
+
+    @Bean
     public RestClient rawgRestClient() {
         return httpClientProperties.restClientBuilder("https://api.rawg.io/api").build();
     }

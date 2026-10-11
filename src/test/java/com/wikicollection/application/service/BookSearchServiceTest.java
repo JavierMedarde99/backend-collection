@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
+import com.wikicollection.domain.port.out.ExternalBookEnricher;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +25,9 @@ class BookSearchServiceTest {
 
     @Mock
     private ExternalBookCatalogClient externalBookCatalogClient;
+
+    @Mock
+    private ExternalBookEnricher externalBookEnricher;
 
     @InjectMocks
     private BookSearchService bookSearchService;
@@ -68,6 +72,39 @@ class BookSearchServiceTest {
 
         assertThat(results.getContent()).containsExactly(result);
         verify(externalBookCatalogClient).searchByIsbn("9788498382671");
+    }
+
+    @Test
+    void searchByIsbn_enrichesResults_whenGoogleLacksCoverOrDescription() {
+        BookSearchResult raw = new BookSearchResult(
+                "LCPqzgEACAAJ", "Fahrenheit 451", List.of("Ray Bradbury"),
+                "9788466356718", null, null, 192,
+                "DEBOLSILLO", "2021-06", 2021, "es", List.of());
+        BookSearchResult enriched = new BookSearchResult(
+                "LCPqzgEACAAJ", "Fahrenheit 451", List.of("Ray Bradbury"),
+                "9788466356718", "http://portada", "Sinopsis", 192,
+                "DEBOLSILLO", "2021-06", 2021, "es", List.of());
+        when(externalBookCatalogClient.searchByIsbn("9788466356718")).thenReturn(List.of(raw));
+        when(externalBookEnricher.enrich(raw)).thenReturn(enriched);
+
+        Page<BookSearchResult> results = bookSearchService.searchByIsbn("9788466356718", PageRequest.of(0, 10));
+
+        assertThat(results.getContent()).containsExactly(enriched);
+        verify(externalBookEnricher).enrich(raw);
+    }
+
+    @Test
+    void searchByIsbn_keepsOriginal_whenEnricherReturnsNull() {
+        BookSearchResult raw = new BookSearchResult(
+                "LCPqzgEACAAJ", "Fahrenheit 451", List.of("Ray Bradbury"),
+                "9788466356718", null, null, 192,
+                "DEBOLSILLO", "2021-06", 2021, "es", List.of());
+        when(externalBookCatalogClient.searchByIsbn("9788466356718")).thenReturn(List.of(raw));
+        when(externalBookEnricher.enrich(raw)).thenReturn(null);
+
+        Page<BookSearchResult> results = bookSearchService.searchByIsbn("9788466356718", PageRequest.of(0, 10));
+
+        assertThat(results.getContent()).containsExactly(raw);
     }
 
     @Test

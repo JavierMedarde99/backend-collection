@@ -9,7 +9,7 @@ This document describes the architecture of `wiki-collection-backend`, a Spring 
 | Language | Java 25 |
 | Framework | Spring Boot 4.1.1 |
 | Persistence | Spring Data MongoDB (`books` NOT used; collection is `BOOKS`) |
-| External integration | Google Books REST API (via `RestClient`) |
+| External integration | Google Books REST API + Open Library (via `RestClient`) |
 | Build / CI | Maven (`mvn verify`, CI: `./mvnw clean package`) |
 | Code generation | Lombok 1.18.46 (requires `annotationProcessorPaths` on JDK 25) |
 | Coverage gate | JaCoCo LINE ≥ 0.80, enforced at `verify` |
@@ -85,6 +85,7 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 **Outbound catalog adapter** (`adapter/out/google/`):
 
 - `GoogleBooksClient implements ExternalBookCatalogClient` — calls the Google Books API with `q=intitle:<name>`, `langRestrict=es`, `startIndex` y `maxResults` (Google devuelve 10 por defecto y **40 como máximo** por llamada; el cliente pagina con `startIndex` en ventanas de 40 para cualquier `size`) y usa `totalItems` como total de la `Page`. `searchByIsbn` **sin `langRestrict`** (un ISBN ya identifica la edición y el filtro descarta en silencio volúmenes sin idioma etiquetado) y con **respaldo para el índice `isbn:`**: si `q=isbn:` devuelve 0, resuelve el ISBN al id del volumen con la **Dynamic Links API** (`books.google.com/books?jscmd=viewapi&bibkeys=ISBN:<isbn>`, acepta ISBN-10/13 y no consume cuota) y pide `GET /v1/volumes/{id}`. **Retries 3 more times (4 total) at 1s intervals** on 5xx/timeout and **rethrows** if all fail; an empty `items` list is a valid empty result.
+- `OpenLibraryClient implements ExternalBookEnricher` — rellena la **portada** y la **descripción** de los resultados de la búsqueda por ISBN que vienen solo con metadatos (sin `imageLinks`/`description`). Pide `GET /isbn/{isbn}.json` (portada = `covers[0]` → `https://covers.openlibrary.org/b/id/{id}-M.jpg`; `works` para la descripción) y, si falta la descripción, `GET /works/{key}.json`. Best-effort: 404/5xx/timeout devuelve el resultado original; `@Cacheable` en `bookEnrich` (clave ISBN, TTL `books`) y no llama a la API si portada y descripción ya están.
 
 **Configuration** (`config/`):
 
@@ -145,7 +146,8 @@ Tests mirror the layers and live in the same package structure under `src/test`:
 - `application/service/` — unit tests for `BookService` and `BookSearchService` with mocked ports.
 - `infrastructure/adapter/out/persistence/` — adapter tests with mocked Spring Data repo + mapper.
 - `infrastructure/adapter/out/google/` — `GoogleBooksClientTest` uses `MockRestServiceServer` to stub the Google API and verify the retry behavior (constructed with a 0 ms interval).
-- `infrastructure/adapter/in/web/` — `BookControllerTest` is `@SpringBootTest` + `@AutoConfigureMockMvc` with `@MockitoBean` for the Spring Data repo and Google client; verifies HTTP contracts (status, JSON, CORS, validation).
+- `infrastructure/adapter/out/openlibrary/` — `OpenLibraryClientTest` uses `MockRestServiceServer` to stub `/isbn/` and `/works/` and verify the best-effort enrichment (404 → original result, no calls when nothing is missing).
+- `infrastructure/adapter/in/web/` — `BookControllerTest` is `@SpringBootTest` + `@AutoConfigureMockMvc` with `@MockitoBean` for the Spring Data repo, the Google client and the enricher; verifies HTTP contracts (status, JSON, CORS, validation).
 
 **Key property:** `spring.data.mongodb.auto-index-creation=false` so `@SpringBootTest` does not need a running MongoDB.
 

@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 public class CacheConfig {
 
     public static final String BOOK_SEARCH = "bookSearch";
+    public static final String BOOK_ENRICH = "bookEnrich";
     public static final String GAME_SEARCH = "gameSearch";
     public static final String BOARDGAME_SEARCH = "boardgameSearch";
     public static final String MAGIC_SEARCH = "magicSearch";
@@ -55,6 +56,7 @@ public class CacheConfig {
 
     public static final List<String> CACHE_NAMES = List.of(
             BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH,
+            BOOK_ENRICH,
             BOOK_DETAIL, GAME_DETAIL, BOARDGAME_DETAIL, MOVIE_DETAIL, MAGIC_DETAIL, DECK_DETAIL, USER_PROFILE_DETAIL,
             BOOK_LIST, GAME_LIST, BOARDGAME_LIST, MOVIE_LIST, MAGIC_LIST, DECK_LIST,
             USER_BOOKS_LIST, USER_GAMES_LIST, USER_BOARDGAMES_LIST, USER_MAGIC_CARDS_LIST, USER_DECKS_LIST,
@@ -66,6 +68,7 @@ public class CacheConfig {
 
     private static final Map<String, String> PROPERTY_KEYS = Map.ofEntries(
             Map.entry(BOOK_SEARCH, "books"),
+            Map.entry(BOOK_ENRICH, "books"),
             Map.entry(GAME_SEARCH, "games"),
             Map.entry(BOARDGAME_SEARCH, "boardgames"),
             Map.entry(MAGIC_SEARCH, "magic"),
