@@ -84,7 +84,7 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 
 **Outbound catalog adapter** (`adapter/out/google/`):
 
-- `GoogleBooksClient implements ExternalBookCatalogClient` — calls the Google Books API with `q=intitle:<name>`, `langRestrict=es`, `startIndex` y `maxResults` (Google devuelve 10 por defecto y **40 como máximo** por llamada; el cliente pagina con `startIndex` en ventanas de 40 para cualquier `size`) y usa `totalItems` como total de la `Page`. `searchByIsbn` sigue siendo una única llamada sin paginación y **sin `langRestrict`** (un ISBN ya identifica la edición y el filtro descarta en silencio volúmenes sin idioma etiquetado). **Retries 3 more times (4 total) at 1s intervals** on 5xx/timeout and **rethrows** if all fail; an empty `items` list is a valid empty result.
+- `GoogleBooksClient implements ExternalBookCatalogClient` — calls the Google Books API with `q=intitle:<name>`, `langRestrict=es`, `startIndex` y `maxResults` (Google devuelve 10 por defecto y **40 como máximo** por llamada; el cliente pagina con `startIndex` en ventanas de 40 para cualquier `size`) y usa `totalItems` como total de la `Page`. `searchByIsbn` **sin `langRestrict`** (un ISBN ya identifica la edición y el filtro descarta en silencio volúmenes sin idioma etiquetado) y con **respaldo para el índice `isbn:`**: si `q=isbn:` devuelve 0, resuelve el ISBN al id del volumen con la **Dynamic Links API** (`books.google.com/books?jscmd=viewapi&bibkeys=ISBN:<isbn>`, acepta ISBN-10/13 y no consume cuota) y pide `GET /v1/volumes/{id}`. **Retries 3 more times (4 total) at 1s intervals** on 5xx/timeout and **rethrows** if all fail; an empty `items` list is a valid empty result.
 
 **Configuration** (`config/`):
 
