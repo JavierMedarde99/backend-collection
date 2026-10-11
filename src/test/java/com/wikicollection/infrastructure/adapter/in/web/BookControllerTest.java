@@ -65,6 +65,9 @@ class BookControllerTest {
     private GoogleBooksClient googleBooksClient;
 
     @MockitoBean
+    private com.wikicollection.domain.port.out.ExternalBookEnricher externalBookEnricher;
+
+    @MockitoBean
     private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
 
     @Autowired
