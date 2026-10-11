@@ -98,15 +98,55 @@ class GoogleBooksClientTest {
     }
 
     @Test
-    void searchByIsbn_returnsEmpty_whenNoItems() {
+    void searchByIsbn_returnsEmpty_whenIsbnSearchAndVolumeLookupFindNothing() {
         server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788498382671"))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo("https://books.google.com/books?jscmd=viewapi&bibkeys=ISBN%3A9788498382671"))
+                .andRespond(withSuccess("var _GBSBookInfo = {}", MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.searchByIsbn("9788498382671");
 
         assertThat(results).isEmpty();
         server.verify();
     }
+
+    @Test
+    void searchByIsbn_fallsBackToVolumeLookup_whenIsbnSearchIsEmpty() {
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788466356718"))
+                .andRespond(withSuccess("{\"totalItems\": 0}", MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo("https://books.google.com/books?jscmd=viewapi&bibkeys=ISBN%3A9788466356718"))
+                .andRespond(withSuccess(viewApiFixture("LCPqzgEACAAJ"), MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes/LCPqzgEACAAJ"))
+                .andRespond(withSuccess(volumeFixture("LCPqzgEACAAJ", "Fahrenheit 451"), MediaType.APPLICATION_JSON));
+
+        List<BookSearchResult> results = client.searchByIsbn("9788466356718");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).id()).isEqualTo("LCPqzgEACAAJ");
+        assertThat(results.get(0).title()).isEqualTo("Fahrenheit 451");
+        assertThat(results.get(0).isbn()).isEqualTo("9788466356718");
+        server.verify();
+    }
+
+    @Test
+    void searchByIsbn_usesApiKey_inVolumeLookupFallback() {
+        RestClient.Builder keyBuilder = RestClient.builder()
+                .baseUrl("https://www.googleapis.com/books");
+        MockRestServiceServer keyServer = MockRestServiceServer.bindTo(keyBuilder).build();
+        GoogleBooksClient clientWithKey = new GoogleBooksClient(keyBuilder.build(), "my-secret-key", 0);
+        keyServer.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788466356718&key=my-secret-key"))
+                .andRespond(withSuccess("{\"totalItems\": 0}", MediaType.APPLICATION_JSON));
+        keyServer.expect(once(), requestTo("https://books.google.com/books?jscmd=viewapi&bibkeys=ISBN%3A9788466356718"))
+                .andRespond(withSuccess(viewApiFixture("LCPqzgEACAAJ"), MediaType.APPLICATION_JSON));
+        keyServer.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes/LCPqzgEACAAJ?key=my-secret-key"))
+                .andRespond(withSuccess(volumeFixture("LCPqzgEACAAJ", "Fahrenheit 451"), MediaType.APPLICATION_JSON));
+
+        List<BookSearchResult> results = clientWithKey.searchByIsbn("9788466356718");
+
+        assertThat(results).hasSize(1);
+        keyServer.verify();
+    }
+
     @Test
     void search_throwsWhenAllRetriesFail() {
         server.expect(times(4), anything()).andRespond(withServerError());
@@ -244,6 +284,31 @@ class GoogleBooksClientTest {
                   ]
                 }
                 """;
+    }
+
+    /** Respuesta de la Dynamic Links API: embebe el id del volumen en `info_url`. */
+    private String viewApiFixture(String volumeId) {
+        return "var _GBSBookInfo = {\"ISBN:9788466356718\":{"
+                + "\"bib_key\":\"ISBN:9788466356718\","
+                + "\"info_url\":\"https://books.google.com/books?id=" + volumeId + "&source=gbs_ViewAPI\","
+                + "\"preview\":\"noview\"}};";
+    }
+
+    /** Respuesta de `GET /v1/volumes/{id}` (un único volumen). */
+    private String volumeFixture(String id, String title) {
+        return """
+                {
+                  "id": "%s",
+                  "volumeInfo": {
+                    "title": "%s",
+                    "authors": ["Ray Bradbury"],
+                    "language": "es",
+                    "industryIdentifiers": [
+                      { "type": "ISBN_13", "identifier": "9788466356718" }
+                    ]
+                  }
+                }
+                """.formatted(id, title);
     }
 
     private String googleBooksFixtureWithItems(int count, int totalItems) {

@@ -1,7 +1,13 @@
 package com.wikicollection.infrastructure.adapter.out.google;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
@@ -18,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
@@ -25,6 +32,9 @@ import org.springframework.web.client.RestClientResponseException;
 public class GoogleBooksClient implements ExternalBookCatalogClient {
 
     private static final String VOLUMES_PATH = "/v1/volumes";
+    private static final String VIEW_API_URL = "https://books.google.com/books?jscmd=viewapi";
+    /** Extrae el id del volumen desde el `info_url` que devuelve la Dynamic Links API. */
+    private static final Pattern VOLUME_ID_PATTERN = Pattern.compile("[?&]id=([A-Za-z0-9_-]+)");
     private static final int GOOGLE_MAX_RESULTS = 40;
     private static final int TOTAL_ATTEMPTS = 4;
     private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
@@ -82,13 +92,15 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         // Un ISBN ya identifica una edición concreta: no se restringe por idioma.
         // Google aplica langRestrict a los volúmenes "etiquetados" con ese idioma y
         // descarta en silencio ediciones sin etiquetar, devolviendo 0 resultados.
-        GoogleBooksResponse response = executeSearch("isbn:" + isbn, null, null, null);
-        if (response == null || response.items() == null) {
-            return List.of();
+        List<BookSearchResult> results = mapItems(executeSearch("isbn:" + isbn, null, null, null));
+        if (!results.isEmpty()) {
+            return results;
         }
-        return response.items().stream()
-                .map(this::toResult)
-                .toList();
+        // El buscador de Google no siempre indexa el ISBN de las ediciones sin vista
+        // previa y responde 0 resultados aunque el volumen exista. La Dynamic Links
+        // API de Google (documentada) resuelve ISBN-10/13 al id del volumen, que sí
+        // se puede consultar directamente. Es el caso de 9788466356718 -> LCPqzgEACAAJ.
+        return searchByResolvedVolumeIds(isbn);
     }
 
     @Override
@@ -124,11 +136,86 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     }
 
     private GoogleBooksResponse executeSearch(String q, Integer startIndex, Integer maxResults, String language) {
+        return withRetry(() -> doSearch(q, startIndex, maxResults, language));
+    }
+
+    private List<BookSearchResult> mapItems(GoogleBooksResponse response) {
+        if (response == null || response.items() == null) {
+            return List.of();
+        }
+        return response.items().stream()
+                .map(this::toResult)
+                .toList();
+    }
+
+    private List<BookSearchResult> searchByResolvedVolumeIds(String isbn) {
+        List<String> volumeIds;
+        try {
+            volumeIds = withRetry(() -> resolveVolumeIds(isbn));
+        } catch (RestClientException e) {
+            log.warn("No se pudo resolver el ISBN {} con la View API de Google Books: {}", isbn, e.getMessage());
+            return List.of();
+        }
+        List<BookSearchResult> results = new ArrayList<>();
+        for (String volumeId : volumeIds) {
+            try {
+                GoogleBookItem item = withRetry(() -> fetchVolume(volumeId));
+                if (item != null && item.volumeInfo() != null) {
+                    results.add(toResult(item));
+                }
+            } catch (RestClientException e) {
+                log.warn("No se pudo recuperar el volumen {} de Google Books: {}", volumeId, e.getMessage());
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Resuelve un ISBN al id de su volumen con la Dynamic Links API de Google
+     * ({@code jscmd=viewapi}). Acepta ISBN-10 y ISBN-13 y también resuelve ediciones
+     * que el buscador {@code q=isbn:} no indexa (devuelve 0 resultados aunque el
+     * volumen exista).
+     */
+    private List<String> resolveVolumeIds(String isbn) {
+        String url = VIEW_API_URL + "&bibkeys="
+                + URLEncoder.encode("ISBN:" + isbn, StandardCharsets.UTF_8);
+        String body = restClient.get()
+                .uri(URI.create(url))
+                .retrieve()
+                .body(String.class);
+        if (body == null || body.isBlank()) {
+            return List.of();
+        }
+        Matcher matcher = VOLUME_ID_PATTERN.matcher(body);
+        List<String> ids = new ArrayList<>();
+        while (matcher.find()) {
+            String id = matcher.group(1);
+            if (!ids.contains(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private GoogleBookItem fetchVolume(String volumeId) {
+        return restClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.path(VOLUMES_PATH + "/{id}");
+                    if (apiKey != null && !apiKey.isBlank()) {
+                        uriBuilder.queryParam("key", apiKey);
+                    }
+                    return uriBuilder.build(volumeId);
+                })
+                .retrieve()
+                .body(GoogleBookItem.class);
+    }
+
+    private <T> T withRetry(Supplier<T> action) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;
         for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             try {
-                return doSearch(q, startIndex, maxResults, language);
+                return action.get();
             } catch (RestClientResponseException e) {
                 lastHttp = e;
                 log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
