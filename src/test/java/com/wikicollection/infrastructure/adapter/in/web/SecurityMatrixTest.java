@@ -155,7 +155,7 @@ class SecurityMatrixTest {
 
     @Test
     void searchPublic_withoutAuth_returns200() throws Exception {
-        when(bookCatalog.search(any())).thenReturn(java.util.List.of());
+        when(bookCatalog.search(any(), any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "dune"))
                 .andExpect(status().isOk());

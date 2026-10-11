@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -35,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -520,7 +522,8 @@ class BookControllerTest {
                 "abc123", "Cien años de soledad", List.of("Gabriel García Márquez"),
                 "9780307474728", "http://thumb", "Sinopsis", 417,
                 "Vintage Español", "2011-05-03", 2011, "es", List.of("Literatura"));
-        when(googleBooksClient.search("cien")).thenReturn(List.of(result));
+        when(googleBooksClient.search(eq("cien"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(result)));
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
@@ -580,7 +583,7 @@ class BookControllerTest {
 
     @Test
     void search_returnsEmpty_whenGoogleUnavailable() throws Exception {
-        when(googleBooksClient.search("cien")).thenReturn(List.of());
+        when(googleBooksClient.search(eq("cien"), any(Pageable.class))).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isOk())
@@ -589,7 +592,7 @@ class BookControllerTest {
 
     @Test
     void search_returns502_whenGoogleThrowsRestClientError() throws Exception {
-        when(googleBooksClient.search("cien")).thenThrow(
+        when(googleBooksClient.search(eq("cien"), any(Pageable.class))).thenThrow(
                 new RestClientResponseException(
                         "error", 500, "Internal Server Error", HttpHeaders.EMPTY, new byte[0], StandardCharsets.UTF_8));
 
@@ -600,7 +603,7 @@ class BookControllerTest {
 
     @Test
     void search_returns503_whenGoogleUnreachable() throws Exception {
-        when(googleBooksClient.search("cien")).thenThrow(new ResourceAccessException("no disponible"));
+        when(googleBooksClient.search(eq("cien"), any(Pageable.class))).thenThrow(new ResourceAccessException("no disponible"));
 
         mockMvc.perform(get("/api/v1/books/search").param("name", "cien"))
                 .andExpect(status().isServiceUnavailable())

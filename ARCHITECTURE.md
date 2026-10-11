@@ -84,7 +84,7 @@ The **dependency rule is strictly inward**: `infrastructure` → `application` �
 
 **Outbound catalog adapter** (`adapter/out/google/`):
 
-- `GoogleBooksClient implements ExternalBookCatalogClient` — calls the Google Books API with `q=intitle:<name>`, `langRestrict=es`, `maxResults=10`. **Retries 3 more times (4 total) at 1s intervals** on 5xx/timeout and **rethrows** if all fail; only returns an empty list when the response has no items.
+- `GoogleBooksClient implements ExternalBookCatalogClient` — calls the Google Books API with `q=intitle:<name>`, `langRestrict=es`, `startIndex` y `maxResults` (Google devuelve 10 por defecto y **40 como máximo** por llamada; el cliente pagina con `startIndex` en ventanas de 40 para cualquier `size`) y usa `totalItems` como total de la `Page`. `searchByIsbn` sigue siendo una única llamada sin paginación. **Retries 3 more times (4 total) at 1s intervals** on 5xx/timeout and **rethrows** if all fail; an empty `items` list is a valid empty result.
 
 **Configuration** (`config/`):
 

@@ -15,6 +15,8 @@ import com.wikicollection.domain.model.BookSearchResult;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -35,13 +37,14 @@ class GoogleBooksClientTest {
 
     @Test
     void search_mapsGoogleBooksResponse() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es&startIndex=0&maxResults=10"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
-        List<BookSearchResult> results = client.search("cien");
+        Page<BookSearchResult> results = client.search("cien", PageRequest.of(0, 10));
 
-        assertThat(results).hasSize(1);
-        BookSearchResult result = results.get(0);
+        assertThat(results.getContent()).hasSize(1);
+        assertThat(results.getTotalElements()).isEqualTo(1);
+        BookSearchResult result = results.getContent().get(0);
         assertThat(result.id()).isEqualTo("abc123");
         assertThat(result.title()).isEqualTo("Cien años de soledad");
         assertThat(result.authors()).containsExactly("Gabriel García Márquez");
@@ -63,21 +66,21 @@ class GoogleBooksClientTest {
         MockRestServiceServer keyServer = MockRestServiceServer.bindTo(keyBuilder).build();
         GoogleBooksClient clientWithKey = new GoogleBooksClient(keyBuilder.build(), "my-secret-key", 0);
         keyServer.expect(once(),
-                        requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:test&langRestrict=es&key=my-secret-key"))
+                        requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:test&langRestrict=es&startIndex=0&maxResults=10&key=my-secret-key"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
-        List<BookSearchResult> results = clientWithKey.search("test");
+        Page<BookSearchResult> results = clientWithKey.search("test", PageRequest.of(0, 10));
 
-        assertThat(results).hasSize(1);
+        assertThat(results.getContent()).hasSize(1);
         keyServer.verify();
     }
 
     @Test
     void search_returnsEmpty_whenNoItems() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:vacio&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:vacio&langRestrict=es&startIndex=0&maxResults=10"))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
 
-        List<BookSearchResult> results = client.search("vacio");
+        Page<BookSearchResult> results = client.search("vacio", PageRequest.of(0, 10));
 
         assertThat(results).isEmpty();
     }
@@ -108,7 +111,7 @@ class GoogleBooksClientTest {
     void search_throwsWhenAllRetriesFail() {
         server.expect(times(4), anything()).andRespond(withServerError());
 
-        assertThatThrownBy(() -> client.search("cien"))
+        assertThatThrownBy(() -> client.search("cien", PageRequest.of(0, 10)))
                 .isInstanceOf(RestClientResponseException.class);
         server.verify();
     }
@@ -118,9 +121,36 @@ class GoogleBooksClientTest {
         server.expect(once(), anything()).andRespond(withServerError());
         server.expect(once(), anything()).andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
-        List<BookSearchResult> results = client.search("cien");
+        Page<BookSearchResult> results = client.search("cien", PageRequest.of(0, 10));
 
-        assertThat(results).hasSize(1);
+        assertThat(results.getContent()).hasSize(1);
+        server.verify();
+    }
+
+    @Test
+    void search_usesStartIndexAndKeepsTotal_whenRequestingSecondPage() {
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es&startIndex=10&maxResults=10"))
+                .andRespond(withSuccess(googleBooksFixtureWithItems(1, 25), MediaType.APPLICATION_JSON));
+
+        Page<BookSearchResult> results = client.search("cien", PageRequest.of(1, 10));
+
+        assertThat(results.getNumber()).isEqualTo(1);
+        assertThat(results.getContent()).hasSize(1);
+        assertThat(results.getTotalElements()).isEqualTo(25);
+        server.verify();
+    }
+
+    @Test
+    void search_paginatesIn40ItemWindows_whenSizeExceedsGoogleLimit() {
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es&startIndex=0&maxResults=40"))
+                .andRespond(withSuccess(googleBooksFixtureWithItems(40, 60), MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=intitle:cien&langRestrict=es&startIndex=40&maxResults=10"))
+                .andRespond(withSuccess(googleBooksFixtureWithItems(3, 60), MediaType.APPLICATION_JSON));
+
+        Page<BookSearchResult> results = client.search("cien", PageRequest.of(0, 50));
+
+        assertThat(results.getContent()).hasSize(43);
+        assertThat(results.getTotalElements()).isEqualTo(60);
         server.verify();
     }
 
@@ -173,10 +203,10 @@ class GoogleBooksClientTest {
         server.expect(once(), anything())
                 .andRespond(withSuccess(fixtureWithPublishedDate(publishedDate), MediaType.APPLICATION_JSON));
 
-        List<BookSearchResult> results = client.search("cien");
+        Page<BookSearchResult> results = client.search("cien", PageRequest.of(0, 10));
 
-        assertThat(results).hasSize(1);
-        return results.get(0);
+        assertThat(results.getContent()).hasSize(1);
+        return results.getContent().get(0);
     }
 
     private String fixtureWithPublishedDate(String publishedDate) {
@@ -214,5 +244,19 @@ class GoogleBooksClientTest {
                   ]
                 }
                 """;
+    }
+
+    private String googleBooksFixtureWithItems(int count, int totalItems) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"totalItems\": ").append(totalItems).append(", \"items\": [");
+        for (int i = 0; i < count; i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"id\": \"id").append(i)
+                    .append("\", \"volumeInfo\": {\"title\": \"Titulo ").append(i).append("\"}}");
+        }
+        json.append("]}");
+        return json.toString();
     }
 }

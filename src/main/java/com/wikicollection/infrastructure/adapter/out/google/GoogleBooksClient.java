@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.google;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.wikicollection.domain.model.BookSearchResult;
@@ -11,6 +12,9 @@ import com.wikicollection.infrastructure.config.CacheConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -21,6 +25,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class GoogleBooksClient implements ExternalBookCatalogClient {
 
     private static final String VOLUMES_PATH = "/v1/volumes";
+    private static final int GOOGLE_MAX_RESULTS = 40;
     private static final int TOTAL_ATTEMPTS = 4;
     private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
 
@@ -45,15 +50,42 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     }
 
     @Override
-    @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "#query")
-    public List<BookSearchResult> search(String query) {
-        return searchWithRetry("intitle:" + query);
+    @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "#query + ':' + #pageable.offset + ':' + #pageable.pageSize")
+    public Page<BookSearchResult> search(String query, Pageable pageable) {
+        int startIndex = (int) pageable.getOffset();
+        int remaining = pageable.getPageSize();
+        List<BookSearchResult> results = new ArrayList<>();
+        Integer totalItems = null;
+        while (remaining > 0) {
+            int maxResults = Math.min(GOOGLE_MAX_RESULTS, remaining);
+            GoogleBooksResponse response = executeSearch("intitle:" + query, startIndex, maxResults);
+            if (totalItems == null && response != null) {
+                totalItems = response.totalItems();
+            }
+            List<GoogleBookItem> items = response == null || response.items() == null
+                    ? List.of()
+                    : response.items();
+            items.stream().map(this::toResult).forEach(results::add);
+            if (items.size() < maxResults) {
+                break;
+            }
+            remaining -= items.size();
+            startIndex += items.size();
+        }
+        long total = totalItems != null ? totalItems : results.size();
+        return new PageImpl<>(results, pageable, total);
     }
 
     @Override
     @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "'isbn:' + #isbn")
     public List<BookSearchResult> searchByIsbn(String isbn) {
-        return searchWithRetry("isbn:" + isbn);
+        GoogleBooksResponse response = executeSearch("isbn:" + isbn, null, null);
+        if (response == null || response.items() == null) {
+            return List.of();
+        }
+        return response.items().stream()
+                .map(this::toResult)
+                .toList();
     }
 
     @Override
@@ -88,12 +120,12 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         }
     }
 
-    private List<BookSearchResult> searchWithRetry(String q) {
+    private GoogleBooksResponse executeSearch(String q, Integer startIndex, Integer maxResults) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;
         for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             try {
-                return doSearch(q);
+                return doSearch(q, startIndex, maxResults);
             } catch (RestClientResponseException e) {
                 lastHttp = e;
                 log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -111,12 +143,18 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         throw lastConnection;
     }
 
-    private List<BookSearchResult> doSearch(String q) {
-        GoogleBooksResponse response = restClient.get()
+    private GoogleBooksResponse doSearch(String q, Integer startIndex, Integer maxResults) {
+        return restClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path(VOLUMES_PATH)
                             .queryParam("q", q)
                             .queryParam("langRestrict", "es");
+                    if (startIndex != null) {
+                        uriBuilder.queryParam("startIndex", startIndex);
+                    }
+                    if (maxResults != null) {
+                        uriBuilder.queryParam("maxResults", maxResults);
+                    }
                     if (apiKey != null && !apiKey.isBlank()) {
                         uriBuilder.queryParam("key", apiKey);
                     }
@@ -124,13 +162,6 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
                 })
                 .retrieve()
                 .body(GoogleBooksResponse.class);
-
-        if (response == null || response.items() == null) {
-            return List.of();
-        }
-        return response.items().stream()
-                .map(this::toResult)
-                .toList();
     }
 
     private void sleepBeforeRetry() {
@@ -204,7 +235,7 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
                         .orElse(null));
     }
 
-    record GoogleBooksResponse(List<GoogleBookItem> items) {
+    record GoogleBooksResponse(Integer totalItems, List<GoogleBookItem> items) {
     }
 
     record GoogleBookItem(String id, VolumeInfo volumeInfo) {

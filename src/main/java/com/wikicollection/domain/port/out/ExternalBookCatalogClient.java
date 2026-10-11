@@ -4,9 +4,12 @@ import java.util.List;
 
 import com.wikicollection.domain.model.BookSearchResult;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface ExternalBookCatalogClient {
 
-    List<BookSearchResult> search(String query);
+    Page<BookSearchResult> search(String query, Pageable pageable);
 
     List<BookSearchResult> searchByIsbn(String isbn);
 
