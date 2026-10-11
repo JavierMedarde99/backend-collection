@@ -22,7 +22,7 @@ public class BookSearchService implements BookSearchUseCase {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("El parámetro de búsqueda 'q' es obligatorio");
         }
-        return PagedResults.slice(externalBookCatalogClient.search(query), pageable);
+        return externalBookCatalogClient.search(query, pageable);
     }
 
     @Override

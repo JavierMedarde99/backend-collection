@@ -11,6 +11,7 @@ import com.wikicollection.domain.model.BookSearchResult;
 import com.wikicollection.domain.port.out.ExternalBookCatalogClient;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,13 +34,14 @@ class BookSearchServiceTest {
                 "abc123", "Cien años de soledad", List.of("Gabriel García Márquez"),
                 "9780307474728", "http://thumb", "Sinopsis", 417,
                 "Vintage Español", "2011-05-03", 2011, "es", List.of("Literatura"));
-        when(externalBookCatalogClient.search("cien")).thenReturn(List.of(result));
+        when(externalBookCatalogClient.search("cien", PageRequest.of(0, 10)))
+                .thenReturn(new PageImpl<>(List.of(result), PageRequest.of(0, 10), 1));
 
         Page<BookSearchResult> results = bookSearchService.search("cien", PageRequest.of(0, 10));
 
         assertThat(results.getContent()).containsExactly(result);
         assertThat(results.getTotalElements()).isEqualTo(1);
-        verify(externalBookCatalogClient).search("cien");
+        verify(externalBookCatalogClient).search("cien", PageRequest.of(0, 10));
     }
 
     @Test
