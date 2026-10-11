@@ -47,7 +47,7 @@ There is intentionally **only one** `@EnableMongoAuditing` (in `MongoAuditConfig
 
 `id`, `externalId`, `title`, `descripcion`, `author` (singular String), `pages`, `type`, `state`, `comment`, `start` (Integer 0–5), `startDate` (LocalDate), `endDate` (LocalDate), `frontpage`. Enums: `BookType` (MANGA, NOVEL, GRAPHIC_NOVEL), `BookState` (TO_READ, READING, COMPLETED). Requests validate `start` 0–5.
 
-Search (`GET /api/books/search`) uses query param **`name`** (not `q`) and hits Google Books with `intitle:<name>` + `langRestrict=es` + `startIndex`/`maxResults`. Google devuelve **10 por defecto** y **40 como máximo** por llamada, así que `GoogleBooksClient` pagina con `startIndex` en ventanas de 40 y usa `totalItems` como `totalElements` de la `Page` (por eso la búsqueda puede devolver más de 10 y el cliente puede pedir páginas >0). `GET /api/books` filters by `state`; there is no `tag` filter (tags were removed with the BOOKS model).
+Search (`GET /api/books/search`) uses query param **`name`** (not `q`) and hits Google Books with `intitle:<name>` + `langRestrict=es` + `startIndex`/`maxResults`. La búsqueda por **ISBN** (`isbn=`) **no** envía `langRestrict`: un ISBN ya identifica una edición y Google descarta en silencio los volúmenes cuyo idioma no está etiquetado (devuelve 0 resultados). Google devuelve **10 por defecto** y **40 como máximo** por llamada, así que `GoogleBooksClient` pagina con `startIndex` en ventanas de 40 y usa `totalItems` como `totalElements` de la `Page` (por eso la búsqueda puede devolver más de 10 y el cliente puede pedir páginas >0). `GET /api/books` filters by `state`; there is no `tag` filter (tags were removed with the BOOKS model).
 
 ## Scryfall: impresiones de carta (issue #451)
 
