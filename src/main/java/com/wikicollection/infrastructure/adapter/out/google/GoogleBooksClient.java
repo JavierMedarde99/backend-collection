@@ -58,7 +58,7 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         Integer totalItems = null;
         while (remaining > 0) {
             int maxResults = Math.min(GOOGLE_MAX_RESULTS, remaining);
-            GoogleBooksResponse response = executeSearch("intitle:" + query, startIndex, maxResults);
+            GoogleBooksResponse response = executeSearch("intitle:" + query, startIndex, maxResults, "es");
             if (totalItems == null && response != null) {
                 totalItems = response.totalItems();
             }
@@ -79,7 +79,10 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
     @Override
     @Cacheable(cacheNames = CacheConfig.BOOK_SEARCH, key = "'isbn:' + #isbn")
     public List<BookSearchResult> searchByIsbn(String isbn) {
-        GoogleBooksResponse response = executeSearch("isbn:" + isbn, null, null);
+        // Un ISBN ya identifica una edición concreta: no se restringe por idioma.
+        // Google aplica langRestrict a los volúmenes "etiquetados" con ese idioma y
+        // descarta en silencio ediciones sin etiquetar, devolviendo 0 resultados.
+        GoogleBooksResponse response = executeSearch("isbn:" + isbn, null, null, null);
         if (response == null || response.items() == null) {
             return List.of();
         }
@@ -120,12 +123,12 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         }
     }
 
-    private GoogleBooksResponse executeSearch(String q, Integer startIndex, Integer maxResults) {
+    private GoogleBooksResponse executeSearch(String q, Integer startIndex, Integer maxResults, String language) {
         RestClientResponseException lastHttp = null;
         ResourceAccessException lastConnection = null;
         for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             try {
-                return doSearch(q, startIndex, maxResults);
+                return doSearch(q, startIndex, maxResults, language);
             } catch (RestClientResponseException e) {
                 lastHttp = e;
                 log.warn("Google Books API devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -143,12 +146,14 @@ public class GoogleBooksClient implements ExternalBookCatalogClient {
         throw lastConnection;
     }
 
-    private GoogleBooksResponse doSearch(String q, Integer startIndex, Integer maxResults) {
+    private GoogleBooksResponse doSearch(String q, Integer startIndex, Integer maxResults, String language) {
         return restClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path(VOLUMES_PATH)
-                            .queryParam("q", q)
-                            .queryParam("langRestrict", "es");
+                            .queryParam("q", q);
+                    if (language != null) {
+                        uriBuilder.queryParam("langRestrict", language);
+                    }
                     if (startIndex != null) {
                         uriBuilder.queryParam("startIndex", startIndex);
                     }

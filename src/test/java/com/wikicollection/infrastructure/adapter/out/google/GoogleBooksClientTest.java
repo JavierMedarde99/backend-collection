@@ -87,7 +87,7 @@ class GoogleBooksClientTest {
 
     @Test
     void searchByIsbn_queriesIsbnEndpoint() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788498382671&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788498382671"))
                 .andRespond(withSuccess(googleBooksFixture(), MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.searchByIsbn("9788498382671");
@@ -99,7 +99,7 @@ class GoogleBooksClientTest {
 
     @Test
     void searchByIsbn_returnsEmpty_whenNoItems() {
-        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788498382671&langRestrict=es"))
+        server.expect(once(), requestTo("https://www.googleapis.com/books/v1/volumes?q=isbn:9788498382671"))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
 
         List<BookSearchResult> results = client.searchByIsbn("9788498382671");
