@@ -16,6 +16,7 @@ import com.wikicollection.infrastructure.config.CacheConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -41,6 +42,7 @@ public class AmiiboApiClient implements ExternalAmiiboCatalogClient {
     private final RestClient restClient;
     private final long retryIntervalMillis;
 
+    @Autowired
     public AmiiboApiClient(RestClient amiiboRestClient) {
         this(amiiboRestClient, DEFAULT_RETRY_INTERVAL_MILLIS);
     }
