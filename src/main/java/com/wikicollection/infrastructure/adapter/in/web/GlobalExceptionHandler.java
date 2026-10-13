@@ -2,6 +2,8 @@ package com.wikicollection.infrastructure.adapter.in.web;
 
 import java.time.LocalDateTime;
 
+import com.wikicollection.application.exception.AmiiboConflictException;
+import com.wikicollection.application.exception.AmiiboNotFoundException;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
@@ -68,6 +70,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(AmiiboNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAmiiboNotFound(AmiiboNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
@@ -90,6 +97,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BookConflictException.class)
     public ResponseEntity<ErrorResponse> handleBookConflict(BookConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AmiiboConflictException.class)
+    public ResponseEntity<ErrorResponse> handleAmiiboConflict(AmiiboConflictException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
