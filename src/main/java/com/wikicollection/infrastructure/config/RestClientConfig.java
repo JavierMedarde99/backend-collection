@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -46,5 +47,10 @@ public class RestClientConfig {
     @Bean
     public RestClient catboxRestClient() {
         return httpClientProperties.restClientBuilder("https://catbox.moe").build();
+    }
+
+    @Bean
+    public RestClient amiiboRestClient(@Value("${amiiboapi.base-url:https://amiiboapi.org/api}") String baseUrl) {
+        return httpClientProperties.restClientBuilder(baseUrl).build();
     }
 }
