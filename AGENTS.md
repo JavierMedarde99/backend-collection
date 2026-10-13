@@ -142,6 +142,41 @@ Los records de deserialización llevan `@JsonIgnoreProperties(ignoreUnknown = tr
 solo constructor (lección de Scryfall). El `type` del catálogo se mapea a `AmiiboType` de forma
 tolerante: un valor desconocido del catálogo se traduce a `null`, no a un error.
 
+## Funko: catálogo externo (HobbyQuantHQ)
+
+La colección Funko Pop (Mongo `funkos`) sigue el patrón de Amiibo/board-games: dos estados
+(`OWNED`/`WISHLIST`), filtro `owner` (`mine`/`other`/`all`) y recorte de `notes` vía
+`ResponseVisibility`. `externalId` es el `id` **entero** de HobbyQuantHQ guardado como String y es
+único en la colección (`FunkoConflictException` → **409**). Endpoints bajo `/api/v1/funkos`:
+CRUD + `GET /api/v1/funkos/search?name=` (mínimo 2 caracteres) y `GET /api/v1/funkos/categories`
+(públicos, como el resto de `GET /api/v1/**`). `CollectionType.FUNKOS("funkos")` habilita owner
+filter y privacidad por colección. Sin precios ni barcode; imágenes por **hotlink**
+(`images.hobbydb.com`); `rarityScore` es un índice de la fuente, no un valor de mercado.
+
+### Trampas verificadas de HobbyQuantHQ (2026-10-13)
+
+| Trampa | Detalle |
+|--------|---------|
+| Base URL | `https://hobbyquanthq.com/api/v1` (la raíz responde **308**; no existe `api.hobbyquanthq.com`) |
+| Auth por header | `x-api-key`; sin cabecera → **422** `{"detail":[{"type":"missing","loc":["header","x-api-key"]}]}`; en beta basta la clave pública `dev-key-change-me` |
+| Sobre `results`, no `data` | `/search` → `{results, query, total}`; `/pops` → `{items, total, page, limit, pages}`. Documentación de terceros con `{"data":[…]}` es incorrecta |
+| `/search` **no pagina** | El parámetro `page` se ignora en silencio; el cliente pide `limit=100` (máximo; 101 → **422**) y el corte de página lo hace `PagedResults.slice` |
+| `total` de `/search` no es el real | Es el número devuelto (recortado por `limit`), no las coincidencias totales: no sirve como `totalElements` global |
+| `q` mínimo 2 caracteres | 1 carácter → **422** `string_too_short`; `FunkoSearchService` lo valida antes (→ **400**) para no propagar un 422 |
+| `/pops/{id}` desconocido → **404** | `{"detail":"Pop not found."}` → `Optional.empty()` **sin** reintentar (4xx no es transitorio) |
+| Sin resultados → **200** con `results: []` | Lista vacía es un resultado válido, no un error |
+| Muchos campos `null` | `series`, `number`, `release_year`, `franchise` vienen a `null` a menudo; el modelo y los DTOs los aceptan opcionales |
+| 5xx/timeout → error | 4 intentos (3 reintentos a 1 s; intervalo inyectable, 0 ms en tests) y **solo 5xx**; al agotar relanza (`RestClientResponseException` → 502 / `ResourceAccessException` → 503) |
+
+**`@Autowired` obligatorio en el constructor público de `FunkoApiClient`** (dos constructores: el
+público `(RestClient, String apiKey)` y el package-private `(RestClient, String, long)` para tests);
+sin la anotación el contexto falla con `No default constructor found` (patrón `AmiiboApiClient`).
+
+Los records de deserialización llevan `@JsonIgnoreProperties(ignoreUnknown = true)` **todos** y un
+solo constructor (lección de Scryfall). Los campos snake_case se mapean con `@JsonProperty`
+(`release_year`, `pop_type`, `rarity_score`, `image_url`). `image_valid` **no** se modela: se infiere
+de `imageUrl != null`.
+
 ## Importación de mazos (issue #353)
 
 - El import es **asíncrono**: `POST /api/v1/decks/{id}/imports` (multipart) o `.../imports/text`
