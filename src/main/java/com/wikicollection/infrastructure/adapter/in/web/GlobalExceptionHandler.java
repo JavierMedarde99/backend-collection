@@ -11,6 +11,8 @@ import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckImportNotFoundException;
 import com.wikicollection.application.exception.DeckListParseException;
 import com.wikicollection.application.exception.DeckNotFoundException;
+import com.wikicollection.application.exception.FunkoConflictException;
+import com.wikicollection.application.exception.FunkoNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.application.exception.ForbiddenException;
 import com.wikicollection.application.exception.InvalidProgressException;
@@ -75,6 +77,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(FunkoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFunkoNotFound(FunkoNotFoundException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
@@ -102,6 +109,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AmiiboConflictException.class)
     public ResponseEntity<ErrorResponse> handleAmiiboConflict(AmiiboConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FunkoConflictException.class)
+    public ResponseEntity<ErrorResponse> handleFunkoConflict(FunkoConflictException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 

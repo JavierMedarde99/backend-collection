@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.wikicollection.domain.model.BoardGameStatus;
 import com.wikicollection.domain.model.BookState;
+import com.wikicollection.domain.model.FunkoStatus;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.model.MovieMediaType;
 import com.wikicollection.domain.model.MovieStatus;
@@ -25,6 +26,8 @@ class StringToEnumConvertersNullSafeTest {
         assertThat(new StringToBookStateConverter().convert("")).isNull();
         assertThat(new StringToBoardGameStatusConverter().convert(null)).isNull();
         assertThat(new StringToBoardGameStatusConverter().convert("  ")).isNull();
+        assertThat(new StringToFunkoStatusConverter().convert(null)).isNull();
+        assertThat(new StringToFunkoStatusConverter().convert("  ")).isNull();
     }
 
     @Test
@@ -34,6 +37,7 @@ class StringToEnumConvertersNullSafeTest {
         assertThat(new StringToBookStateConverter().convert("reading")).isEqualTo(BookState.READING);
         assertThat(new StringToBookStateConverter().convert("wishlist")).isEqualTo(BookState.WISHLIST);
         assertThat(new StringToBoardGameStatusConverter().convert("owned")).isEqualTo(BoardGameStatus.OWNED);
+        assertThat(new StringToFunkoStatusConverter().convert("wishlist")).isEqualTo(FunkoStatus.WISHLIST);
     }
 
     @Test

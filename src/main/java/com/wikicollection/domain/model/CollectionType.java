@@ -12,7 +12,8 @@ public enum CollectionType {
     MAGIC("magic"),
     DECKS("decks"),
     MOVIESHOWS("movieshows"),
-    AMIIBOS("amiibos");
+    AMIIBOS("amiibos"),
+    FUNKOS("funkos");
 
     private final String key;
 

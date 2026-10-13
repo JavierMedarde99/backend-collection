@@ -14,7 +14,7 @@ class UserPreferencesTest {
         assertThat(prefs.getUserId()).isEqualTo("u1");
         assertThat(prefs.getActiveCollections()).containsExactlyInAnyOrderEntriesOf(
                 java.util.Map.of("books", true, "games", true, "boardgames", true,
-                        "magic", true, "decks", true, "movieshows", true, "amiibos", true));
+                        "magic", true, "decks", true, "movieshows", true, "amiibos", true, "funkos", true));
         assertThat(prefs.getCollectionVisibility().values())
                 .allMatch(CollectionVisibility.PUBLIC::equals);
         assertThat(prefs.getCreatedAt()).isNotNull();
