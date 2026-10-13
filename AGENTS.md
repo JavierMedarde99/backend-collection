@@ -36,11 +36,12 @@ Dependencies point inward only; no cross-layer imports outward:
 - `application/` — services (`BookService`, `BookSearchService`, `DeckService`, `DeckImportWorker`, `DeckImportService`), `DeckListParserRegistry`, `DeckImportFormatDetector` and exceptions (`BookNotFoundException`, etc.)
   - `DeckListParserRegistry` and `DeckImportFormatDetector` live **here**, not in `infrastructure`, because `DeckImportWorker` and `DeckImportService` (both `application/` beans) consume them; putting them under `adapter/in` would make `application` import `infrastructure`.
 - `infrastructure/` — adapters + config:
-  - `adapter/in/web`: `BookController`, `DeckController`, `GlobalExceptionHandler`, DTOs
+  - `adapter/in/web`: `BookController`, `AmiiboController`, `DeckController`, `GlobalExceptionHandler`, DTOs
   - `adapter/out/persistence`: `BookEntity`, `SpringDataBookRepository`, `BookEntityMapper`, `BookPersistenceAdapter` (Mongo collection `BOOKS`)
   - `adapter/out/google`: `GoogleBooksClient` (search via external catalog)
   - `adapter/out/openlibrary`: `OpenLibraryClient` (rellena portada/descripción por ISBN cuando Google no las trae)
-  - `config`: `WebConfig` (CORS for `http://localhost:5173`), `MongoAuditConfig`, `StringToBookStateConverter`, `RestClientConfig`
+  - `adapter/out/amiibo`: `AmiiboApiClient` (búsqueda externa contra AmiiboAPI)
+  - `config`: `WebConfig` (CORS for `http://localhost:5173`), `MongoAuditConfig`, `StringToBookStateConverter`, `StringToAmiiboStatusConverter`, `RestClientConfig`
 
 There is intentionally **only one** `@EnableMongoAuditing` (in `MongoAuditConfig`). Don't add a second one (e.g., on the main application class) — it causes `BeanDefinitionOverrideException` and fails every controller test.
 
@@ -110,6 +111,36 @@ trae contenido** y `offset + pageSize > total`:
 Al escribir fixtures, `total_cards` tiene que ser coherente con los elementos devueltos: un
 `total_cards: 10` con 2 elementos no es una respuesta de Scryfall y hace fallar los tests por
 el recorte, no por un fallo del mapper.
+
+## Amiibo: catálogo externo (AmiiboAPI)
+
+La colección Amiibo (Mongo `amiibos`) sigue el patrón de board-games: dos estados
+(`OWNED`/`WISHLIST`), filtro `owner` (`mine`/`other`/`all`) y recorte de `notes` vía
+`ResponseVisibility`. `externalId` es `head` + `tail` (16 hex) del catálogo y es único en la
+colección (`AmiiboConflictException` → **409**). Los endpoints están bajo `/api/v1/amiibos` y la
+búsqueda externa es `GET /api/v1/amiibos/search?name=` (público, como el resto de `GET /api/v1/**`).
+
+### Trampas verificadas de AmiiboAPI (2026-10-13)
+
+| Trampa | Detalle |
+|--------|---------|
+| URL canónica `/api/amiibo/` | Sin slash responde **308**; el `RestClient` lo sigue |
+| Parámetros case-sensitive | `name`, `id`, `showusage`; `gameseries` solo en minúscula (camelCase se ignora en silencio) |
+| Desconocidos se ignoran | Un typo devuelve el catálogo entero (950), no un error: el cliente construye los parámetros exactos y no expone filtros libres |
+| `?id=` devuelve **objeto** | La búsqueda devuelve `{"amiibo":[...]}`, el detalle `{"amiibo":{…}}`: DTOs distintos (`AmiiboApiListResponse`/`AmiiboApiDetailResponse`) |
+| Sin resultados → **200 con `{"amiibo":[]}`** | Lista vacía es un resultado válido, no error; `{"amiibo":null}` también se tolera como vacío |
+| `?id=` desconocido → **400** | `findById` lo traduce a `Optional.empty()` y **no** reintenta |
+| Sin paginación | AmiiboAPI devuelve todos los que coinciden; la paginación es del repositorio local (`PagedResults.slice`) |
+| 5xx/timeout → error | 4 intentos (3 reintentos a 1s; intervalo inyectable, 0 ms en tests) y **reintenta solo 5xx**; al agotar relanza (`RestClientResponseException` → 502 / `ResourceAccessException` → 503). A diferencia de Google Books/Scryfall, no hay lista vacía por fallo de red |
+
+**`@Autowired` obligatorio en el constructor público de `AmiiboApiClient`.** El cliente tiene dos
+constructores (el público de un argumento y el package-private `(RestClient, long)` para tests) y,
+sin la anotación, Spring busca el constructor de por defecto y el contexto falla con
+`No default constructor found` (mismo patrón que `GoogleBooksClient`).
+
+Los records de deserialización llevan `@JsonIgnoreProperties(ignoreUnknown = true)` **todos** y un
+solo constructor (lección de Scryfall). El `type` del catálogo se mapea a `AmiiboType` de forma
+tolerante: un valor desconocido del catálogo se traduce a `null`, no a un error.
 
 ## Importación de mazos (issue #353)
 

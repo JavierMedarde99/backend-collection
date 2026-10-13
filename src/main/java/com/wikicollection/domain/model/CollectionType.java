@@ -11,7 +11,8 @@ public enum CollectionType {
     BOARDGAMES("boardgames"),
     MAGIC("magic"),
     DECKS("decks"),
-    MOVIESHOWS("movieshows");
+    MOVIESHOWS("movieshows"),
+    AMIIBOS("amiibos");
 
     private final String key;
 
