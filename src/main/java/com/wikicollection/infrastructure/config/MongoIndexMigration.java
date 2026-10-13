@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class MongoIndexMigration implements ApplicationRunner {
 
     private static final List<String> OWNER_COLLECTIONS =
-            List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows", "amiibos");
+            List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows", "amiibos", "funkos");
 
     private final MongoTemplate mongoTemplate;
     private final boolean enabled;
