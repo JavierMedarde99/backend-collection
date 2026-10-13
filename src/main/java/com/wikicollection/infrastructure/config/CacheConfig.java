@@ -24,6 +24,8 @@ public class CacheConfig {
     public static final String COMMANDER_SEARCH = "commanderSearch";
     public static final String PLATFORM_SEARCH = "platformSearch";
     public static final String AMIIBO_SEARCH = "amiiboSearch";
+    public static final String FUNKO_SEARCH = "funkoSearch";
+    public static final String FUNKO_CATEGORIES = "funkoCategories";
     public static final String MAGIC_PRINTINGS = "magicPrintings";
 
     public static final String BOOK_DETAIL = "bookDetail";
@@ -33,6 +35,7 @@ public class CacheConfig {
     public static final String MAGIC_DETAIL = "magicDetail";
     public static final String DECK_DETAIL = "deckDetail";
     public static final String AMIIBO_DETAIL = "amiiboDetail";
+    public static final String FUNKO_DETAIL = "funkoDetail";
     public static final String USER_PROFILE_DETAIL = "userProfileDetail";
 
     public static final String BOOK_LIST = "bookList";
@@ -42,6 +45,7 @@ public class CacheConfig {
     public static final String MAGIC_LIST = "magicList";
     public static final String DECK_LIST = "deckList";
     public static final String AMIIBO_LIST = "amiiboList";
+    public static final String FUNKO_LIST = "funkoList";
 
     public static final String USER_BOOKS_LIST = "userBooksList";
     public static final String USER_GAMES_LIST = "userGamesList";
@@ -59,11 +63,12 @@ public class CacheConfig {
 
     public static final List<String> CACHE_NAMES = List.of(
             BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH,
-            AMIIBO_SEARCH,
+            AMIIBO_SEARCH, FUNKO_SEARCH, FUNKO_CATEGORIES,
             BOOK_ENRICH,
             BOOK_DETAIL, GAME_DETAIL, BOARDGAME_DETAIL, MOVIE_DETAIL, MAGIC_DETAIL, DECK_DETAIL, AMIIBO_DETAIL,
+            FUNKO_DETAIL,
             USER_PROFILE_DETAIL,
-            BOOK_LIST, GAME_LIST, BOARDGAME_LIST, MOVIE_LIST, MAGIC_LIST, DECK_LIST, AMIIBO_LIST,
+            BOOK_LIST, GAME_LIST, BOARDGAME_LIST, MOVIE_LIST, MAGIC_LIST, DECK_LIST, AMIIBO_LIST, FUNKO_LIST,
             USER_BOOKS_LIST, USER_GAMES_LIST, USER_BOARDGAMES_LIST, USER_MAGIC_CARDS_LIST, USER_DECKS_LIST,
             USER_MOVIE_SHOWS_LIST, USER_STREAMS_LIST,
             USER_PREFERENCES_DETAIL, USER_ACTIVE_COLLECTIONS, USER_PREFERENCE_FLAGS,
@@ -77,6 +82,8 @@ public class CacheConfig {
             Map.entry(GAME_SEARCH, "games"),
             Map.entry(BOARDGAME_SEARCH, "boardgames"),
             Map.entry(AMIIBO_SEARCH, "amiibos"),
+            Map.entry(FUNKO_SEARCH, "funkos"),
+            Map.entry(FUNKO_CATEGORIES, "funkos"),
             Map.entry(MAGIC_SEARCH, "magic"),
             Map.entry(MOVIE_SEARCH, "movieshows"),
             Map.entry(COMMANDER_SEARCH, "decks"),
@@ -84,6 +91,7 @@ public class CacheConfig {
             Map.entry(GAME_DETAIL, "games"),
             Map.entry(BOARDGAME_DETAIL, "boardgames"),
             Map.entry(AMIIBO_DETAIL, "amiibos"),
+            Map.entry(FUNKO_DETAIL, "funkos"),
             Map.entry(MOVIE_DETAIL, "movieshows"),
             Map.entry(MAGIC_DETAIL, "magic"),
             Map.entry(DECK_DETAIL, "decks"),
@@ -92,6 +100,7 @@ public class CacheConfig {
             Map.entry(GAME_LIST, "games"),
             Map.entry(BOARDGAME_LIST, "boardgames"),
             Map.entry(AMIIBO_LIST, "amiibos"),
+            Map.entry(FUNKO_LIST, "funkos"),
             Map.entry(MOVIE_LIST, "movieshows"),
             Map.entry(MAGIC_LIST, "magic"),
             Map.entry(DECK_LIST, "decks"),

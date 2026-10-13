@@ -53,4 +53,10 @@ public class RestClientConfig {
     public RestClient amiiboRestClient(@Value("${amiiboapi.base-url:https://amiiboapi.org/api}") String baseUrl) {
         return httpClientProperties.restClientBuilder(baseUrl).build();
     }
+
+    @Bean
+    public RestClient funkoRestClient(
+            @Value("${hobbyquanthq.api.base-url:https://hobbyquanthq.com/api/v1}") String baseUrl) {
+        return httpClientProperties.restClientBuilder(baseUrl).build();
+    }
 }
