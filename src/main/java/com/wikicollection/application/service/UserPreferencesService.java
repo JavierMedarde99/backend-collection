@@ -1,6 +1,7 @@
 package com.wikicollection.application.service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -71,9 +72,9 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     @Override
     @Cacheable(cacheNames = "userActiveCollections", key = "#userId")
     public List<CollectionType> getActiveCollections(String userId) {
-        return prefsOrDefaults(userId).getActiveCollections().entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(entry -> CollectionType.fromKey(entry.getKey()))
+        Map<String, Boolean> active = prefsOrDefaults(userId).getActiveCollections();
+        return Arrays.stream(CollectionType.values())
+                .filter(type -> active.getOrDefault(type.getKey(), true))
                 .toList();
     }
 

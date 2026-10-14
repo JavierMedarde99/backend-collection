@@ -128,6 +128,19 @@ class UserPreferencesServiceTest {
     }
 
     @Test
+    void getActiveCollections_treatsKeysMissingFromLegacyMapAsActive() {
+        UserPreferences legacy = UserPreferences.defaults("u1");
+        legacy.getActiveCollections().remove("amiibos");
+        legacy.getActiveCollections().remove("funkos");
+        when(preferencesRepository.findByUserId("u1")).thenReturn(Optional.of(legacy));
+
+        List<CollectionType> active = service.getActiveCollections("u1");
+
+        assertThat(active)
+                .contains(CollectionType.AMIIBOS, CollectionType.FUNKOS);
+    }
+
+    @Test
     void visibilityChecks_reflectStoredValues() {
         UserPreferences prefs = UserPreferences.defaults("u1");
         prefs.getCollectionVisibility().put("books", CollectionVisibility.PRIVATE);
