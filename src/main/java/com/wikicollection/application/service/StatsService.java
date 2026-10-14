@@ -3,16 +3,20 @@ package com.wikicollection.application.service;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.wikicollection.domain.model.AmiiboSearchCriteria;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.model.FunkoSearchCriteria;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.port.in.StatsUseCase;
+import com.wikicollection.domain.port.out.AmiiboRepository;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.domain.port.out.DeckRepository;
+import com.wikicollection.domain.port.out.FunkoRepository;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.domain.port.out.MovieShowRepository;
@@ -31,19 +35,25 @@ public class StatsService implements StatsUseCase {
     private final MagicCardRepository magicCardRepository;
     private final DeckRepository deckRepository;
     private final MovieShowRepository movieShowRepository;
+    private final FunkoRepository funkoRepository;
+    private final AmiiboRepository amiiboRepository;
 
     public StatsService(BookRepository bookRepository,
                         GameRepository gameRepository,
                         BoardGameRepository boardGameRepository,
                         MagicCardRepository magicCardRepository,
                         DeckRepository deckRepository,
-                        MovieShowRepository movieShowRepository) {
+                        MovieShowRepository movieShowRepository,
+                        FunkoRepository funkoRepository,
+                        AmiiboRepository amiiboRepository) {
         this.bookRepository = bookRepository;
         this.gameRepository = gameRepository;
         this.boardGameRepository = boardGameRepository;
         this.magicCardRepository = magicCardRepository;
         this.deckRepository = deckRepository;
         this.movieShowRepository = movieShowRepository;
+        this.funkoRepository = funkoRepository;
+        this.amiiboRepository = amiiboRepository;
     }
 
     @Override
@@ -62,6 +72,10 @@ public class StatsService implements StatsUseCase {
         counts.put(CollectionType.DECKS.getKey(), deckRepository.findAll(single).getTotalElements());
         counts.put(CollectionType.MOVIESHOWS.getKey(), movieShowRepository
                 .findByCriteria(new MovieSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
+        counts.put(CollectionType.FUNKOS.getKey(), funkoRepository
+                .search(new FunkoSearchCriteria(null, null, null, null), single).getTotalElements());
+        counts.put(CollectionType.AMIIBOS.getKey(), amiiboRepository
+                .search(new AmiiboSearchCriteria(null, null, null, null), single).getTotalElements());
         return counts;
     }
 }

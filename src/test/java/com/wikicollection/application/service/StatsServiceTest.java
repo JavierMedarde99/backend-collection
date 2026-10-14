@@ -7,9 +7,11 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 
+import com.wikicollection.domain.port.out.AmiiboRepository;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.domain.port.out.DeckRepository;
+import com.wikicollection.domain.port.out.FunkoRepository;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.domain.port.out.MovieShowRepository;
@@ -43,6 +45,12 @@ class StatsServiceTest {
     @Mock
     private MovieShowRepository movieShowRepository;
 
+    @Mock
+    private FunkoRepository funkoRepository;
+
+    @Mock
+    private AmiiboRepository amiiboRepository;
+
     @InjectMocks
     private StatsService service;
 
@@ -61,11 +69,16 @@ class StatsServiceTest {
                 .thenReturn(new PageImpl<>(List.of(), pageable, 2));
         when(movieShowRepository.findByCriteria(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 4));
+        when(funkoRepository.search(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 8));
+        when(amiiboRepository.search(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 6));
 
         Map<String, Long> counts = service.getGlobalCounts();
 
         assertThat(counts).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "books", 10L, "games", 5L, "boardgames", 3L,
-                "magic", 7L, "decks", 2L, "movieshows", 4L));
+                "magic", 7L, "decks", 2L, "movieshows", 4L,
+                "funkos", 8L, "amiibos", 6L));
     }
 }
