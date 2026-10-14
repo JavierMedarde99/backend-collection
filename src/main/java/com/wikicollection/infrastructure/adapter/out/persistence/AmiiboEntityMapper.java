@@ -32,6 +32,8 @@ public class AmiiboEntityMapper {
                 .status(amiibo.getStatus())
                 .notes(amiibo.getNotes())
                 .dateAdded(amiibo.getDateAdded())
+                .acquisitionDate(amiibo.getAcquisitionDate())
+                .acquisitionPrice(amiibo.getAcquisitionPrice())
                 .build();
     }
 
@@ -55,6 +57,8 @@ public class AmiiboEntityMapper {
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
                 .dateAdded(entity.getDateAdded())
+                .acquisitionDate(entity.getAcquisitionDate())
+                .acquisitionPrice(entity.getAcquisitionPrice())
                 .build();
     }
 

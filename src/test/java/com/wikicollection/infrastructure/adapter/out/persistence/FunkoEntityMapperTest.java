@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.Funko;
@@ -32,6 +33,8 @@ class FunkoEntityMapperTest {
                 .status(FunkoStatus.OWNED)
                 .notes("Mi pop")
                 .dateAdded(LocalDate.of(2026, 10, 13))
+                .acquisitionDate(LocalDate.of(2024, 5, 1))
+                .acquisitionPrice(new BigDecimal("24.99"))
                 .build();
     }
 
@@ -55,6 +58,8 @@ class FunkoEntityMapperTest {
         assertThat(entity.getStatus()).isEqualTo(FunkoStatus.OWNED);
         assertThat(entity.getNotes()).isEqualTo("Mi pop");
         assertThat(entity.getDateAdded()).isEqualTo(LocalDate.of(2026, 10, 13));
+        assertThat(entity.getAcquisitionDate()).isEqualTo(LocalDate.of(2024, 5, 1));
+        assertThat(entity.getAcquisitionPrice()).isEqualByComparingTo("24.99");
     }
 
     @Test

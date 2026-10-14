@@ -2,6 +2,7 @@ package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,6 +37,8 @@ class AmiiboEntityMapperTest {
                 .status(AmiiboStatus.OWNED)
                 .notes("Mi amiibo")
                 .dateAdded(LocalDate.of(2026, 10, 13))
+                .acquisitionDate(LocalDate.of(2024, 5, 1))
+                .acquisitionPrice(new BigDecimal("14.50"))
                 .build();
     }
 
@@ -47,6 +50,8 @@ class AmiiboEntityMapperTest {
         assertThat(entity.getReleaseDateEu()).isEqualTo(LocalDate.of(2017, 6, 16));
         assertThat(entity.getReleaseDateJp()).isEqualTo(LocalDate.of(2018, 7, 20));
         assertThat(entity.getReleaseDateNa()).isEqualTo(LocalDate.of(2017, 6, 16));
+        assertThat(entity.getAcquisitionDate()).isEqualTo(LocalDate.of(2024, 5, 1));
+        assertThat(entity.getAcquisitionPrice()).isEqualByComparingTo("14.50");
     }
 
     @Test

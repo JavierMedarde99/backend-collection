@@ -25,6 +25,8 @@ public class AmiiboDtoMapper {
                 .status(request.status())
                 .notes(request.notes())
                 .dateAdded(request.dateAdded())
+                .acquisitionDate(request.acquisitionDate())
+                .acquisitionPrice(request.acquisitionPrice())
                 .build();
     }
 
@@ -46,6 +48,8 @@ public class AmiiboDtoMapper {
                 amiibo.getStatus(),
                 amiibo.getNotes(),
                 amiibo.getDateAdded(),
+                amiibo.getAcquisitionDate(),
+                amiibo.getAcquisitionPrice(),
                 UserOwnedResponse.from(amiibo.getUserOwned()));
     }
 

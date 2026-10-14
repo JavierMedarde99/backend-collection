@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -22,5 +23,7 @@ public record AmiiboRequest(
         List<String> compatibleGames,
         @NotNull(message = "El estado es obligatorio") AmiiboStatus status,
         String notes,
-        LocalDate dateAdded) {
+        LocalDate dateAdded,
+        LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice) {
 }

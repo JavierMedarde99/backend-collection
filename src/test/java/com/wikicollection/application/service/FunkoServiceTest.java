@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -119,6 +120,8 @@ class FunkoServiceTest {
                 .status(FunkoStatus.OWNED)
                 .notes("nuevo")
                 .dateAdded(LocalDate.of(2026, 10, 13))
+                .acquisitionDate(LocalDate.of(2024, 5, 1))
+                .acquisitionPrice(new BigDecimal("24.99"))
                 .build();
         when(funkoRepository.findById("fk1")).thenReturn(Optional.of(existing));
         when(funkoRepository.findByExternalId("44")).thenReturn(Optional.empty());
@@ -144,6 +147,8 @@ class FunkoServiceTest {
         assertThat(saved.getStatus()).isEqualTo(FunkoStatus.OWNED);
         assertThat(saved.getNotes()).isEqualTo("nuevo");
         assertThat(saved.getDateAdded()).isEqualTo(LocalDate.of(2026, 10, 13));
+        assertThat(saved.getAcquisitionDate()).isEqualTo(LocalDate.of(2024, 5, 1));
+        assertThat(saved.getAcquisitionPrice()).isEqualByComparingTo("24.99");
     }
 
     @Test

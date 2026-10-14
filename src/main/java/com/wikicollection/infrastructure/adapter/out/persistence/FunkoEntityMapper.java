@@ -30,6 +30,8 @@ public class FunkoEntityMapper {
                 .status(funko.getStatus())
                 .notes(funko.getNotes())
                 .dateAdded(funko.getDateAdded())
+                .acquisitionDate(funko.getAcquisitionDate())
+                .acquisitionPrice(funko.getAcquisitionPrice())
                 .build();
     }
 
@@ -56,6 +58,8 @@ public class FunkoEntityMapper {
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
                 .dateAdded(entity.getDateAdded())
+                .acquisitionDate(entity.getAcquisitionDate())
+                .acquisitionPrice(entity.getAcquisitionPrice())
                 .build();
     }
 }

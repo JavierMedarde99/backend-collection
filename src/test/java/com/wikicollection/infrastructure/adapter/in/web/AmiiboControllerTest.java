@@ -210,12 +210,14 @@ class AmiiboControllerTest {
         mockMvc.perform(put("/api/v1/amiibos/am1").with(user("u1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"externalId":"09d0030102bb0e02","name":"Nuevo","status":"WISHLIST","notes":"quimera"}
+                                {"externalId":"09d0030102bb0e02","name":"Nuevo","status":"WISHLIST","notes":"quimera","acquisitionDate":"2024-05-01","acquisitionPrice":14.5}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Nuevo"))
                 .andExpect(jsonPath("$.status").value("WISHLIST"))
-                .andExpect(jsonPath("$.notes").value("quimera"));
+                .andExpect(jsonPath("$.notes").value("quimera"))
+                .andExpect(jsonPath("$.acquisitionDate").value("2024-05-01"))
+                .andExpect(jsonPath("$.acquisitionPrice").value(14.5));
     }
 
     @Test
