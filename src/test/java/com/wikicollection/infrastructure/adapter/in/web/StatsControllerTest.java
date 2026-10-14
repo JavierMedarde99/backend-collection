@@ -30,12 +30,15 @@ class StatsControllerTest {
     void globalStats_isPublic() throws Exception {
         when(statsUseCase.getGlobalCounts()).thenReturn(Map.of(
                 "books", 10L, "games", 5L, "boardgames", 3L,
-                "magic", 7L, "decks", 2L, "movieshows", 4L));
+                "magic", 7L, "decks", 2L, "movieshows", 4L,
+                "funkos", 8L, "amiibos", 6L));
 
         mockMvc.perform(get("/api/v1/stats"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.collections.books").value(10))
                 .andExpect(jsonPath("$.collections.games").value(5))
-                .andExpect(jsonPath("$.collections.movieshows").value(4));
+                .andExpect(jsonPath("$.collections.movieshows").value(4))
+                .andExpect(jsonPath("$.collections.funkos").value(8))
+                .andExpect(jsonPath("$.collections.amiibos").value(6));
     }
 }
