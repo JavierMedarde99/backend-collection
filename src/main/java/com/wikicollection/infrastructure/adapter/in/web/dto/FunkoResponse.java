@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.FunkoStatus;
@@ -21,10 +22,13 @@ public record FunkoResponse(
         FunkoStatus status,
         String notes,
         LocalDate dateAdded,
+        LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice,
         UserOwnedResponse userOwned) {
 
     public FunkoResponse withoutPrivate() {
         return new FunkoResponse(id, externalId, name, series, number, category, exclusive, vaulted,
-                releaseYear, franchise, popType, rarityScore, imageUrl, status, null, dateAdded, userOwned);
+                releaseYear, franchise, popType, rarityScore, imageUrl, status, null, dateAdded,
+                acquisitionDate, acquisitionPrice, userOwned);
     }
 }

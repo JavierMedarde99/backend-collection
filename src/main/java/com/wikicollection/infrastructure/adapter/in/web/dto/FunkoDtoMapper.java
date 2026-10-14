@@ -29,6 +29,8 @@ public class FunkoDtoMapper {
                 .status(request.status())
                 .notes(request.notes())
                 .dateAdded(request.dateAdded())
+                .acquisitionDate(request.acquisitionDate())
+                .acquisitionPrice(request.acquisitionPrice())
                 .build();
     }
 
@@ -53,6 +55,8 @@ public class FunkoDtoMapper {
                 funko.getStatus(),
                 funko.getNotes(),
                 funko.getDateAdded(),
+                funko.getAcquisitionDate(),
+                funko.getAcquisitionPrice(),
                 UserOwnedResponse.from(funko.getUserOwned()));
     }
 

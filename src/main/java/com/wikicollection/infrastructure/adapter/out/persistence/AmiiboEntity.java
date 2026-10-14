@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -54,4 +55,6 @@ public class AmiiboEntity {
     private AmiiboStatus status;
     private String notes;
     private LocalDate dateAdded;
+    private LocalDate acquisitionDate;
+    private BigDecimal acquisitionPrice;
 }

@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -21,10 +22,13 @@ public record AmiiboResponse(
         AmiiboStatus status,
         String notes,
         LocalDate dateAdded,
+        LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice,
         UserOwnedResponse userOwned) {
 
     public AmiiboResponse withoutPrivate() {
         return new AmiiboResponse(id, externalId, name, character, amiiboSeries, gameSeries, amiiboType,
-                releaseDates, imageUrl, compatibleGames, status, null, dateAdded, userOwned);
+                releaseDates, imageUrl, compatibleGames, status, null, dateAdded,
+                acquisitionDate, acquisitionPrice, userOwned);
     }
 }

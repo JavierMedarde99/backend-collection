@@ -1,5 +1,6 @@
 package com.wikicollection.infrastructure.adapter.in.web.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.wikicollection.domain.model.FunkoStatus;
@@ -22,5 +23,7 @@ public record FunkoRequest(
         String imageUrl,
         @NotNull(message = "El estado es obligatorio") FunkoStatus status,
         String notes,
-        LocalDate dateAdded) {
+        LocalDate dateAdded,
+        LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice) {
 }

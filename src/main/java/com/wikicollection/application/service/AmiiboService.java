@@ -111,5 +111,7 @@ public class AmiiboService implements AmiiboUseCase {
         target.setStatus(source.getStatus());
         target.setNotes(source.getNotes());
         target.setDateAdded(source.getDateAdded());
+        target.setAcquisitionDate(source.getAcquisitionDate());
+        target.setAcquisitionPrice(source.getAcquisitionPrice());
     }
 }
