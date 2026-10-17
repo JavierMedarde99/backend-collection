@@ -1,6 +1,5 @@
 package com.wikicollection.application.service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -24,7 +23,7 @@ public class JwtService {
     private final String adminUsername;
 
     public JwtService(
-            @Value("${app.jwt.secret:clave-cambiar-en-produccion-min-256-bits}") String secret,
+            @Value("${app.jwt.secret:}") String secret,
             @Value("${app.jwt.access-token-expiration:86400000}") long accessExpirationMillis,
             @Value("${app.jwt.refresh-token-expiration:86400000}") long refreshExpirationMillis,
             @Value("${app.admin.username:admin}") String adminUsername) {
@@ -86,14 +85,23 @@ public class JwtService {
     }
 
     private static SecretKey toKey(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("Falta la variable de entorno JWT_SECRET: la aplicación no puede "
+                    + "arrancar sin un secreto de firma. Genera uno con "
+                    + "`openssl rand -base64 48` (>= 256 bits) y expórtalo antes de arrancar.");
+        }
         byte[] bytes;
         try {
             bytes = Decoders.BASE64.decode(secret);
         } catch (RuntimeException e) {
-            bytes = secret.getBytes(StandardCharsets.UTF_8);
+            throw new IllegalStateException("El secreto JWT (JWT_SECRET) no es Base64 válido: la aplicación no puede "
+                    + "arrancar sin un secreto de firma correcto. Genera uno con `openssl rand -base64 48` "
+                    + "(>= 256 bits) y expórtalo antes de arrancar.", e);
         }
         if (bytes.length < 32) {
-            throw new IllegalStateException("El secreto JWT debe tener al menos 256 bits");
+            throw new IllegalStateException("El secreto JWT (JWT_SECRET) debe tener al menos 256 bits: la "
+                    + "aplicación no puede arrancar con un secreto más corto. Genera uno con "
+                    + "`openssl rand -base64 48`.");
         }
         return Keys.hmacShaKeyFor(bytes);
     }
