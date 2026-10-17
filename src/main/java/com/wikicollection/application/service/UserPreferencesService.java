@@ -13,6 +13,7 @@ import com.wikicollection.domain.port.in.UserPreferencesUseCase;
 import com.wikicollection.domain.port.out.UserPreferencesRepository;
 import com.wikicollection.domain.port.out.UserRepository;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,8 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = { "userPreferencesDetail", "userActiveCollections", "userPreferenceFlags" },
+            allEntries = true)
     public UserPreferences updatePreferences(String userId, Map<String, Boolean> activeCollections,
                                              Map<String, CollectionVisibility> visibility) {
         requireUser(userId);
@@ -50,6 +53,8 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = { "userPreferencesDetail", "userActiveCollections", "userPreferenceFlags" },
+            allEntries = true)
     public UserPreferences setActiveCollections(String userId, Map<String, Boolean> collections) {
         requireUser(userId);
         validateKeys(collections.keySet());
@@ -60,6 +65,8 @@ public class UserPreferencesService implements UserPreferencesUseCase {
     }
 
     @Override
+    @CacheEvict(cacheNames = { "userPreferencesDetail", "userActiveCollections", "userPreferenceFlags" },
+            allEntries = true)
     public UserPreferences setCollectionVisibility(String userId, Map<String, CollectionVisibility> visibility) {
         requireUser(userId);
         validateKeys(visibility.keySet());
