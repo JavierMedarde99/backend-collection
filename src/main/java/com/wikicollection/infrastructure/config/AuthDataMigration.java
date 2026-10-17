@@ -1,13 +1,17 @@
 package com.wikicollection.infrastructure.config;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.port.out.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -25,6 +29,8 @@ public class AuthDataMigration implements ApplicationRunner {
     private static final List<String> COLLECTIONS =
             List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows");
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,14 +38,28 @@ public class AuthDataMigration implements ApplicationRunner {
     private final String adminUsername;
     private final String adminPassword;
     private final String adminEmail;
+    private final Supplier<String> passwordGenerator;
 
+    @Autowired
     public AuthDataMigration(MongoTemplate mongoTemplate,
                              UserRepository userRepository,
                              PasswordEncoder passwordEncoder,
                              @Value("${app.migration.enabled:true}") boolean enabled,
                              @Value("${app.admin.username:admin}") String adminUsername,
-                             @Value("${app.admin.password:admin123}") String adminPassword,
+                             @Value("${app.admin.password:}") String adminPassword,
                              @Value("${app.admin.email:admin@local.dev}") String adminEmail) {
+        this(mongoTemplate, userRepository, passwordEncoder, enabled, adminUsername,
+                adminPassword, adminEmail, AuthDataMigration::generatePassword);
+    }
+
+    AuthDataMigration(MongoTemplate mongoTemplate,
+                      UserRepository userRepository,
+                      PasswordEncoder passwordEncoder,
+                      boolean enabled,
+                      String adminUsername,
+                      String adminPassword,
+                      String adminEmail,
+                      Supplier<String> passwordGenerator) {
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -47,6 +67,7 @@ public class AuthDataMigration implements ApplicationRunner {
         this.adminUsername = adminUsername;
         this.adminPassword = adminPassword;
         this.adminEmail = adminEmail;
+        this.passwordGenerator = passwordGenerator;
     }
 
     @Override
@@ -61,17 +82,44 @@ public class AuthDataMigration implements ApplicationRunner {
                 mongoTemplate.updateMulti(missing, system, collection);
             }
             if (!userRepository.existsByUsername(adminUsername)) {
+                String password = adminPassword == null || adminPassword.isBlank()
+                        ? passwordGenerator.get()
+                        : adminPassword;
                 userRepository.save(User.builder()
                         .username(adminUsername)
                         .email(adminEmail)
-                        .password(passwordEncoder.encode(adminPassword))
+                        .password(passwordEncoder.encode(password))
                         .displayName("Administrador")
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build());
+                logAdminPassword(adminPassword, password);
             }
         } catch (RuntimeException e) {
             log.warn("Migración de auth omitida (Mongo no disponible): {}", e.getMessage());
         }
+    }
+
+    private void logAdminPassword(String configuredPassword, String usedPassword) {
+        if (configuredPassword == null || configuredPassword.isBlank()) {
+            log.warn("""
+                    ============================================================
+                    Se ha creado la cuenta de administrador '{}' con una
+                    contraseña ALEATORIA generada en este arranque:
+                        {}
+                    Anótala AHORA: no se vuelve a imprimir. Para fijar una
+                    propia, exporta ADMIN_PASSWORD antes de arrancar.
+                    ============================================================""", adminUsername, usedPassword);
+        } else {
+            log.info("Cuenta de administrador '{}' creada con la contraseña configurada en ADMIN_PASSWORD.",
+                    adminUsername);
+        }
+    }
+
+    /** Genera un secreto de 32 bytes aleatorios (256 bits) en Base64. */
+    static String generatePassword() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }
