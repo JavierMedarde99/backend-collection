@@ -53,9 +53,8 @@ public class CacheConfig {
     public static final String USER_MAGIC_CARDS_LIST = "userMagicCardsList";
     public static final String USER_DECKS_LIST = "userDecksList";
     public static final String USER_MOVIE_SHOWS_LIST = "userMovieShowsList";
-    public static final String USER_STREAMS_LIST = "userStreamsList";
-
-    public static final String USER_PREFERENCES_DETAIL = "userPreferencesDetail";
+    public static final String USER_AMIIBOS_LIST = "userAmiibosList";
+    public static final String USER_FUNKOS_LIST = "userFunkosList";
     public static final String USER_ACTIVE_COLLECTIONS = "userActiveCollections";
     public static final String USER_PREFERENCE_FLAGS = "userPreferenceFlags";
 
@@ -70,7 +69,7 @@ public class CacheConfig {
             USER_PROFILE_DETAIL,
             BOOK_LIST, GAME_LIST, BOARDGAME_LIST, MOVIE_LIST, MAGIC_LIST, DECK_LIST, AMIIBO_LIST, FUNKO_LIST,
             USER_BOOKS_LIST, USER_GAMES_LIST, USER_BOARDGAMES_LIST, USER_MAGIC_CARDS_LIST, USER_DECKS_LIST,
-            USER_MOVIE_SHOWS_LIST, USER_STREAMS_LIST,
+            USER_MOVIE_SHOWS_LIST, USER_STREAMS_LIST, USER_AMIIBOS_LIST, USER_FUNKOS_LIST,
             USER_PREFERENCES_DETAIL, USER_ACTIVE_COLLECTIONS, USER_PREFERENCE_FLAGS,
             PLATFORM_SEARCH,
             MAGIC_PRINTINGS,
@@ -111,6 +110,8 @@ public class CacheConfig {
             Map.entry(USER_DECKS_LIST, "users"),
             Map.entry(USER_MOVIE_SHOWS_LIST, "users"),
             Map.entry(USER_STREAMS_LIST, "users"),
+            Map.entry(USER_AMIIBOS_LIST, "users"),
+            Map.entry(USER_FUNKOS_LIST, "users"),
             Map.entry(USER_PREFERENCES_DETAIL, "preferences"),
             Map.entry(USER_ACTIVE_COLLECTIONS, "preferences"),
             Map.entry(USER_PREFERENCE_FLAGS, "preferences"),

@@ -1,8 +1,10 @@
 package com.wikicollection.domain.port.in;
 
+import com.wikicollection.domain.model.Amiibo;
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.Book;
 import com.wikicollection.domain.model.Deck;
+import com.wikicollection.domain.model.Funko;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MovieShow;
@@ -26,4 +28,8 @@ public interface UserProfileUseCase {
     Page<Deck> getPublicDecks(String username, Pageable pageable);
 
     Page<MovieShow> getPublicMovieShows(String username, Pageable pageable);
+
+    Page<Amiibo> getPublicAmiibos(String username, Pageable pageable);
+
+    Page<Funko> getPublicFunkos(String username, Pageable pageable);
 }

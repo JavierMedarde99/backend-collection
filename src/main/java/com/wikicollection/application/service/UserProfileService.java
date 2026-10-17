@@ -1,6 +1,8 @@
 package com.wikicollection.application.service;
 
 import com.wikicollection.application.exception.UserNotFoundException;
+import com.wikicollection.domain.model.Amiibo;
+import com.wikicollection.domain.model.AmiiboSearchCriteria;
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.Book;
@@ -8,6 +10,8 @@ import com.wikicollection.domain.model.BookSearchCriteria;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.CollectionVisibility;
 import com.wikicollection.domain.model.Deck;
+import com.wikicollection.domain.model.Funko;
+import com.wikicollection.domain.model.FunkoSearchCriteria;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCard;
@@ -17,9 +21,11 @@ import com.wikicollection.domain.model.MovieShow;
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.model.UserPreferences;
 import com.wikicollection.domain.port.in.UserProfileUseCase;
+import com.wikicollection.domain.port.out.AmiiboRepository;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.domain.port.out.DeckRepository;
+import com.wikicollection.domain.port.out.FunkoRepository;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.domain.port.out.MovieShowRepository;
@@ -42,6 +48,8 @@ public class UserProfileService implements UserProfileUseCase {
     private final MagicCardRepository magicCardRepository;
     private final DeckRepository deckRepository;
     private final MovieShowRepository movieShowRepository;
+    private final AmiiboRepository amiiboRepository;
+    private final FunkoRepository funkoRepository;
 
     public UserProfileService(UserProfilePort userProfilePort,
                               UserPreferencesRepository preferencesRepository,
@@ -50,7 +58,9 @@ public class UserProfileService implements UserProfileUseCase {
                               BoardGameRepository boardGameRepository,
                               MagicCardRepository magicCardRepository,
                               DeckRepository deckRepository,
-                              MovieShowRepository movieShowRepository) {
+                              MovieShowRepository movieShowRepository,
+                              AmiiboRepository amiiboRepository,
+                              FunkoRepository funkoRepository) {
         this.userProfilePort = userProfilePort;
         this.preferencesRepository = preferencesRepository;
         this.bookRepository = bookRepository;
@@ -59,6 +69,8 @@ public class UserProfileService implements UserProfileUseCase {
         this.magicCardRepository = magicCardRepository;
         this.deckRepository = deckRepository;
         this.movieShowRepository = movieShowRepository;
+        this.amiiboRepository = amiiboRepository;
+        this.funkoRepository = funkoRepository;
     }
 
     @Override
@@ -130,6 +142,28 @@ public class UserProfileService implements UserProfileUseCase {
         }
         return movieShowRepository.findByCriteria(
                 new MovieSearchCriteria(null, null, null, null, user.getId(), null), pageable);
+    }
+
+    @Override
+    @Cacheable(cacheNames = "userAmiibosList", key = "T(java.util.Objects).hash(#username, #pageable)")
+    public Page<Amiibo> getPublicAmiibos(String username, Pageable pageable) {
+        User user = findUser(username);
+        if (!isVisible(user.getId(), CollectionType.AMIIBOS)) {
+            return Page.empty(pageable);
+        }
+        return amiiboRepository.search(
+                new AmiiboSearchCriteria(null, null, user.getId(), null), pageable);
+    }
+
+    @Override
+    @Cacheable(cacheNames = "userFunkosList", key = "T(java.util.Objects).hash(#username, #pageable)")
+    public Page<Funko> getPublicFunkos(String username, Pageable pageable) {
+        User user = findUser(username);
+        if (!isVisible(user.getId(), CollectionType.FUNKOS)) {
+            return Page.empty(pageable);
+        }
+        return funkoRepository.search(
+                new FunkoSearchCriteria(null, null, user.getId(), null), pageable);
     }
 
     private User findUser(String username) {

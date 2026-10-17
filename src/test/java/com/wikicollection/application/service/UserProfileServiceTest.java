@@ -22,6 +22,10 @@ import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.domain.port.out.MovieShowRepository;
 import com.wikicollection.domain.port.out.UserPreferencesRepository;
 import com.wikicollection.domain.port.out.UserProfilePort;
+import com.wikicollection.domain.model.AmiiboSearchCriteria;
+import com.wikicollection.domain.model.FunkoSearchCriteria;
+import com.wikicollection.domain.port.out.AmiiboRepository;
+import com.wikicollection.domain.port.out.FunkoRepository;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +62,12 @@ class UserProfileServiceTest {
 
     @Mock
     private MovieShowRepository movieShowRepository;
+
+    @Mock
+    private AmiiboRepository amiiboRepository;
+
+    @Mock
+    private FunkoRepository funkoRepository;
 
     @InjectMocks
     private UserProfileService service;
@@ -117,5 +127,55 @@ class UserProfileServiceTest {
         service.getPublicBooks("javi", PageRequest.of(0, 20));
 
         verify(bookRepository).search(any(BookSearchCriteria.class), any());
+    }
+
+    @Test
+    void getPublicAmiibos_returnsEmpty_whenPrivate() {
+        when(userProfilePort.findByUsername("javi")).thenReturn(Optional.of(sampleUser()));
+        UserPreferences prefs = UserPreferences.defaults("u1");
+        prefs.getCollectionVisibility().put("amiibos", CollectionVisibility.PRIVATE);
+        when(preferencesRepository.findByUserId("u1")).thenReturn(Optional.of(prefs));
+
+        assertThat(service.getPublicAmiibos("javi", PageRequest.of(0, 20))).isEmpty();
+    }
+
+    @Test
+    void getPublicAmiibos_searches_whenPublic() {
+        when(userProfilePort.findByUsername("javi")).thenReturn(Optional.of(sampleUser()));
+        UserPreferences prefs = UserPreferences.defaults("u1");
+        prefs.getCollectionVisibility().put("amiibos", CollectionVisibility.PUBLIC);
+        when(preferencesRepository.findByUserId("u1")).thenReturn(Optional.of(prefs));
+        when(amiiboRepository.search(any(AmiiboSearchCriteria.class), any())).thenReturn(Page.empty());
+
+        service.getPublicAmiibos("javi", PageRequest.of(0, 20));
+
+        ArgumentCaptor<AmiiboSearchCriteria> captor = ArgumentCaptor.forClass(AmiiboSearchCriteria.class);
+        verify(amiiboRepository).search(captor.capture(), any());
+        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
+    }
+
+    @Test
+    void getPublicFunkos_returnsEmpty_whenPrivate() {
+        when(userProfilePort.findByUsername("javi")).thenReturn(Optional.of(sampleUser()));
+        UserPreferences prefs = UserPreferences.defaults("u1");
+        prefs.getCollectionVisibility().put("funkos", CollectionVisibility.PRIVATE);
+        when(preferencesRepository.findByUserId("u1")).thenReturn(Optional.of(prefs));
+
+        assertThat(service.getPublicFunkos("javi", PageRequest.of(0, 20))).isEmpty();
+    }
+
+    @Test
+    void getPublicFunkos_searches_whenPublic() {
+        when(userProfilePort.findByUsername("javi")).thenReturn(Optional.of(sampleUser()));
+        UserPreferences prefs = UserPreferences.defaults("u1");
+        prefs.getCollectionVisibility().put("funkos", CollectionVisibility.PUBLIC);
+        when(preferencesRepository.findByUserId("u1")).thenReturn(Optional.of(prefs));
+        when(funkoRepository.search(any(FunkoSearchCriteria.class), any())).thenReturn(Page.empty());
+
+        service.getPublicFunkos("javi", PageRequest.of(0, 20));
+
+        ArgumentCaptor<FunkoSearchCriteria> captor = ArgumentCaptor.forClass(FunkoSearchCriteria.class);
+        verify(funkoRepository).search(captor.capture(), any());
+        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
     }
 }
