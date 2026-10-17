@@ -4,12 +4,14 @@ import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.index.PartialIndexFilter;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,6 +24,17 @@ public class MongoIndexMigration implements ApplicationRunner {
 
     private static final List<String> OWNER_COLLECTIONS =
             List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows", "amiibos", "funkos");
+
+    /**
+     * Colecciones cuyo servicio valida la unicidad de {@code externalId} en cada operación y
+     * lanza 409 en duplicado. El índice único es el respaldo que elimina la carrera entre esa
+     * comprobación y la escritura.
+     *
+     * <p>Se excluyen {@code games} y {@code board_games} porque sus servicios no validan
+     * unicidad: añadir el índice cambiaría el comportamiento y podría romper datos existentes.
+     */
+    private static final List<String> EXTERNAL_ID_COLLECTIONS =
+            List.of("books", "movie_shows", "amiibos", "funkos");
 
     private final MongoTemplate mongoTemplate;
     private final boolean enabled;
@@ -48,8 +61,30 @@ public class MongoIndexMigration implements ApplicationRunner {
             for (String collection : OWNER_COLLECTIONS) {
                 mongoTemplate.indexOps(collection).ensureIndex(ownerIndex);
             }
+            for (String collection : EXTERNAL_ID_COLLECTIONS) {
+                mongoTemplate.indexOps(collection).ensureIndex(partialUniqueExternalIdIndex());
+            }
         } catch (RuntimeException e) {
             log.warn("Creación de índices omitida (Mongo no disponible): {}", e.getMessage());
         }
+    }
+
+    /**
+     * Índice único <strong>parcial</strong> sobre {@code externalId}: solo indexa los valores
+     * string no vacíos.
+     *
+     * <p>Un índice único normal haría que todos los documentos sin {@code externalId} (los
+     * añadidos a mano, sin correspondencia en el catálogo externo) colisionaran entre sí en el
+     * valor {@code null}, porque Mongo trata los campos ausentes como {@code null} a efectos de
+     * unicidad. El filtro parcial descarta esos documentos del índice, así que solo compiten
+     * los identificadores externos reales.
+     */
+    private static Index partialUniqueExternalIdIndex() {
+        Document nonBlankString = new Document("$type", "string").append("$gt", "");
+        return new Index()
+                .on("externalId", Sort.Direction.ASC)
+                .unique()
+                .named("externalId_unique_non_blank")
+                .partial(PartialIndexFilter.of(new Document("externalId", nonBlankString)));
     }
 }
