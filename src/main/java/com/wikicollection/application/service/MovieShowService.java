@@ -28,7 +28,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -98,7 +97,6 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = "movieList", allEntries = true)
     public MovieShow save(MovieShow movieShow, String ownerId) {
         movieShow.setOwnerId(ownerId);
@@ -111,7 +109,6 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = {"movieDetail", "movieList"}, allEntries = true)
     public MovieShow update(String id, MovieShow updates, String userId) {
         MovieShow existing = findById(id);
@@ -134,7 +131,6 @@ public class MovieShowService implements MovieShowUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = {"movieDetail", "movieList"}, allEntries = true)
     public MovieShow refreshStreamingProviders(String id, String userId) {
         MovieShow existing = findById(id);

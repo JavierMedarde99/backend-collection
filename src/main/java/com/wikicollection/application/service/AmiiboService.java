@@ -14,7 +14,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AmiiboService implements AmiiboUseCase {
@@ -51,7 +50,6 @@ public class AmiiboService implements AmiiboUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = "amiiboList", allEntries = true)
     public Amiibo save(Amiibo amiibo, String ownerId) {
         amiibo.setOwnerId(ownerId);
@@ -61,7 +59,6 @@ public class AmiiboService implements AmiiboUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = {"amiiboDetail", "amiiboList"}, allEntries = true)
     public Amiibo update(String id, Amiibo updates, String userId) {
         Amiibo existing = findById(id);

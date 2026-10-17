@@ -34,7 +34,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class MovieShowServiceTest {
@@ -189,14 +188,6 @@ class MovieShowServiceTest {
         assertThatThrownBy(() -> movieShowService.save(show, "u1"))
                 .isInstanceOf(MovieShowConflictException.class)
                 .hasMessageContaining("550");
-    }
-
-    @Test
-    void saveAndUpdate_areTransactional() throws Exception {
-        assertThat(MovieShowService.class.getMethod("save", MovieShow.class, String.class).isAnnotationPresent(Transactional.class))
-                .isTrue();
-        assertThat(MovieShowService.class.getMethod("update", String.class, MovieShow.class, String.class)
-                .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
     @Test
