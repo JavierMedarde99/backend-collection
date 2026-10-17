@@ -18,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,7 +79,6 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = "bookList", allEntries = true)
     public Book save(Book book, String ownerId) {
         book.setOwnerId(ownerId);
@@ -93,7 +91,6 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = {"bookDetail", "bookList"}, allEntries = true)
     public Book update(String id, Book updates, String userId) {
         Book existing = findById(id);

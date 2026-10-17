@@ -32,7 +32,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceTest {
@@ -211,14 +210,6 @@ class BookServiceTest {
         assertThatThrownBy(() -> bookService.save(book, "u1"))
                 .isInstanceOf(BookConflictException.class)
                 .hasMessageContaining("gb123");
-    }
-
-    @Test
-    void saveAndUpdate_areTransactional() throws Exception {
-        assertThat(BookService.class.getMethod("save", Book.class, String.class).isAnnotationPresent(Transactional.class))
-                .isTrue();
-        assertThat(BookService.class.getMethod("update", String.class, Book.class, String.class)
-                .isAnnotationPresent(Transactional.class)).isTrue();
     }
 
     @Test

@@ -14,7 +14,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FunkoService implements FunkoUseCase {
@@ -51,7 +50,6 @@ public class FunkoService implements FunkoUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = "funkoList", allEntries = true)
     public Funko save(Funko funko, String ownerId) {
         funko.setOwnerId(ownerId);
@@ -61,7 +59,6 @@ public class FunkoService implements FunkoUseCase {
     }
 
     @Override
-    @Transactional
     @CacheEvict(cacheNames = {"funkoDetail", "funkoList"}, allEntries = true)
     public Funko update(String id, Funko updates, String userId) {
         Funko existing = findById(id);

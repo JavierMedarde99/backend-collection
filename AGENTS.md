@@ -212,6 +212,21 @@ de `imageUrl != null`.
 - El registro de jobs **no** va en `CacheConfig.CACHE_NAMES`: es un `Cache` de Caffeine consultado
   directamente por `DeckImportJobStore`.
 
+## Transacciones en MongoDB
+
+**No uses `@Transactional` en los servicios de colección.** El proyecto no declara ningún
+`PlatformTransactionManager`, así que la anotación no hace nada: Spring no abre transacción y
+cada escritura se ejecuta por separado. Mantenerla da una falsa sensación de atomicidad.
+
+La atomicidad real la da Mongo a nivel de **documento** (una escritura sobre un documento es
+atómica por sí misma), que es exactamente el patrón de todos los servicios.
+
+`TransactionalPolicyTest` es el guardián: escanea `application/service` y falla si aparece
+cualquier `@Transactional`. Si alguna operación llega a necesitar varias escrituras atómicas
+en distintos documentos, hay que declarar `MongoTransactionManager` y **exigir replica set**
+(tanto en local como en producción) antes de volver a usar la anotación; en ese caso,
+actualiza el test y documenta el requisito aquí.
+
 ## Git workflow
 
 Work happens on feature branches (`feat/*`, `fix/*`) opened as PRs against `main`; each PR is linked to an issue (`Closes #N`). Keep `mvn verify` green before opening a PR.
