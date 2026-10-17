@@ -3,6 +3,7 @@ package com.wikicollection.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import com.wikicollection.domain.model.User;
@@ -64,13 +65,48 @@ class JwtServiceTest {
     @Test
     void shortSecret_rejected() {
         assertThatThrownBy(() -> new JwtService("corta", 900000, 604800000, "admin"))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("base64");
     }
 
     @Test
-    void defaultSecret_acceptedAsRawBytes() {
-        JwtService withDefault = new JwtService("clave-cambiar-en-produccion-min-256-bits", 900000, 604800000, "admin");
+    void shortButValidBase64Secret_rejected() {
+        String shortBase64 = Base64.getEncoder().encodeToString("corta".getBytes());
 
-        assertThat(withDefault.isTokenValid(withDefault.generateAccessToken(sampleUser()))).isTrue();
+        assertThatThrownBy(() -> new JwtService(shortBase64, 900000, 604800000, "admin"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("256");
+    }
+
+    @Test
+    void blankSecret_rejectedWithActionableMessage() {
+        assertThatThrownBy(() -> new JwtService("", 900000, 604800000, "admin"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JWT_SECRET");
+    }
+
+    @Test
+    void whitespaceOnlySecret_rejectedWithActionableMessage() {
+        assertThatThrownBy(() -> new JwtService("   ", 900000, 604800000, "admin"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JWT_SECRET");
+    }
+
+    @Test
+    void nonBase64Secret_rejectedInsteadOfBeingAcceptedAsRawBytes() {
+        assertThatThrownBy(() -> new JwtService("clave-cambiar-en-produccion-min-256-bits", 900000, 604800000, "admin"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("base64");
+    }
+
+    @Test
+    void applicationProperties_declaresNoDefaultJwtSecret() throws Exception {
+        String properties = new String(
+                JwtService.class.getResourceAsStream("/application.properties").readAllBytes(),
+                StandardCharsets.UTF_8);
+
+        assertThat(properties)
+                .as("El secreto JWT no puede tener valor por defecto hardcodeado (#476)")
+                .contains("app.jwt.secret=${JWT_SECRET:}");
     }
 }

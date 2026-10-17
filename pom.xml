@@ -116,6 +116,21 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!--
+                        Los tests de contexto (@SpringBootTest) necesitan un secreto JWT >= 256 bits
+                        porque la app ya no arranca sin él (issue #476). Se inyecta como propiedad de
+                        sistema en lugar de crear src/test/resources/application.properties, que
+                        sombrearía el fichero de main y perdería todas las demás propiedades.
+                    -->
+                    <systemPropertyVariables>
+                        <JWT_SECRET>dGVzdC1zZWNyZXQtamV3dC1wb3J0YWJsZS0zMi1ieXRlcy0wMTIz</JWT_SECRET>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>

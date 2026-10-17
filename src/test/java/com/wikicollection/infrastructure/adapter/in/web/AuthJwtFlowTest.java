@@ -29,8 +29,13 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class AuthJwtFlowTest {
 
-    /** Secreto por defecto de application.properties: el JwtService del contexto lo usa. */
-    private static final String APP_DEFAULT_SECRET = "clave-cambiar-en-produccion-min-256-bits";
+    /**
+     * Secreto con el que arranca el JwtService del contexto: lo inyecta surefire como propiedad de
+     * sistema (ver pom.xml). Un test que emita tokens debe firmar con el mismo, porque ya no hay
+     * secreto por defecto en application.properties (#476).
+     */
+    private static final String APP_SECRET = System.getProperty(
+            "JWT_SECRET", "c2VncmV0b2RlLXRlc3QtZGUtMzIgYnl0ZXMtMDAwMDAwMDAwMDA=");
 
     @MockitoBean
     private com.wikicollection.application.service.OwnerResolver ownerResolver;
@@ -103,7 +108,7 @@ class AuthJwtFlowTest {
 
     @Test
     void expiredToken_returns401() throws Exception {
-        JwtService expiredIssuer = new JwtService(APP_DEFAULT_SECRET, -1000, -1000, "admin");
+        JwtService expiredIssuer = new JwtService(APP_SECRET, -1000, -1000, "admin");
         String expired = expiredIssuer.generateAccessToken(sampleUser());
 
         mockMvc.perform(post("/api/v1/books")
