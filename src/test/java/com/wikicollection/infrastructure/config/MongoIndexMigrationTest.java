@@ -72,6 +72,28 @@ class MongoIndexMigrationTest {
     }
 
     @Test
+    void run_createsParentIndexOnBoardGames() {
+        IndexOperations otherOps = mock(IndexOperations.class);
+        IndexOperations boardGamesOps = mock(IndexOperations.class);
+        MongoTemplate mongoTemplate = mock(MongoTemplate.class);
+        when(mongoTemplate.indexOps(any(String.class))).thenReturn(otherOps);
+        when(mongoTemplate.indexOps("board_games")).thenReturn(boardGamesOps);
+        ArgumentCaptor<Index> captor = ArgumentCaptor.forClass(Index.class);
+
+        new MongoIndexMigration(mongoTemplate, true).run(null);
+
+        verify(boardGamesOps, atLeastOnce()).ensureIndex(captor.capture());
+        assertThat(captor.getAllValues())
+                .filteredOn(index -> index.getIndexKeys().containsKey("parentId"))
+                .singleElement()
+                .satisfies(index -> {
+                    assertThat(index.getIndexKeys().keySet()).containsExactly("ownerId", "parentId");
+                    assertThat(index.getIndexKeys().get("ownerId")).isEqualTo(1);
+                    assertThat(index.getIndexKeys().get("parentId")).isEqualTo(1);
+                });
+    }
+
+    @Test
     void run_doesNothing_whenDisabled() {
         MongoTemplate mongoTemplate = mock(MongoTemplate.class);
 

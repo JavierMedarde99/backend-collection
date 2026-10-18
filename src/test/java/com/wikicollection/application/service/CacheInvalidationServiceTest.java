@@ -81,6 +81,8 @@ class CacheInvalidationServiceTest {
     private MagicCardService magicCardService;
     @Autowired
     private BoardGameService boardGameService;
+    @Autowired
+    private BoardGameExpansionService boardGameExpansionService;
 
     @Autowired
     private CacheManager cacheManager;
@@ -99,6 +101,8 @@ class CacheInvalidationServiceTest {
     private BoardGameRepository boardGameRepository;
     @MockitoBean
     private ExternalMagicCardCatalogClient magicCardCatalogClient;
+    @MockitoBean
+    private com.wikicollection.domain.port.out.ExternalBoardGameCatalogClient bggXmlClient;
     @MockitoBean
     private OwnerResolver ownerResolver;
 
@@ -308,8 +312,46 @@ class CacheInvalidationServiceTest {
     }
 
     @Test
+    void stats_isEvicted_afterDelete() {
+        BoardGame game = BoardGame.builder().id("bg1").ownerId(OWNER).title("Catan")
+                .status(BoardGameStatus.OWNED).build();
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
+        cacheManager.getCache("stats").put("global", "stale");
+
+        boardGameService.delete("bg1", OWNER);
+
+        assertThat(cacheManager.getCache("stats").get("global")).isNull();
+    }
+
+    @Test
+    void boardGameAndStatsCaches_areEvicted_afterAddExpansions() {
+        BoardGame base = BoardGame.builder().id("bg1").ownerId(OWNER).title("Arkham Horror: The Card Game")
+                .bggId("205637").status(BoardGameStatus.OWNED).build();
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(base));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn(OWNER, List.of("926"))).thenReturn(List.of());
+        when(bggXmlClient.findByBggIds(List.of("926"))).thenReturn(List.of(expansionInfo("926")));
+
+        cacheManager.getCache("stats").put("global", "stale");
+        cacheManager.getCache("boardgameList").put("some-list", "stale");
+        cacheManager.getCache("boardgameDetail").put("bg1", "stale");
+
+        boardGameExpansionService.addExpansions("bg1", List.of("926"), OWNER);
+
+        assertThat(cacheManager.getCache("stats").get("global")).isNull();
+        assertThat(cacheManager.getCache("boardgameList").get("some-list")).isNull();
+        assertThat(cacheManager.getCache("boardgameDetail").get("bg1")).isNull();
+    }
+
+    private com.wikicollection.domain.model.BoardGameExpansionInfo expansionInfo(String bggId) {
+        return new com.wikicollection.domain.model.BoardGameExpansionInfo(
+                bggId, "Expansión " + bggId, null, 2017, 2, 4, 30, 60,
+                null, List.of(), List.of(), List.of(), null, null, null,
+                com.wikicollection.domain.model.BoardGameType.BOARDGAME_EXPANSION, List.of("205637"));
+    }
+
+    @Test
     void boardGameList_isEvicted_afterSave() {
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null, null);
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 

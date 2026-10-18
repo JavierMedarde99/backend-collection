@@ -39,6 +39,9 @@ public class BoardGameEntityMapper {
                 .lastPlayedDate(boardGame.getLastPlayedDate())
                 .difficulty(boardGame.getDifficulty())
                 .acquisitionPrice(boardGame.getAcquisitionPrice())
+                .bggType(boardGame.getBggType())
+                .parentId(boardGame.getParentId())
+                .parentTitle(boardGame.getParentTitle())
                 .build();
     }
 
@@ -74,6 +77,9 @@ public class BoardGameEntityMapper {
                 .lastPlayedDate(entity.getLastPlayedDate())
                 .difficulty(entity.getDifficulty())
                 .acquisitionPrice(entity.getAcquisitionPrice())
+                .bggType(entity.getBggType())
+                .parentId(entity.getParentId())
+                .parentTitle(entity.getParentTitle())
                 .build();
     }
 }

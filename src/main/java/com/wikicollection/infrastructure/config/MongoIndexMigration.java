@@ -64,6 +64,10 @@ public class MongoIndexMigration implements ApplicationRunner {
             for (String collection : EXTERNAL_ID_COLLECTIONS) {
                 mongoTemplate.indexOps(collection).ensureIndex(partialUniqueExternalIdIndex());
             }
+            // «mis expansiones de este base»: consulta frecuente desde la ficha.
+            mongoTemplate.indexOps("board_games")
+                    .ensureIndex(new Index().on("ownerId", Sort.Direction.ASC)
+                            .on("parentId", Sort.Direction.ASC));
         } catch (RuntimeException e) {
             log.warn("Creación de índices omitida (Mongo no disponible): {}", e.getMessage());
         }

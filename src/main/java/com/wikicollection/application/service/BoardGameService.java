@@ -3,6 +3,7 @@ package com.wikicollection.application.service;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.port.in.BoardGameUseCase;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
@@ -55,7 +56,7 @@ public class BoardGameService implements BoardGameUseCase {
     @Cacheable(cacheNames = "boardgameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<BoardGame> search(BoardGameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.BOARDGAMES, owner, viewerId);
-        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return boardGameRepository.search(new BoardGameSearchCriteria(criteria.name(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), criteria.type()), pageable);
     }
 
     @Override
@@ -83,10 +84,14 @@ public class BoardGameService implements BoardGameUseCase {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"boardgameDetail", "boardgameList"}, allEntries = true)
+    @CacheEvict(cacheNames = {"boardgameDetail", "boardgameList", "stats"}, allEntries = true)
     public void delete(String id, String userId) {
         BoardGame existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
+        if (existing.getBggType() != BoardGameType.BOARDGAME_EXPANSION) {
+            // Un base no puede dejar sus expansiones huérfanas: se borran primero.
+            boardGameRepository.deleteByOwnerIdAndParentId(existing.getOwnerId(), id);
+        }
         boardGameRepository.deleteById(id);
     }
 

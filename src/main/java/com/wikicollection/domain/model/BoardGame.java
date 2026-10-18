@@ -46,4 +46,7 @@ public class BoardGame {
     private LocalDate lastPlayedDate;
     private Difficulty difficulty;
     private BigDecimal acquisitionPrice;
+    private BoardGameType bggType;
+    private String parentId;
+    private String parentTitle;
 }

@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
 import org.springframework.data.domain.Page;
@@ -72,6 +73,14 @@ public class BoardGamePersistenceAdapter implements BoardGameRepository {
         if (criteria.hasExcludeOwnerIds()) {
             query.addCriteria(Criteria.where("ownerId").nin(criteria.excludeOwnerIds()));
         }
+        if (criteria.isBaseOnly()) {
+            // Los registros antiguos no tienen tipo: son bases, no expansiones.
+            query.addCriteria(new Criteria().orOperator(
+                    Criteria.where("bggType").is(null),
+                    Criteria.where("bggType").is(BoardGameType.BOARDGAME)));
+        } else if (criteria.isExpansionOnly()) {
+            query.addCriteria(Criteria.where("bggType").is(BoardGameType.BOARDGAME_EXPANSION));
+        }
         return query;
     }
 
@@ -101,5 +110,32 @@ public class BoardGamePersistenceAdapter implements BoardGameRepository {
                 new Query(Criteria.where("ownerId").is(ownerId)),
                 new Update().set("userOwned.ownerName", ownerName),
                 BoardGameEntity.class);
+    }
+
+    @Override
+    public Optional<BoardGame> findByOwnerIdAndBggId(String ownerId, String bggId) {
+        return springDataBoardGameRepository.findByOwnerIdAndBggId(ownerId, bggId).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<BoardGame> findByOwnerIdAndBggIdIn(String ownerId, List<String> bggIds) {
+        if (bggIds == null || bggIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataBoardGameRepository.findByOwnerIdAndBggIdIn(ownerId, bggIds).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<BoardGame> findByOwnerIdAndParentId(String ownerId, String parentId) {
+        return springDataBoardGameRepository.findByOwnerIdAndParentId(ownerId, parentId).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void deleteByOwnerIdAndParentId(String ownerId, String parentId) {
+        springDataBoardGameRepository.deleteByOwnerIdAndParentId(ownerId, parentId);
     }
 }

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.model.Difficulty;
 
 public record BoardGameResponse(
@@ -33,12 +34,16 @@ public record BoardGameResponse(
         LocalDate lastPlayedDate,
         Difficulty difficulty,
         BigDecimal acquisitionPrice,
-        UserOwnedResponse userOwned) {
+        UserOwnedResponse userOwned,
+        BoardGameType bggType,
+        String parentId,
+        String parentTitle) {
 
 
     public BoardGameResponse withoutPrivate() {
         return new BoardGameResponse(id, title, genres, description, yearPublished, minPlayers, maxPlayers,
                 minPlaytime, maxPlaytime, publisher, designers, categories, mechanics, imageUrl,
-                thumbnailUrl, bggRating, bggId, status, null, dateAdded, null, null, null, null, acquisitionPrice, userOwned);
+                thumbnailUrl, bggRating, bggId, status, null, dateAdded, null, null, null, null, acquisitionPrice, userOwned,
+                bggType, parentId, parentTitle);
     }
 }

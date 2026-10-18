@@ -22,4 +22,16 @@ public interface BoardGameRepository {
     void updateOwnerName(String ownerId, String ownerName);
 
     List<String> distinctGenres(List<String> excludeOwnerIds);
+
+    /** El juego que este usuario tiene con ese bggId, si lo tiene. */
+    Optional<BoardGame> findByOwnerIdAndBggId(String ownerId, String bggId);
+
+    /** Los juegos que este usuario tiene con esos bggIds (para el flag «ya lo tienes»). */
+    List<BoardGame> findByOwnerIdAndBggIdIn(String ownerId, List<String> bggIds);
+
+    /** Las expansiones que este usuario tiene enlazadas a un juego base. */
+    List<BoardGame> findByOwnerIdAndParentId(String ownerId, String parentId);
+
+    /** Borra en cascada las expansiones de un juego base. */
+    void deleteByOwnerIdAndParentId(String ownerId, String parentId);
 }

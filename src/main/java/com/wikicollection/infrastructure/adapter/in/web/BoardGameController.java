@@ -4,10 +4,15 @@ import java.net.URI;
 
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameTypeFilter;
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.port.in.BoardGameExpansionUseCase;
 import com.wikicollection.domain.port.in.BoardGameSearchUseCase;
 import com.wikicollection.domain.port.in.BoardGameUseCase;
+import com.wikicollection.infrastructure.adapter.in.web.dto.AddExpansionsRequest;
+import com.wikicollection.infrastructure.adapter.in.web.dto.AddExpansionsResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameDtoMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameExpansionListResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.BoardGameSearchResponse;
@@ -17,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import com.wikicollection.infrastructure.config.CurrentUser;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,16 +54,19 @@ public class BoardGameController {
 
     private final BoardGameUseCase boardGameUseCase;
     private final BoardGameSearchUseCase boardGameSearchUseCase;
+    private final BoardGameExpansionUseCase boardGameExpansionUseCase;
     private final BoardGameDtoMapper mapper;
 
     private final ResponseVisibility visibility;
 
     public BoardGameController(BoardGameUseCase boardGameUseCase,
                                BoardGameSearchUseCase boardGameSearchUseCase,
+                               BoardGameExpansionUseCase boardGameExpansionUseCase,
                                BoardGameDtoMapper mapper,
                                ResponseVisibility visibility) {
         this.boardGameUseCase = boardGameUseCase;
         this.boardGameSearchUseCase = boardGameSearchUseCase;
+        this.boardGameExpansionUseCase = boardGameExpansionUseCase;
         this.mapper = mapper;
         this.visibility = visibility;
     }
@@ -76,9 +85,10 @@ public class BoardGameController {
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) BoardGameStatus status,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @Parameter(description = "Filtro por tipo: base|expansion|all") @RequestParam(defaultValue = "all") BoardGameTypeFilter type,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status, genre, null, null);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(name, status, genre, null, null, type);
         return boardGameUseCase.search(criteria, pageable, owner, viewerId).map(boardGame -> {
             var response = mapper.toResponse(boardGame);
             return visibility.canSeePrivate(boardGame.getOwnerId(), CollectionType.BOARDGAMES) ? response : response.withoutPrivate();
@@ -142,6 +152,38 @@ public class BoardGameController {
             @Parameter(description = "Identificador del juego de mesa") @PathVariable String id, @CurrentUser String currentUserId) {
         boardGameUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/expansions")
+    @Operation(summary = "Catálogo de expansiones de un juego base", description = "Las expansiones que BoardGameGeek cuelga de un juego base, con el flag 'inCollection' del espectador (anónimo ⇒ todo false).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Catálogo de expansiones (vacío si el juego no tiene bggId)"),
+            @ApiResponse(responseCode = "404", description = "Juego de mesa no encontrado"),
+            @ApiResponse(responseCode = "502", description = "BoardGameGeek no responde")
+    })
+    public BoardGameExpansionListResponse expansions(
+            @Parameter(description = "Identificador del juego base") @PathVariable String id,
+            @CurrentUser String viewerId) {
+        return BoardGameExpansionListResponse.from(boardGameExpansionUseCase.expansionsOf(id, viewerId));
+    }
+
+    @PostMapping("/{id}/expansions")
+    @Operation(summary = "Añade expansiones a un juego base de tu colección", description = "Da de alta las expansiones enlazándolas al base. Idempotente: lo que ya está en la colección se devuelve en 'skipped'.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Expansiones creadas"),
+            @ApiResponse(responseCode = "400", description = "bggIds vacío, con más de 20 ids o en blanco"),
+            @ApiResponse(responseCode = "403", description = "El juego base es de otro usuario"),
+            @ApiResponse(responseCode = "404", description = "Juego de mesa no encontrado"),
+            @ApiResponse(responseCode = "422", description = "El base no está en OWNED o el bggId no es una expansión de ese base"),
+            @ApiResponse(responseCode = "502", description = "BoardGameGeek no responde")
+    })
+    public ResponseEntity<AddExpansionsResponse> addExpansions(
+            @Parameter(description = "Identificador del juego base") @PathVariable String id,
+            @Valid @RequestBody AddExpansionsRequest request,
+            @CurrentUser String currentUserId) {
+        var result = boardGameExpansionUseCase.addExpansions(id, request.bggIds(), currentUserId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(AddExpansionsResponse.from(result, mapper::toResponse));
     }
 
     @GetMapping("/search")

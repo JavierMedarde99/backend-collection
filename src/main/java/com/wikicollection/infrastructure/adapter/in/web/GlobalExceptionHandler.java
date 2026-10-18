@@ -6,11 +6,13 @@ import com.wikicollection.application.exception.AmiiboConflictException;
 import com.wikicollection.application.exception.AmiiboNotFoundException;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
+import com.wikicollection.application.exception.BoardGameExpansionException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckImportNotFoundException;
 import com.wikicollection.application.exception.DeckListParseException;
 import com.wikicollection.application.exception.DeckNotFoundException;
+import com.wikicollection.application.exception.ExternalCatalogException;
 import com.wikicollection.application.exception.FunkoConflictException;
 import com.wikicollection.application.exception.FunkoNotFoundException;
 import com.wikicollection.application.exception.GameNotFoundException;
@@ -141,6 +143,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    /**
+     * La regla de negocio de las expansiones no se cumple (el base no está en
+     * OWNED o el bggId no es una expansión de ese base): se puede corregir y
+     * reenviar, así que es un 422 y no un error interno.
+     */
+    @ExceptionHandler(BoardGameExpansionException.class)
+    public ResponseEntity<ErrorResponse> handleBoardGameExpansion(BoardGameExpansionException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(UnauthenticatedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthenticated(UnauthenticatedException ex, HttpServletRequest request) {
         return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
@@ -178,6 +190,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RestClientResponseException.class)
     public ResponseEntity<ErrorResponse> handleExternalError(RestClientResponseException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_GATEWAY, "El servicio externo devolvió un error: " + ex.getMessage(), request);
+    }
+
+    /**
+     * El catálogo externo (BGG) no contestó: a diferencia del resto de búsquedas,
+     * aquí no se traga el error porque «BGG está caído» no es «no tiene expansiones».
+     */
+    @ExceptionHandler(ExternalCatalogException.class)
+    public ResponseEntity<ErrorResponse> handleExternalCatalog(ExternalCatalogException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_GATEWAY, "El catálogo externo devolvió un error: " + ex.getMessage(), request);
     }
 
     @ExceptionHandler(ResourceAccessException.class)

@@ -46,6 +46,16 @@ class CacheConfigCacheNamesTest {
         assertThat(CacheConfig.CACHE_NAMES).contains(CacheConfig.MAGIC_PRINTINGS);
     }
 
+    @Test
+    void boardgameExpansionsIsRegistered_soItGetsATtlAndMaxSize() {
+        assertThat(CacheConfig.CACHE_NAMES).contains(CacheConfig.BOARDGAME_EXPANSIONS);
+    }
+
+    @Test
+    void boardgameExpansionsTtlComesFromTheBoardgamesProperty() throws Exception {
+        assertThat(propertyKeys()).containsEntry(CacheConfig.BOARDGAME_EXPANSIONS, "boardgames");
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, String> propertyKeys() throws Exception {
         Field field = CacheConfig.class.getDeclaredField("PROPERTY_KEYS");

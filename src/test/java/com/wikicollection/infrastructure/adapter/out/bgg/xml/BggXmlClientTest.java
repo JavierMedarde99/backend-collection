@@ -1,11 +1,15 @@
 package com.wikicollection.infrastructure.adapter.out.bgg.xml;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.wikicollection.application.exception.ExternalCatalogException;
+import com.wikicollection.domain.model.BoardGameExpansionInfo;
 import com.wikicollection.domain.model.BoardGameSearchResult;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper;
 
 import okhttp3.mockwebserver.MockResponse;
@@ -236,6 +240,175 @@ class BggXmlClientTest {
         assertThat(secondBatch.getRequestUrl().queryParameter("id").split(",").length).isEqualTo(5);
         assertThat(results).hasSize(25);
         assertThat(results.get(0).description()).isEqualTo("Un juego de colonización");
+    }
+
+    @Test
+    void expansionsOf_returnsExpansionCatalogOfBase() throws Exception {
+        server.enqueue(xmlResponse(bggBaseThingFixture(2)));
+        server.enqueue(xmlResponse(bggExpansionsThingFixture("161936", "161937")));
+
+        List<BoardGameExpansionInfo> expansions = client.expansionsOf("205637");
+
+        assertThat(expansions).hasSize(2);
+        BoardGameExpansionInfo first = expansions.get(0);
+        assertThat(first.bggId()).isEqualTo("161936");
+        assertThat(first.title()).isEqualTo("Expansión 161936");
+        assertThat(first.yearPublished()).isEqualTo(2017);
+        assertThat(first.imageUrl()).isEqualTo("http://img161936");
+        assertThat(first.thumbnailUrl()).isEqualTo("http://thumb161936");
+        assertThat(first.type()).isEqualTo(BoardGameType.BOARDGAME_EXPANSION);
+        assertThat(first.baseBggIds()).containsExactly("205637");
+        assertThat(expansions.get(1).bggId()).isEqualTo("161937");
+
+        RecordedRequest baseRequest = server.takeRequest();
+        assertThat(baseRequest.getRequestUrl().queryParameter("id")).isEqualTo("205637");
+        RecordedRequest childrenRequest = server.takeRequest();
+        assertThat(childrenRequest.getRequestUrl().queryParameter("id")).isEqualTo("161936,161937");
+    }
+
+    @Test
+    void expansionsOf_returnsEmpty_whenBaseHasNoExpansions() throws Exception {
+        server.enqueue(xmlResponse("""
+                <items>
+                  <item type="boardgame" id="31260">
+                    <name type="primary" value="Catan"/>
+                    <link type="boardgamemechanic" id="2011" value="Dados"/>
+                  </item>
+                </items>
+                """));
+
+        assertThat(client.expansionsOf("31260")).isEmpty();
+        assertThat(server.getRequestCount()).isEqualTo(1);
+    }
+
+    @Test
+    void expansionsOf_fetchesChildrenInBatchesOfTwenty() throws Exception {
+        List<String> ids = new java.util.ArrayList<>();
+        for (int i = 1; i <= 25; i++) {
+            ids.add(String.valueOf(161935 + i));
+        }
+        server.enqueue(xmlResponse(bggBaseThingFixture(25)));
+        server.enqueue(xmlResponse(bggExpansionsThingFixture(ids.subList(0, 20))));
+        server.enqueue(xmlResponse(bggExpansionsThingFixture(ids.subList(20, 25))));
+
+        List<BoardGameExpansionInfo> expansions = client.expansionsOf("205637");
+
+        server.takeRequest();
+        RecordedRequest firstBatch = server.takeRequest();
+        assertThat(firstBatch.getRequestUrl().queryParameter("id").split(",")).hasSize(20);
+        RecordedRequest secondBatch = server.takeRequest();
+        assertThat(secondBatch.getRequestUrl().queryParameter("id").split(",")).hasSize(5);
+        assertThat(expansions).hasSize(25);
+        assertThat(expansions.get(0).bggId()).isEqualTo("161936");
+        assertThat(expansions.get(24).bggId()).isEqualTo("161960");
+    }
+
+    @Test
+    void expansionsOf_returnsEmpty_whenBggReturnsNotFound() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(404));
+
+        assertThat(client.expansionsOf("999999")).isEmpty();
+    }
+
+    @Test
+    void expansionsOf_throws_whenBggReturnsError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500));
+
+        assertThatThrownBy(() -> client.expansionsOf("205637"))
+                .isInstanceOf(ExternalCatalogException.class)
+                .hasMessageContaining("500");
+    }
+
+    @Test
+    void expansionsOf_throws_whenBggKeepsAccepting() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(202).setBody(""));
+        server.enqueue(new MockResponse().setResponseCode(202).setBody(""));
+
+        assertThatThrownBy(() -> client.expansionsOf("205637"))
+                .isInstanceOf(ExternalCatalogException.class);
+        assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void expansionsOf_throws_whenBggIsUnavailable() throws Exception {
+        server.shutdown();
+
+        assertThatThrownBy(() -> client.expansionsOf("205637"))
+                .isInstanceOf(ExternalCatalogException.class);
+    }
+
+    @Test
+    void findByBggIds_returnsInfosForKnownIds() throws Exception {
+        server.enqueue(xmlResponse(bggExpansionsThingFixture("161936", "161937")));
+
+        List<BoardGameExpansionInfo> infos = client.findByBggIds(List.of("161936", "161937"));
+
+        assertThat(infos).extracting(BoardGameExpansionInfo::bggId).containsExactly("161936", "161937");
+        assertThat(infos.get(0).type()).isEqualTo(BoardGameType.BOARDGAME_EXPANSION);
+        assertThat(infos.get(0).baseBggIds()).containsExactly("205637");
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getRequestUrl().queryParameter("id")).isEqualTo("161936,161937");
+    }
+
+    @Test
+    void findByBggIds_skipsIdsBggDoesNotKnow() throws Exception {
+        server.enqueue(xmlResponse(bggExpansionsThingFixture("161936")));
+
+        List<BoardGameExpansionInfo> infos = client.findByBggIds(List.of("161936", "999999"));
+
+        assertThat(infos).extracting(BoardGameExpansionInfo::bggId).containsExactly("161936");
+    }
+
+    @Test
+    void findByBggIds_throws_whenBggReturnsError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500));
+
+        assertThatThrownBy(() -> client.findByBggIds(List.of("161936")))
+                .isInstanceOf(ExternalCatalogException.class);
+    }
+
+    private MockResponse xmlResponse(String body) {
+        return new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
+                .setBody(body);
+    }
+
+    private String bggBaseThingFixture(int expansionCount) {
+        StringBuilder sb = new StringBuilder("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <items>
+                  <item type="boardgame" id="205637">
+                    <name type="primary" value="Arkham Horror: The Card Game"/>
+                """);
+        for (int i = 1; i <= expansionCount; i++) {
+            int expansionId = 161935 + i;
+            sb.append("    <link type=\"boardgameexpansion\" id=\"%d\" value=\"Expansión %d\"/>\n"
+                    .formatted(expansionId, expansionId));
+        }
+        sb.append("  </item>\n</items>");
+        return sb.toString();
+    }
+
+    private String bggExpansionsThingFixture(String... ids) {
+        return bggExpansionsThingFixture(List.of(ids));
+    }
+
+    private String bggExpansionsThingFixture(List<String> ids) {
+        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<items>\n");
+        for (String id : ids) {
+            sb.append("""
+                      <item type="boardgameexpansion" id="%s">
+                        <name type="primary" value="Expansión %s"/>
+                        <yearpublished value="2017"/>
+                        <image>http://img%s</image>
+                        <thumbnail>http://thumb%s</thumbnail>
+                        <link type="boardgameexpansion" id="205637" value="Arkham Horror: The Card Game" inbound="true"/>
+                      </item>
+                    """.formatted(id, id, id, id));
+        }
+        sb.append("</items>");
+        return sb.toString();
     }
 
     private String bggSearchFixture() {

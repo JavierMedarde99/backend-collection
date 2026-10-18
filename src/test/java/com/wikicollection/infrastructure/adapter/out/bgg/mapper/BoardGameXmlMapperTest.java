@@ -7,7 +7,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import com.wikicollection.domain.model.BoardGameExpansionInfo;
 import com.wikicollection.domain.model.BoardGameSearchResult;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper.BggXmlItem;
 
 import org.junit.jupiter.api.Test;
@@ -162,6 +164,141 @@ class BoardGameXmlMapperTest {
         BoardGameSearchResult enriched = mapper.enrich(basic, null);
 
         assertThat(enriched).isSameAs(basic);
+    }
+
+    @Test
+    void expansionIdsOf_returnsExpansionLinksWithoutInbound() {
+        String xml = """
+                <items>
+                  <item type="boardgame" id="205637">
+                    <name type="primary" value="Arkham Horror: The Card Game"/>
+                    <link type="boardgameexpansion" id="161936" value="Dunwich Legacy"/>
+                    <link type="boardgameexpansion" id="161937" value="Carcosa" inbound="true"/>
+                    <link type="boardgamemechanic" id="2040" value="Cooperativo"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("205637");
+
+        assertThat(mapper.expansionIdsOf(item)).containsExactly("161936");
+    }
+
+    @Test
+    void expansionIdsOf_returnsEmpty_whenItemHasNoExpansionLinks() {
+        String xml = """
+                <items>
+                  <item type="boardgame" id="31260">
+                    <name type="primary" value="Catan"/>
+                    <link type="boardgamemechanic" id="2011" value="Dados"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("31260");
+
+        assertThat(mapper.expansionIdsOf(item)).isEmpty();
+    }
+
+    @Test
+    void baseIdsOf_returnsOnlyInboundExpansionLinks() {
+        String xml = """
+                <items>
+                  <item type="boardgameexpansion" id="161936">
+                    <name type="primary" value="Dunwich Legacy"/>
+                    <link type="boardgameexpansion" id="205637" value="Arkham Horror: The Card Game" inbound="true"/>
+                    <link type="boardgameexpansion" id="161940" value="Otra expansión"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("161936");
+
+        assertThat(mapper.baseIdsOf(item)).containsExactly("205637");
+        assertThat(mapper.expansionIdsOf(item)).containsExactly("161940");
+    }
+
+    @Test
+    void toExpansionInfo_mapsTypeAndDisplayFields() {
+        String xml = """
+                <items>
+                  <item type="boardgameexpansion" id="926">
+                    <name type="primary" value="Catan: Navegantes"/>
+                    <yearpublished value="1997"/>
+                    <image>http://img</image>
+                    <thumbnail>http://thumb</thumbnail>
+                    <link type="boardgameexpansion" id="13" value="Catan" inbound="true"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("926");
+
+        BoardGameExpansionInfo info = mapper.toExpansionInfo(item);
+
+        assertThat(info.bggId()).isEqualTo("926");
+        assertThat(info.title()).isEqualTo("Catan: Navegantes");
+        assertThat(info.yearPublished()).isEqualTo(1997);
+        assertThat(info.imageUrl()).isEqualTo("http://img");
+        assertThat(info.thumbnailUrl()).isEqualTo("http://thumb");
+        assertThat(info.type()).isEqualTo(BoardGameType.BOARDGAME_EXPANSION);
+        assertThat(info.baseBggIds()).containsExactly("13");
+    }
+
+    @Test
+    void toExpansionInfo_unknownBggType_mapsToNull() {
+        String xml = """
+                <items>
+                  <item type="boardgameaccessory" id="1">
+                    <name type="primary" value="Funda"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("1");
+
+        BoardGameExpansionInfo info = mapper.toExpansionInfo(item);
+
+        assertThat(info.type()).isNull();
+        assertThat(info.baseBggIds()).isEmpty();
+    }
+
+    @Test
+    void toExpansionInfo_copiesTheSameBlockAsSearchResults() {
+        String xml = """
+                <items>
+                  <item type="boardgameexpansion" id="926">
+                    <name type="primary" value="Catan: Navegantes"/>
+                    <description>Barcos y colonización</description>
+                    <yearpublished value="1997"/>
+                    <minplayers value="2"/>
+                    <maxplayers value="4"/>
+                    <minplaytime value="60"/>
+                    <maxplaytime value="120"/>
+                    <image>http://img</image>
+                    <thumbnail>http://thumb</thumbnail>
+                    <link type="boardgamepublisher" id="253" value="Kosmos"/>
+                    <link type="boardgamedesigner" id="20" value="Klaus Teuber"/>
+                    <link type="boardgamecategory" id="1028" value="Negociación"/>
+                    <link type="boardgamemechanic" id="2011" value="Dados"/>
+                    <link type="boardgameexpansion" id="13" value="Catan" inbound="true"/>
+                    <statistics page="1">
+                      <ratings>
+                        <average value="8.1"/>
+                      </ratings>
+                    </statistics>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("926");
+
+        BoardGameExpansionInfo info = mapper.toExpansionInfo(item);
+
+        assertThat(info.description()).isEqualTo("Barcos y colonización");
+        assertThat(info.minPlayers()).isEqualTo(2);
+        assertThat(info.maxPlayers()).isEqualTo(4);
+        assertThat(info.minPlaytime()).isEqualTo(60);
+        assertThat(info.maxPlaytime()).isEqualTo(120);
+        assertThat(info.publisher()).isEqualTo("Kosmos");
+        assertThat(info.designers()).containsExactly("Klaus Teuber");
+        assertThat(info.categories()).containsExactly("Negociación");
+        assertThat(info.mechanics()).containsExactly("Dados");
+        assertThat(info.bggRating()).isEqualByComparingTo(new BigDecimal("8.1"));
     }
 
     private String bggThingFixture() {
