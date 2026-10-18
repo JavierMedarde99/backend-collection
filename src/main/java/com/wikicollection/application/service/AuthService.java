@@ -164,6 +164,8 @@ public class AuthService implements UserUseCase {
         magicCardRepository.updateOwnerName(userId, ownerName);
         deckRepository.updateOwnerName(userId, ownerName);
         movieShowRepository.updateOwnerName(userId, ownerName);
+        amiiboRepository.updateOwnerName(userId, ownerName);
+        funkoRepository.updateOwnerName(userId, ownerName);
     }
 
     private AuthTokens tokens(User user) {
