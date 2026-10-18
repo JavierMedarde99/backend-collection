@@ -6,6 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.concurrent.TimeUnit;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -163,7 +165,7 @@ class RateLimitFilterTest {
     }
 
     @Test
-    void windowsCache_isBounded() {
+    void windowsCache_isBounded() throws InterruptedException {
         RateLimitFilter filter = new RateLimitFilter(100, "", 10);
         FilterChain chain = mock(FilterChain.class);
 
@@ -173,6 +175,15 @@ class RateLimitFilterTest {
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
+        }
+
+        // Caffeine expulsa de forma asíncrona (ForkJoinPool común), así que cuando la JVM
+        // está saturada con el resto de la suite la tarea de mantenimiento llega tarde y el
+        // tamaño sigue por encima del tope justo al terminar el bucle. Esperamos a que
+        // termine antes de comprobar: sin esto el test era flaky (#503).
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (filter.cachedWindowCount() > 20 && System.nanoTime() < deadline) {
+            Thread.sleep(10);
         }
 
         assertThat(filter.cachedWindowCount())
