@@ -20,5 +20,7 @@ public interface AmiiboRepository {
 
     void deleteById(String id);
 
+    void deleteByOwnerId(String ownerId);
+
     void updateOwnerName(String ownerId, String ownerName);
 }

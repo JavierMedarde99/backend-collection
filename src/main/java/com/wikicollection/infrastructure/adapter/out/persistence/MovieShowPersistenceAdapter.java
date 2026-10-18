@@ -74,6 +74,11 @@ public class MovieShowPersistenceAdapter implements MovieShowRepository {
     }
 
     @Override
+    public void deleteByOwnerId(String ownerId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), MovieShowEntity.class);
+    }
+
+    @Override
     public Optional<MovieShow> findByExternalId(String externalId) {
         return springDataMovieShowRepository.findByExternalId(externalId).map(mapper::toDomain);
     }

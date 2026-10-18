@@ -171,4 +171,13 @@ class MovieShowPersistenceAdapterTest {
         assertThat(showMapper.toEntity(null)).isNull();
         assertThat(showMapper.toDomain(null)).isNull();
     }
+
+    @Test
+    void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerId("u1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(MovieShowEntity.class));
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
+    }
 }

@@ -156,4 +156,13 @@ class GamePersistenceAdapterTest {
         assertThat(gameMapper.toEntity(null)).isNull();
         assertThat(gameMapper.toDomain(null)).isNull();
     }
+
+    @Test
+    void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerId("u1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(GameEntity.class));
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
+    }
 }

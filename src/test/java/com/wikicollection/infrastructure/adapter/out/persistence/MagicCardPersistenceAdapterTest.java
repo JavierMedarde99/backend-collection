@@ -190,4 +190,13 @@ class MagicCardPersistenceAdapterTest {
         assertThat(cardMapper.toEntity(null)).isNull();
         assertThat(cardMapper.toDomain(null)).isNull();
     }
+
+    @Test
+    void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerId("u1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(MagicCardEntity.class));
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
+    }
 }

@@ -17,6 +17,8 @@ public interface DeckRepository {
 
     void deleteById(String id);
 
+    void deleteByOwnerId(String ownerId);
+
     Page<Deck> findAll(Pageable pageable);
 
     Page<Deck> findByName(String name, Pageable pageable);
