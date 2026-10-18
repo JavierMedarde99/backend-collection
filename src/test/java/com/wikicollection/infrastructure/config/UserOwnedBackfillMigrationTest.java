@@ -47,6 +47,8 @@ class UserOwnedBackfillMigrationTest {
         verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq("books"));
         verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq("games"));
         verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq("movie_shows"));
+        verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq("amiibos"));
+        verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq("funkos"));
     }
 
     @Test

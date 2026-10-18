@@ -126,6 +126,18 @@ class AuthServiceCreatePreferencesTest {
     }
 
     @Test
+    void updateProfile_propagatesNameToAmiibosAndFunkos() {
+        User user = User.builder().id("u1").username("javi").displayName("Javi").build();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        authService.updateProfile("u1", "Nuevo", null, null, null);
+
+        verify(amiiboRepository).updateOwnerName("u1", "Nuevo");
+        verify(funkoRepository).updateOwnerName("u1", "Nuevo");
+    }
+
+    @Test
     void updateProfile_skipsPropagation_whenNameUnchanged() {
         User user = User.builder().id("u1").username("javi").build();
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));

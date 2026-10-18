@@ -55,6 +55,8 @@ class AuthDataMigrationTest {
 
         verify(mongoTemplate).updateMulti(any(Query.class), any(Update.class), eq("books"));
         verify(mongoTemplate).updateMulti(any(Query.class), any(Update.class), eq("movie_shows"));
+        verify(mongoTemplate).updateMulti(any(Query.class), any(Update.class), eq("amiibos"));
+        verify(mongoTemplate).updateMulti(any(Query.class), any(Update.class), eq("funkos"));
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertThatCode(() -> org.assertj.core.api.Assertions.assertThat(captor.getValue().getUsername())

@@ -27,7 +27,8 @@ import org.springframework.stereotype.Component;
 public class AuthDataMigration implements ApplicationRunner {
 
     private static final List<String> COLLECTIONS =
-            List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows");
+            List.of("books", "games", "board_games", "magic_cards", "decks", "movie_shows",
+                    "amiibos", "funkos");
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
