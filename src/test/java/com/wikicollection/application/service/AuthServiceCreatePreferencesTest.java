@@ -60,6 +60,12 @@ class AuthServiceCreatePreferencesTest {
     @Mock
     private com.wikicollection.domain.port.out.MovieShowRepository movieShowRepository;
 
+    @Mock
+    private com.wikicollection.domain.port.out.AmiiboRepository amiiboRepository;
+
+    @Mock
+    private com.wikicollection.domain.port.out.FunkoRepository funkoRepository;
+
     private final String secret = Base64.getEncoder()
             .encodeToString("0123456789abcdef0123456789abcdef".getBytes());
 
@@ -149,12 +155,46 @@ class AuthServiceCreatePreferencesTest {
                 .thenReturn(org.springframework.data.domain.Page.empty());
         when(movieShowRepository.findByCriteria(any(), any()))
                 .thenReturn(org.springframework.data.domain.Page.empty());
+        when(amiiboRepository.search(any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        when(funkoRepository.search(any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
 
         authService.deleteAccount("u1");
 
         verify(bookRepository).deleteById("b1");
         verify(preferencesRepository).deleteByUserId("u1");
         verify(userRepository).deleteById("u1");
+    }
+
+    @Test
+    void deleteAccount_removesAmiibosAndFunkos() {
+        User user = User.builder().id("u1").username("javi").build();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(bookRepository.search(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(gameRepository.search(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(boardGameRepository.search(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(magicCardRepository.search(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(deckRepository.findByOwnerId(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(movieShowRepository.findByCriteria(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(amiiboRepository.search(any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(
+                java.util.List.of(com.wikicollection.domain.model.Amiibo.builder().id("a1").ownerId("u1").build())));
+        when(funkoRepository.search(any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(
+                java.util.List.of(com.wikicollection.domain.model.Funko.builder().id("f1").ownerId("u1").build())));
+
+        authService.deleteAccount("u1");
+
+        ArgumentCaptor<com.wikicollection.domain.model.AmiiboSearchCriteria> amiiboCriteria =
+                ArgumentCaptor.forClass(com.wikicollection.domain.model.AmiiboSearchCriteria.class);
+        verify(amiiboRepository).search(amiiboCriteria.capture(), any());
+        assertThat(amiiboCriteria.getValue().ownerId()).isEqualTo("u1");
+        verify(amiiboRepository).deleteById("a1");
+
+        ArgumentCaptor<com.wikicollection.domain.model.FunkoSearchCriteria> funkoCriteria =
+                ArgumentCaptor.forClass(com.wikicollection.domain.model.FunkoSearchCriteria.class);
+        verify(funkoRepository).search(funkoCriteria.capture(), any());
+        assertThat(funkoCriteria.getValue().ownerId()).isEqualTo("u1");
+        verify(funkoRepository).deleteById("f1");
     }
 
     @Test
