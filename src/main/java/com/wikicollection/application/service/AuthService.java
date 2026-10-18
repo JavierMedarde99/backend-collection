@@ -7,8 +7,10 @@ import com.wikicollection.application.exception.UserNotFoundException;
 import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.domain.model.AuthSession;
 import com.wikicollection.domain.model.AuthTokens;
+import com.wikicollection.domain.model.AmiiboSearchCriteria;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BookSearchCriteria;
+import com.wikicollection.domain.model.FunkoSearchCriteria;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
 import com.wikicollection.domain.model.MovieSearchCriteria;
@@ -18,6 +20,8 @@ import com.wikicollection.domain.port.in.UserUseCase;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.domain.port.out.BookRepository;
 import com.wikicollection.domain.port.out.DeckRepository;
+import com.wikicollection.domain.port.out.AmiiboRepository;
+import com.wikicollection.domain.port.out.FunkoRepository;
 import com.wikicollection.domain.port.out.GameRepository;
 import com.wikicollection.domain.port.out.MagicCardRepository;
 import com.wikicollection.domain.port.out.MovieShowRepository;
@@ -44,6 +48,8 @@ public class AuthService implements UserUseCase {
     private final MagicCardRepository magicCardRepository;
     private final DeckRepository deckRepository;
     private final MovieShowRepository movieShowRepository;
+    private final AmiiboRepository amiiboRepository;
+    private final FunkoRepository funkoRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -55,7 +61,9 @@ public class AuthService implements UserUseCase {
                        BoardGameRepository boardGameRepository,
                        MagicCardRepository magicCardRepository,
                        DeckRepository deckRepository,
-                       MovieShowRepository movieShowRepository) {
+                       MovieShowRepository movieShowRepository,
+                       AmiiboRepository amiiboRepository,
+                       FunkoRepository funkoRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -67,6 +75,8 @@ public class AuthService implements UserUseCase {
         this.magicCardRepository = magicCardRepository;
         this.deckRepository = deckRepository;
         this.movieShowRepository = movieShowRepository;
+        this.amiiboRepository = amiiboRepository;
+        this.funkoRepository = funkoRepository;
     }
 
     @Override
@@ -156,6 +166,10 @@ public class AuthService implements UserUseCase {
                 .forEach(deck -> deckRepository.deleteById(deck.getId()));
         movieShowRepository.findByCriteria(new MovieSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(movieShow -> movieShowRepository.deleteById(movieShow.getId()));
+        amiiboRepository.search(new AmiiboSearchCriteria(null, null, userId, null), all)
+                .forEach(amiibo -> amiiboRepository.deleteById(amiibo.getId()));
+        funkoRepository.search(new FunkoSearchCriteria(null, null, userId, null), all)
+                .forEach(funko -> funkoRepository.deleteById(funko.getId()));
         preferencesRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);
     }
