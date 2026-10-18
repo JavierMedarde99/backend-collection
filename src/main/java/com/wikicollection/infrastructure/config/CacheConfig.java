@@ -53,6 +53,9 @@ public class CacheConfig {
     public static final String USER_MAGIC_CARDS_LIST = "userMagicCardsList";
     public static final String USER_DECKS_LIST = "userDecksList";
     public static final String USER_MOVIE_SHOWS_LIST = "userMovieShowsList";
+    public static final String USER_STREAMS_LIST = "userStreamsList";
+
+    public static final String USER_PREFERENCES_DETAIL = "userPreferencesDetail";
     public static final String USER_AMIIBOS_LIST = "userAmiibosList";
     public static final String USER_FUNKOS_LIST = "userFunkosList";
     public static final String USER_ACTIVE_COLLECTIONS = "userActiveCollections";
