@@ -4,6 +4,7 @@ import java.net.URI;
 
 import com.wikicollection.application.service.ImageStorageService;
 import com.wikicollection.infrastructure.adapter.in.web.dto.ImageResponse;
+import com.wikicollection.infrastructure.config.CurrentUser;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,23 +43,26 @@ public class ImageStorageController {
             @ApiResponse(responseCode = "502", description = "El servicio de imágenes devolvió un error")
     })
     public ResponseEntity<ImageResponse> upload(
-            @Parameter(description = "Archivo de imagen") @RequestParam("file") MultipartFile file) {
-        String url = imageStorageService.store(file);
+            @Parameter(description = "Archivo de imagen") @RequestParam("file") MultipartFile file,
+            @CurrentUser String currentUserId) {
+        String url = imageStorageService.store(file, currentUserId);
         String filename = url.substring(url.lastIndexOf('/') + 1);
         return ResponseEntity.created(java.net.URI.create(url))
                 .body(new ImageResponse(url, filename));
     }
 
     @DeleteMapping("/{filename}")
-    @Operation(summary = "Elimina una imagen subida", description = "Requiere catbox.userhash configurado.")
+    @Operation(summary = "Elimina una imagen subida", description = "Solo puede borrarla su propietario (o un admin). Las imágenes subidas antes de registrar la propiedad solo las puede borrar un admin. Requiere catbox.userhash configurado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Imagen eliminada"),
             @ApiResponse(responseCode = "400", description = "Nombre de archivo inválido o borrado no disponible"),
+            @ApiResponse(responseCode = "403", description = "La imagen pertenece a otro usuario"),
             @ApiResponse(responseCode = "404", description = "Imagen no encontrada")
     })
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Nombre del archivo") @PathVariable String filename) {
-        imageStorageService.delete(filename);
+            @Parameter(description = "Nombre del archivo") @PathVariable String filename,
+            @CurrentUser String currentUserId) {
+        imageStorageService.delete(filename, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }
