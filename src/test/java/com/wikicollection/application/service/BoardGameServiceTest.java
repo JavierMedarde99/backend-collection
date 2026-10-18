@@ -3,6 +3,7 @@ package com.wikicollection.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,7 @@ import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.UserOwned;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +70,7 @@ class BoardGameServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria("catan", BoardGameStatus.OWNED, null, null, null);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria("catan", BoardGameStatus.OWNED, null, null, null, null);
         when(boardGameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<BoardGame> result = boardGameService.search(criteria, pageable);
@@ -171,6 +173,86 @@ class BoardGameServiceTest {
         verify(boardGameRepository).save(captor.capture());
         assertThat(captor.getValue().getId()).isEqualTo("bg1");
         assertThat(captor.getValue().getTitle()).isEqualTo("Nuevo título");
+    }
+
+    @Test
+    void update_preservesTypeAndParent_whenUpdatingAnExpansion() {
+        BoardGame existing = BoardGame.builder()
+                .id("bg2").ownerId("u1").title("Navegantes")
+                .bggType(BoardGameType.BOARDGAME_EXPANSION)
+                .parentId("bg1").parentTitle("Catan")
+                .status(BoardGameStatus.OWNED)
+                .build();
+        when(boardGameRepository.findById("bg2")).thenReturn(Optional.of(existing));
+        BoardGame updates = sampleGame();
+        updates.setTitle("Título nuevo");
+
+        boardGameService.update("bg2", updates, "u1");
+
+        ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
+        verify(boardGameRepository).save(captor.capture());
+        BoardGame saved = captor.getValue();
+        assertThat(saved.getBggType()).isEqualTo(BoardGameType.BOARDGAME_EXPANSION);
+        assertThat(saved.getParentId()).isEqualTo("bg1");
+        assertThat(saved.getParentTitle()).isEqualTo("Catan");
+    }
+
+    @Test
+    void update_toWishlist_doesNotDeleteExpansions() {
+        BoardGame base = BoardGame.builder()
+                .id("bg1").ownerId("u1").title("Catan").bggId("13")
+                .bggType(BoardGameType.BOARDGAME)
+                .status(BoardGameStatus.OWNED)
+                .build();
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(base));
+        BoardGame updates = sampleGame();
+        updates.setStatus(BoardGameStatus.WISHLIST);
+
+        boardGameService.update("bg1", updates, "u1");
+
+        verify(boardGameRepository, never()).deleteByOwnerIdAndParentId(any(), any());
+        verify(boardGameRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void delete_cascadesExpansions_whenDeletingABase() {
+        BoardGame base = BoardGame.builder()
+                .id("bg1").ownerId("u1").title("Catan").bggId("13")
+                .bggType(BoardGameType.BOARDGAME)
+                .status(BoardGameStatus.OWNED)
+                .build();
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(base));
+
+        boardGameService.delete("bg1", "u1");
+
+        verify(boardGameRepository).deleteByOwnerIdAndParentId("u1", "bg1");
+        verify(boardGameRepository).deleteById("bg1");
+    }
+
+    @Test
+    void delete_cascadesExpansions_whenTheBaseIsARecordWithoutType() {
+        BoardGame base = BoardGame.builder().id("bg1").ownerId("u1").title("Catan").build();
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(base));
+
+        boardGameService.delete("bg1", "u1");
+
+        verify(boardGameRepository).deleteByOwnerIdAndParentId("u1", "bg1");
+        verify(boardGameRepository).deleteById("bg1");
+    }
+
+    @Test
+    void delete_doesNotCascade_whenDeletingAnExpansion() {
+        BoardGame expansion = BoardGame.builder()
+                .id("bg2").ownerId("u1").title("Navegantes")
+                .bggType(BoardGameType.BOARDGAME_EXPANSION)
+                .parentId("bg1").parentTitle("Catan")
+                .build();
+        when(boardGameRepository.findById("bg2")).thenReturn(Optional.of(expansion));
+
+        boardGameService.delete("bg2", "u1");
+
+        verify(boardGameRepository, never()).deleteByOwnerIdAndParentId(any(), any());
+        verify(boardGameRepository).deleteById("bg2");
     }
 
     @Test

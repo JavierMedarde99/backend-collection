@@ -14,6 +14,7 @@ import java.util.Optional;
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameTypeFilter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<BoardGame> result = adapter.search(new BoardGameSearchCriteria(null, null, null, null, null), pageable);
+        Page<BoardGame> result = adapter.search(new BoardGameSearchCriteria(null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -70,7 +71,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
 
-        adapter.search(new BoardGameSearchCriteria("catan", null, null, null, null), pageable);
+        adapter.search(new BoardGameSearchCriteria("catan", null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BoardGameEntity.class));
@@ -86,7 +87,7 @@ class BoardGamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
 
-        adapter.search(new BoardGameSearchCriteria(null, BoardGameStatus.WISHLIST, null, null, null), pageable);
+        adapter.search(new BoardGameSearchCriteria(null, BoardGameStatus.WISHLIST, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(BoardGameEntity.class));
@@ -124,6 +125,105 @@ class BoardGamePersistenceAdapterTest {
         adapter.deleteById("bg1");
 
         verify(springDataBoardGameRepository).deleteById("bg1");
+    }
+
+    @Test
+    void search_withTypeFilterBase_matchesNullOrBoardgame() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
+
+        adapter.search(criteriaWithType(BoardGameTypeFilter.BASE), pageable);
+
+        String qs = capturedQuery();
+        assertThat(qs).contains("bggType");
+        assertThat(qs).contains("$or");
+    }
+
+    @Test
+    void search_withTypeFilterExpansion_matchesOnlyExpansions() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
+
+        adapter.search(criteriaWithType(BoardGameTypeFilter.EXPANSION), pageable);
+
+        String qs = capturedQuery();
+        assertThat(qs).contains("bggType");
+        assertThat(qs).doesNotContain("$or");
+    }
+
+    @Test
+    void search_withTypeFilterAll_doesNotAddTypeCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
+
+        adapter.search(criteriaWithType(BoardGameTypeFilter.ALL), pageable);
+
+        assertThat(capturedQuery()).doesNotContain("bggType");
+    }
+
+    @Test
+    void search_withoutTypeFilter_doesNotAddTypeCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(BoardGameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(BoardGameEntity.class))).thenReturn(0L);
+
+        adapter.search(new BoardGameSearchCriteria(null, null, null, null, null, null), pageable);
+
+        assertThat(capturedQuery()).doesNotContain("bggType");
+    }
+
+    @Test
+    void findByOwnerIdAndBggId_delegatesToSpringData() {
+        BoardGameEntity entity = BoardGameEntity.builder().id("bg2").title("Navegantes").build();
+        BoardGame expected = sampleGame();
+        when(springDataBoardGameRepository.findByOwnerIdAndBggId("u1", "926"))
+                .thenReturn(Optional.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(expected);
+
+        assertThat(adapter.findByOwnerIdAndBggId("u1", "926")).contains(expected);
+    }
+
+    @Test
+    void findByOwnerIdAndBggIdIn_delegatesToSpringData() {
+        BoardGameEntity entity = BoardGameEntity.builder().id("bg2").title("Navegantes").build();
+        BoardGame expected = sampleGame();
+        when(springDataBoardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926", "325")))
+                .thenReturn(List.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(expected);
+
+        assertThat(adapter.findByOwnerIdAndBggIdIn("u1", List.of("926", "325")))
+                .containsExactly(expected);
+    }
+
+    @Test
+    void findByOwnerIdAndParentId_delegatesToSpringData() {
+        BoardGameEntity entity = BoardGameEntity.builder().id("bg2").title("Navegantes").build();
+        BoardGame expected = sampleGame();
+        when(springDataBoardGameRepository.findByOwnerIdAndParentId("u1", "bg1"))
+                .thenReturn(List.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(expected);
+
+        assertThat(adapter.findByOwnerIdAndParentId("u1", "bg1")).containsExactly(expected);
+    }
+
+    @Test
+    void deleteByOwnerIdAndParentId_delegatesToSpringData() {
+        adapter.deleteByOwnerIdAndParentId("u1", "bg1");
+
+        verify(springDataBoardGameRepository).deleteByOwnerIdAndParentId("u1", "bg1");
+    }
+
+    private BoardGameSearchCriteria criteriaWithType(BoardGameTypeFilter type) {
+        return new BoardGameSearchCriteria(null, null, null, null, null, type);
+    }
+
+    private String capturedQuery() {
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(BoardGameEntity.class));
+        return queryCaptor.getValue().toString();
     }
 
     @Test

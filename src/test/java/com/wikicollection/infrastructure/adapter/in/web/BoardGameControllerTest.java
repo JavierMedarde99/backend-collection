@@ -1,6 +1,8 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -16,10 +18,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.application.exception.ExternalCatalogException;
 import com.wikicollection.domain.model.BoardGame;
+import com.wikicollection.domain.model.BoardGameExpansionInfo;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
 import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameType;
+import com.wikicollection.domain.model.BoardGameTypeFilter;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 import com.wikicollection.infrastructure.adapter.out.bgg.xml.BggXmlClient;
@@ -58,6 +64,10 @@ class BoardGameControllerTest {
 
     @MockitoBean
     private com.wikicollection.domain.port.in.UserPreferencesUseCase preferencesUseCase;
+
+    /** Sin este mock la comprobación de administrador de OwnershipValidator consulta Mongo. */
+    @MockitoBean
+    private com.wikicollection.domain.port.out.UserRepository userRepository;
 
     @Autowired
     private CacheManager cacheManager;
@@ -352,6 +362,266 @@ class BoardGameControllerTest {
     void search_returns400_whenBlankQuery() throws Exception {
         mockMvc.perform(get("/api/v1/boardgames/search").param("name", " "))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ------------------------------------------------------------ expansiones
+
+    private BoardGameExpansionInfo expansionInfo(String bggId, String... baseBggIds) {
+        return new BoardGameExpansionInfo(
+                bggId, "Expansión " + bggId, "Una expansión", 2017, 2, 4, 30, 60,
+                "Kosmos", List.of("Klaus Teuber"), List.of("Negociación"), List.of("Dados"),
+                "http://img" + bggId, "http://thumb" + bggId, new java.math.BigDecimal("8.1"),
+                BoardGameType.BOARDGAME_EXPANSION, List.of(baseBggIds));
+    }
+
+    private BoardGame baseGame(BoardGameStatus status) {
+        return BoardGame.builder()
+                .id("bg1").ownerId("u1").title("Arkham Horror: The Card Game")
+                .bggId("205637").status(status)
+                .build();
+    }
+
+    @Test
+    void getExpansions_returnsCatalogWithInCollectionFlag() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(bggXmlClient.expansionsOf("205637")).thenReturn(
+                List.of(expansionInfo("926", "205637"), expansionInfo("325", "205637")));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926", "325")))
+                .thenReturn(List.of(BoardGame.builder().id("bg2").ownerId("u1").bggId("926").build()));
+
+        mockMvc.perform(get("/api/v1/boardgames/bg1/expansions").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.baseGameId").value("bg1"))
+                .andExpect(jsonPath("$.baseBggId").value("205637"))
+                .andExpect(jsonPath("$.expansions.length()").value(2))
+                .andExpect(jsonPath("$.expansions[0].bggId").value("926"))
+                .andExpect(jsonPath("$.expansions[0].title").value("Expansión 926"))
+                .andExpect(jsonPath("$.expansions[0].inCollection").value(true))
+                .andExpect(jsonPath("$.expansions[1].inCollection").value(false));
+    }
+
+    @Test
+    void getExpansions_isPublic_andMarksNothingAsOwnedForAnonymous() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(bggXmlClient.expansionsOf("205637")).thenReturn(List.of(expansionInfo("926", "205637")));
+
+        mockMvc.perform(get("/api/v1/boardgames/bg1/expansions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expansions[0].inCollection").value(false));
+    }
+
+    @Test
+    void getExpansions_returns404_whenBaseMissing() throws Exception {
+        when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/boardgames/nope/expansions"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getExpansions_returns502_whenBggFails() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(bggXmlClient.expansionsOf("205637"))
+                .thenThrow(new ExternalCatalogException("BGG devolvió error 500"));
+
+        mockMvc.perform(get("/api/v1/boardgames/bg1/expansions"))
+                .andExpect(status().isBadGateway());
+    }
+
+    @Test
+    void addExpansions_returns201_withCreated() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926"))).thenReturn(List.of());
+        when(bggXmlClient.findByBggIds(List.of("926")))
+                .thenReturn(List.of(expansionInfo("926", "205637")));
+        when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> {
+            BoardGame saved = invocation.getArgument(0);
+            saved.setId("bg-exp1");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created.length()").value(1))
+                .andExpect(jsonPath("$.created[0].id").value("bg-exp1"))
+                .andExpect(jsonPath("$.created[0].bggType").value("boardgameexpansion"))
+                .andExpect(jsonPath("$.created[0].parentId").value("bg1"))
+                .andExpect(jsonPath("$.created[0].parentTitle").value("Arkham Horror: The Card Game"))
+                .andExpect(jsonPath("$.created[0].status").value("OWNED"))
+                .andExpect(jsonPath("$.skipped").isEmpty());
+    }
+
+    @Test
+    void addExpansions_returns201_withSkipped_whatIsAlreadyInCollection() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926")))
+                .thenReturn(List.of(BoardGame.builder().id("bg2").ownerId("u1").bggId("926").build()));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created").isEmpty())
+                .andExpect(jsonPath("$.skipped.length()").value(1))
+                .andExpect(jsonPath("$.skipped[0].bggId").value("926"))
+                .andExpect(jsonPath("$.skipped[0].reason").value("ALREADY_IN_COLLECTION"));
+    }
+
+    @Test
+    void addExpansions_returns400_whenBggIdsIsEmpty() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":[]}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addExpansions_returns400_whenMoreThanTwentyBggIds() throws Exception {
+        String manyIds = java.util.stream.IntStream.range(0, 21)
+                .mapToObj(i -> "\"" + i + "\"")
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bggIds\":" + manyIds + "}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addExpansions_returns404_whenBaseMissing() throws Exception {
+        when(boardGameRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/boardgames/nope/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addExpansions_returns403_whenBaseBelongsToAnotherUser() throws Exception {
+        BoardGame other = baseGame(BoardGameStatus.OWNED);
+        other.setOwnerId("u2");
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(other));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void addExpansions_returns422_whenBaseIsNotOwned() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.WISHLIST)));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void addExpansions_returns422_whenTheExpansionBelongsToAnotherBase() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926"))).thenReturn(List.of());
+        when(bggXmlClient.findByBggIds(List.of("926")))
+                .thenReturn(List.of(expansionInfo("926", "13")));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(boardGameRepository, never()).save(any(BoardGame.class));
+    }
+
+    @Test
+    void addExpansions_returns502_whenBggFails() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926"))).thenReturn(List.of());
+        when(bggXmlClient.findByBggIds(List.of("926")))
+                .thenThrow(new ExternalCatalogException("BGG no responde"));
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"]}
+                                """))
+                .andExpect(status().isBadGateway());
+    }
+
+    // ------------------------------------------------------------------ filtro
+
+    @Test
+    void listBoardGames_filtersByType() throws Exception {
+        when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1")).param("type", "expansion"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
+        verify(boardGameRepository).search(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().type()).isEqualTo(BoardGameTypeFilter.EXPANSION);
+    }
+
+    @Test
+    void listBoardGames_defaultsToAllTypes() throws Exception {
+        when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/boardgames").with(user("u1")))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
+        verify(boardGameRepository).search(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().type()).isEqualTo(BoardGameTypeFilter.ALL);
+    }
+
+    @Test
+    void listBoardGames_returns400_whenTypeIsUnknown() throws Exception {
+        mockMvc.perform(get("/api/v1/boardgames").param("type", "modular"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ----------------------------------------------------- el alta es siempre un base
+
+    @Test
+    void createBoardGame_ignoresBgTypeAndParentId() throws Exception {
+        ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
+        when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> {
+            BoardGame saved = invocation.getArgument(0);
+            saved.setId("bg-new");
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/boardgames").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Catan","status":"OWNED","bggType":"boardgameexpansion","parentId":"bg0"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bggType").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.parentId").value(Matchers.nullValue()));
+
+        verify(boardGameRepository).save(captor.capture());
+        assertThat(captor.getValue().getBggType()).isNull();
+        assertThat(captor.getValue().getParentId()).isNull();
     }
 
     @Test

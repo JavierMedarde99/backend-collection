@@ -11,7 +11,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.wikicollection.domain.model.BoardGameExpansionInfo;
 import com.wikicollection.domain.model.BoardGameSearchResult;
+import com.wikicollection.domain.model.BoardGameType;
 
 import org.springframework.stereotype.Component;
 
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class BoardGameXmlMapper {
 
     private static final String EXTERNAL_SOURCE = "BGG";
+    private static final String EXPANSION_LINK = "boardgameexpansion";
 
     private final XmlMapper xmlMapper;
 
@@ -83,6 +86,83 @@ public class BoardGameXmlMapper {
                 result.externalSource());
     }
 
+    /**
+     * Ids de las expansiones que cuelgan de este item: los links
+     * {@code boardgameexpansion} <b>sin</b> {@code inbound}. Leerlos sin filtrar
+     * invierte la relación, porque en la ficha de una expansión sus links
+     * apuntan hacia su base y llevan {@code inbound="true"}.
+     */
+    public List<String> expansionIdsOf(BggXmlItem item) {
+        if (item == null || item.links == null) {
+            return List.of();
+        }
+        return item.links.stream()
+                .filter(link -> EXPANSION_LINK.equals(link.type))
+                .filter(link -> !isInbound(link))
+                .map(link -> link.id)
+                .filter(id -> id != null)
+                .toList();
+    }
+
+    /**
+     * Ids de los juegos base de los que depende este item: los links
+     * {@code boardgameexpansion} con {@code inbound="true"}.
+     */
+    public List<String> baseIdsOf(BggXmlItem item) {
+        if (item == null || item.links == null) {
+            return List.of();
+        }
+        return item.links.stream()
+                .filter(link -> EXPANSION_LINK.equals(link.type))
+                .filter(link -> isInbound(link))
+                .map(link -> link.id)
+                .filter(id -> id != null)
+                .toList();
+    }
+
+    public BoardGameExpansionInfo toExpansionInfo(BggXmlItem item) {
+        if (item == null) {
+            return null;
+        }
+        // Mismo bloque de campos que rellena la búsqueda: se reutiliza enrich().
+        BoardGameSearchResult result = enrich(toResult(item), item);
+        return new BoardGameExpansionInfo(
+                result.bggId(),
+                result.title(),
+                result.description(),
+                result.yearPublished(),
+                result.minPlayers(),
+                result.maxPlayers(),
+                result.minPlaytime(),
+                result.maxPlaytime(),
+                result.publisher(),
+                result.designers(),
+                result.categories(),
+                result.mechanics(),
+                result.imageUrl(),
+                result.thumbnailUrl(),
+                result.bggRating(),
+                normalizeType(item.type),
+                baseIdsOf(item));
+    }
+
+    private boolean isInbound(BggLink link) {
+        return "true".equalsIgnoreCase(link.inbound);
+    }
+
+    /**
+     * BGG tipa entradas que este modelo no conoce ({@code boardgameaccessory}…).
+     * Mapearlas a {@code null} en vez de fallar deja que la validación de alta
+     * las rechace como «no es una expansión».
+     */
+    private BoardGameType normalizeType(String type) {
+        try {
+            return BoardGameType.fromKey(type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     private BoardGameSearchResult toResult(BggXmlItem item) {
         return new BoardGameSearchResult(
                 item.id,
@@ -136,6 +216,9 @@ public class BoardGameXmlMapper {
     public static class BggXmlItem {
         @JacksonXmlProperty(isAttribute = true)
         public String id;
+
+        @JacksonXmlProperty(isAttribute = true)
+        public String type;
 
         @JacksonXmlProperty(localName = "name")
         public BggXmlName name;
@@ -217,6 +300,12 @@ public class BoardGameXmlMapper {
         public String type;
 
         @JacksonXmlProperty(isAttribute = true)
+        public String id;
+
+        @JacksonXmlProperty(isAttribute = true)
         public String value;
+
+        @JacksonXmlProperty(isAttribute = true)
+        public String inbound;
     }
 }

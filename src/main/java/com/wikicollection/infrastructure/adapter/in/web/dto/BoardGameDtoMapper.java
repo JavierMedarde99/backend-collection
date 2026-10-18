@@ -69,6 +69,9 @@ public class BoardGameDtoMapper {
                 boardGame.getLastPlayedDate(),
                 boardGame.getDifficulty(),
                 boardGame.getAcquisitionPrice(),
-                UserOwnedResponse.from(boardGame.getUserOwned()));
+                UserOwnedResponse.from(boardGame.getUserOwned()),
+                boardGame.getBggType(),
+                boardGame.getParentId(),
+                boardGame.getParentTitle());
     }
 }

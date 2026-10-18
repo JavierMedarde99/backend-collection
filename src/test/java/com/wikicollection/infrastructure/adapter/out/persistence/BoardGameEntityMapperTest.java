@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.model.Difficulty;
 
 class BoardGameEntityMapperTest {
@@ -58,6 +59,57 @@ class BoardGameEntityMapperTest {
         assertEquals(LocalDate.of(2026, 8, 15), boardGame.getLastPlayedDate());
         assertEquals(Difficulty.HARD, boardGame.getDifficulty());
         assertEquals(new java.math.BigDecimal("24.50"), boardGame.getAcquisitionPrice());
+    }
+
+    @Test
+    void toEntity_mapsBggTypeAndParent() {
+        BoardGame boardGame = BoardGame.builder()
+                .id("bg-2")
+                .ownerId("owner-1")
+                .title("Catan: Navegantes")
+                .bggType(BoardGameType.BOARDGAME_EXPANSION)
+                .parentId("bg-1")
+                .parentTitle("Catan")
+                .build();
+
+        BoardGameEntity entity = mapper.toEntity(boardGame);
+
+        assertEquals(BoardGameType.BOARDGAME_EXPANSION, entity.getBggType());
+        assertEquals("bg-1", entity.getParentId());
+        assertEquals("Catan", entity.getParentTitle());
+    }
+
+    @Test
+    void toDomain_mapsBggTypeAndParent() {
+        BoardGameEntity entity = BoardGameEntity.builder()
+                .id("bg-2")
+                .ownerId("owner-1")
+                .title("Catan: Navegantes")
+                .bggType(BoardGameType.BOARDGAME_EXPANSION)
+                .parentId("bg-1")
+                .parentTitle("Catan")
+                .build();
+
+        BoardGame boardGame = mapper.toDomain(entity);
+
+        assertEquals(BoardGameType.BOARDGAME_EXPANSION, boardGame.getBggType());
+        assertEquals("bg-1", boardGame.getParentId());
+        assertEquals("Catan", boardGame.getParentTitle());
+    }
+
+    @Test
+    void toDomain_baseGameKeepsNullTypeAndParent() {
+        BoardGameEntity entity = BoardGameEntity.builder()
+                .id("bg-1")
+                .ownerId("owner-1")
+                .title("Catan")
+                .build();
+
+        BoardGame boardGame = mapper.toDomain(entity);
+
+        assertNull(boardGame.getBggType());
+        assertNull(boardGame.getParentId());
+        assertNull(boardGame.getParentTitle());
     }
 
     @Test

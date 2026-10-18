@@ -148,7 +148,7 @@ public class AuthService implements UserUseCase {
                 .forEach(book -> bookRepository.deleteById(book.getId()));
         gameRepository.search(new GameSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(game -> gameRepository.deleteById(game.getId()));
-        boardGameRepository.search(new BoardGameSearchCriteria(null, null, null, userId, null), all)
+        boardGameRepository.search(new BoardGameSearchCriteria(null, null, null, userId, null, null), all)
                 .forEach(boardGame -> boardGameRepository.deleteById(boardGame.getId()));
         magicCardRepository.search(new MagicCardSearchCriteria(null, null, null, null, userId, null), all)
                 .forEach(card -> magicCardRepository.deleteById(card.getId()));

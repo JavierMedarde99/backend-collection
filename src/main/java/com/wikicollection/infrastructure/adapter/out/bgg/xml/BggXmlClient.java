@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wikicollection.application.exception.ExternalCatalogException;
+import com.wikicollection.domain.model.BoardGameExpansionInfo;
 import com.wikicollection.domain.model.BoardGameSearchResult;
 import com.wikicollection.domain.port.out.ExternalBoardGameCatalogClient;
 import com.wikicollection.infrastructure.adapter.out.bgg.mapper.BoardGameXmlMapper;
@@ -86,6 +88,103 @@ public class BggXmlClient implements ExternalBoardGameCatalogClient {
         } catch (ResourceAccessException e) {
             log.warn("BGG XML no disponible: {}", e.getMessage());
             return List.of();
+        }
+    }
+
+    /**
+     * Expansiones que cuelgan de un juego base: primero la ficha del base para ver
+     * sus links, y después las fichas de los hijos (BGG admite 20 ids por llamada).
+     * El resultado no depende del usuario, así que se cachea por el bggId del base.
+     */
+    @Override
+    @Cacheable(cacheNames = CacheConfig.BOARDGAME_EXPANSIONS, key = "#baseBggId")
+    public List<BoardGameExpansionInfo> expansionsOf(String baseBggId) {
+        if (baseBggId == null || baseBggId.isBlank()) {
+            return List.of();
+        }
+        BggXmlItem baseItem = fetchThingsStrict(List.of(baseBggId)).get(baseBggId);
+        if (baseItem == null) {
+            return List.of();
+        }
+        List<String> childIds = mapper.expansionIdsOf(baseItem);
+        if (childIds.isEmpty()) {
+            return List.of();
+        }
+        Map<String, BggXmlItem> children = fetchAllThingsStrict(childIds);
+        List<BoardGameExpansionInfo> expansions = new ArrayList<>();
+        for (String childId : childIds) {
+            BggXmlItem item = children.get(childId);
+            if (item != null) {
+                expansions.add(mapper.toExpansionInfo(item));
+            }
+        }
+        return List.copyOf(expansions);
+    }
+
+    @Override
+    public List<BoardGameExpansionInfo> findByBggIds(List<String> bggIds) {
+        if (bggIds == null || bggIds.isEmpty()) {
+            return List.of();
+        }
+        List<String> distinctIds = bggIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return List.of();
+        }
+        Map<String, BggXmlItem> things = fetchAllThingsStrict(distinctIds);
+        List<BoardGameExpansionInfo> infos = new ArrayList<>();
+        for (String id : distinctIds) {
+            BggXmlItem item = things.get(id);
+            if (item != null) {
+                infos.add(mapper.toExpansionInfo(item));
+            }
+        }
+        return List.copyOf(infos);
+    }
+
+    private Map<String, BggXmlItem> fetchAllThingsStrict(List<String> ids) {
+        Map<String, BggXmlItem> things = new HashMap<>();
+        for (int from = 0; from < ids.size(); from += MAX_THING_IDS) {
+            things.putAll(fetchThingsStrict(ids.subList(from, Math.min(from + MAX_THING_IDS, ids.size()))));
+        }
+        return things;
+    }
+
+    /**
+     * Como {@link #fetchDetails}, pero sin tragarse los errores: quien necesita la
+     * ficha para decidir algo (¿es una expansión? ¿de qué base?) no puede confundir
+     * un BGG caído con un catálogo vacío.
+     */
+    private Map<String, BggXmlItem> fetchThingsStrict(List<String> ids) {
+        String thingUri = UriComponentsBuilder.fromUriString(baseUrl)
+                .path(THING_PATH)
+                .queryParam("id", String.join(",", ids))
+                .build()
+                .toUriString();
+        ResponseEntity<String> response;
+        try {
+            response = callWithRetry("expansiones", thingUri);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                // BGG no conoce estos ids: dato inexistente, no un fallo del servicio.
+                log.info("BGG no conoce los ids {}", ids);
+                return Map.of();
+            }
+            log.warn("BGG XML devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new ExternalCatalogException("BGG devolvió error " + e.getStatusCode().value(), e);
+        } catch (ResourceAccessException e) {
+            log.warn("BGG XML no disponible: {}", e.getMessage());
+            throw new ExternalCatalogException("BGG no responde: " + e.getMessage(), e);
+        }
+        if (response.getStatusCode() == HttpStatus.ACCEPTED) {
+            throw new ExternalCatalogException("BGG siguió devolviendo 202 tras los reintentos");
+        }
+        try {
+            return mapper.mapThing(response.getBody());
+        } catch (IllegalStateException e) {
+            throw new ExternalCatalogException("BGG devolvió una respuesta que no se pudo leer", e);
         }
     }
 

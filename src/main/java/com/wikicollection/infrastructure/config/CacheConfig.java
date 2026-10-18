@@ -27,6 +27,7 @@ public class CacheConfig {
     public static final String FUNKO_SEARCH = "funkoSearch";
     public static final String FUNKO_CATEGORIES = "funkoCategories";
     public static final String MAGIC_PRINTINGS = "magicPrintings";
+    public static final String BOARDGAME_EXPANSIONS = "boardgameExpansions";
 
     public static final String BOOK_DETAIL = "bookDetail";
     public static final String GAME_DETAIL = "gameDetail";
@@ -64,7 +65,8 @@ public class CacheConfig {
     public static final String STATS = "stats";
 
     public static final List<String> CACHE_NAMES = List.of(
-            BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, MAGIC_SEARCH, MOVIE_SEARCH, COMMANDER_SEARCH,
+            BOOK_SEARCH, GAME_SEARCH, BOARDGAME_SEARCH, BOARDGAME_EXPANSIONS, MAGIC_SEARCH, MOVIE_SEARCH,
+            COMMANDER_SEARCH,
             AMIIBO_SEARCH, FUNKO_SEARCH, FUNKO_CATEGORIES,
             BOOK_ENRICH,
             BOOK_DETAIL, GAME_DETAIL, BOARDGAME_DETAIL, MOVIE_DETAIL, MAGIC_DETAIL, DECK_DETAIL, AMIIBO_DETAIL,
@@ -83,6 +85,7 @@ public class CacheConfig {
             Map.entry(BOOK_ENRICH, "books"),
             Map.entry(GAME_SEARCH, "games"),
             Map.entry(BOARDGAME_SEARCH, "boardgames"),
+            Map.entry(BOARDGAME_EXPANSIONS, "boardgames"),
             Map.entry(AMIIBO_SEARCH, "amiibos"),
             Map.entry(FUNKO_SEARCH, "funkos"),
             Map.entry(FUNKO_CATEGORIES, "funkos"),

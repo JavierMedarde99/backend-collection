@@ -7,7 +7,13 @@ public record BoardGameSearchCriteria(
         BoardGameStatus status,
         java.util.List<String> genres,
         String ownerId,
-        List<String> excludeOwnerIds) {
+        List<String> excludeOwnerIds,
+        BoardGameTypeFilter type) {
+
+    public BoardGameSearchCriteria {
+        // «sin filtro» es ALL: el resto de la capa no tiene que tratar null.
+        type = type == null ? BoardGameTypeFilter.ALL : type;
+    }
 
     public boolean hasName() {
         return name != null && !name.isBlank();
@@ -30,5 +36,13 @@ public record BoardGameSearchCriteria(
 
     public boolean hasExcludeOwnerIds() {
         return excludeOwnerIds != null && !excludeOwnerIds.isEmpty();
+    }
+
+    public boolean isBaseOnly() {
+        return type == BoardGameTypeFilter.BASE;
+    }
+
+    public boolean isExpansionOnly() {
+        return type == BoardGameTypeFilter.EXPANSION;
     }
 }

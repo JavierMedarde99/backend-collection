@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.wikicollection.domain.model.BoardGameStatus;
+import com.wikicollection.domain.model.BoardGameType;
 import com.wikicollection.domain.model.Difficulty;
 
 import org.springframework.data.annotation.Id;
@@ -79,4 +80,7 @@ public class BoardGameEntity {
 
     private Difficulty difficulty;
     private BigDecimal acquisitionPrice;
+    private BoardGameType bggType;
+    private String parentId;
+    private String parentTitle;
 }

@@ -12,6 +12,7 @@ import com.wikicollection.application.exception.UnauthenticatedException;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.BoardGame;
 import com.wikicollection.domain.model.BoardGameSearchCriteria;
+import com.wikicollection.domain.model.BoardGameTypeFilter;
 import com.wikicollection.domain.port.in.UserPreferencesUseCase;
 import com.wikicollection.domain.port.out.BoardGameRepository;
 
@@ -39,11 +40,25 @@ class BoardGameServiceOwnerFilterTest {
     }
 
     @Test
+    void search_propagatesTypeFilterToTheRepository() {
+        when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any())).thenReturn(Page.empty());
+        var pageable = PageRequest.of(0, 20);
+
+        service().search(new BoardGameSearchCriteria(null, null, null, null, null, BoardGameTypeFilter.EXPANSION),
+                pageable, "mine", "u1");
+
+        ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
+        verify(boardGameRepository).search(captor.capture(), any());
+        assertThat(captor.getValue().type()).isEqualTo(BoardGameTypeFilter.EXPANSION);
+        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
+    }
+
+    @Test
     void mine_filtersByViewer() {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any())).thenReturn(Page.empty());
         var pageable = PageRequest.of(0, 20);
 
-        service().search(new BoardGameSearchCriteria(null, null, null, null, null), pageable, "mine", "u1");
+        service().search(new BoardGameSearchCriteria(null, null, null, null, null, null), pageable, "mine", "u1");
 
         ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
         verify(boardGameRepository).search(captor.capture(), any());
@@ -56,7 +71,7 @@ class BoardGameServiceOwnerFilterTest {
                 .thenReturn(List.of("u9"));
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any())).thenReturn(Page.empty());
 
-        service().search(new BoardGameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "other", null);
+        service().search(new BoardGameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "other", null);
 
         ArgumentCaptor<BoardGameSearchCriteria> captor = ArgumentCaptor.forClass(BoardGameSearchCriteria.class);
         verify(boardGameRepository).search(captor.capture(), any());
@@ -65,13 +80,13 @@ class BoardGameServiceOwnerFilterTest {
 
     @Test
     void anonymousMine_throws401() {
-        assertThatThrownBy(() -> service().search(new BoardGameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "mine", null))
+        assertThatThrownBy(() -> service().search(new BoardGameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "mine", null))
                 .isInstanceOf(UnauthenticatedException.class);
     }
 
     @Test
     void unknownMode_throws400() {
-        assertThatThrownBy(() -> service().search(new BoardGameSearchCriteria(null, null, null, null, null), PageRequest.of(0, 20), "bogus", "u1"))
+        assertThatThrownBy(() -> service().search(new BoardGameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "bogus", "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

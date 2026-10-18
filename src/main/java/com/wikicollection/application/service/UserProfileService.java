@@ -109,7 +109,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return boardGameRepository.search(
-                new BoardGameSearchCriteria(null, null, null, user.getId(), null), pageable);
+                new BoardGameSearchCriteria(null, null, null, user.getId(), null, null), pageable);
     }
 
     @Override
