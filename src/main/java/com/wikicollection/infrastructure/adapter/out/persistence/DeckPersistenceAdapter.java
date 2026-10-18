@@ -46,6 +46,11 @@ public class DeckPersistenceAdapter implements DeckRepository {
     }
 
     @Override
+    public void deleteByOwnerId(String ownerId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), DeckEntity.class);
+    }
+
+    @Override
     public Page<Deck> findAll(Pageable pageable) {
         return springDataDeckRepository.findAll(pageable).map(mapper::toDomain);
     }

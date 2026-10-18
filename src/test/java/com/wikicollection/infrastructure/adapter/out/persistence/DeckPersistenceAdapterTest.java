@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import com.wikicollection.domain.model.DeckCard;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,12 +22,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 @ExtendWith(MockitoExtension.class)
 class DeckPersistenceAdapterTest {
 
     @Mock
     private SpringDataDeckRepository springDataDeckRepository;
+
+    @Mock
+    private MongoTemplate mongoTemplate;
 
     @Mock
     private DeckEntityMapper mapper;
@@ -133,5 +140,14 @@ class DeckPersistenceAdapterTest {
 
         assertThat(deckMapper.toEntity(null)).isNull();
         assertThat(deckMapper.toDomain(null)).isNull();
+    }
+
+    @Test
+    void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerId("u1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(DeckEntity.class));
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
     }
 }

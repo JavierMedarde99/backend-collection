@@ -7,13 +7,6 @@ import com.wikicollection.application.exception.UserNotFoundException;
 import com.wikicollection.application.exception.UserAlreadyExistsException;
 import com.wikicollection.domain.model.AuthSession;
 import com.wikicollection.domain.model.AuthTokens;
-import com.wikicollection.domain.model.AmiiboSearchCriteria;
-import com.wikicollection.domain.model.BoardGameSearchCriteria;
-import com.wikicollection.domain.model.BookSearchCriteria;
-import com.wikicollection.domain.model.FunkoSearchCriteria;
-import com.wikicollection.domain.model.GameSearchCriteria;
-import com.wikicollection.domain.model.MagicCardSearchCriteria;
-import com.wikicollection.domain.model.MovieSearchCriteria;
 import com.wikicollection.domain.model.User;
 import com.wikicollection.domain.model.UserPreferences;
 import com.wikicollection.domain.port.in.UserUseCase;
@@ -28,7 +21,6 @@ import com.wikicollection.domain.port.out.MovieShowRepository;
 import com.wikicollection.domain.port.out.UserPreferencesRepository;
 import com.wikicollection.domain.port.out.UserRepository;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -153,23 +145,14 @@ public class AuthService implements UserUseCase {
     @Override
     public void deleteAccount(String userId) {
         getById(userId);
-        Pageable all = Pageable.unpaged();
-        bookRepository.search(new BookSearchCriteria(null, null, null, null, null, userId, null), all)
-                .forEach(book -> bookRepository.deleteById(book.getId()));
-        gameRepository.search(new GameSearchCriteria(null, null, null, null, userId, null), all)
-                .forEach(game -> gameRepository.deleteById(game.getId()));
-        boardGameRepository.search(new BoardGameSearchCriteria(null, null, null, userId, null, null), all)
-                .forEach(boardGame -> boardGameRepository.deleteById(boardGame.getId()));
-        magicCardRepository.search(new MagicCardSearchCriteria(null, null, null, null, userId, null), all)
-                .forEach(card -> magicCardRepository.deleteById(card.getId()));
-        deckRepository.findByOwnerId(userId, all)
-                .forEach(deck -> deckRepository.deleteById(deck.getId()));
-        movieShowRepository.findByCriteria(new MovieSearchCriteria(null, null, null, null, userId, null), all)
-                .forEach(movieShow -> movieShowRepository.deleteById(movieShow.getId()));
-        amiiboRepository.search(new AmiiboSearchCriteria(null, null, userId, null), all)
-                .forEach(amiibo -> amiiboRepository.deleteById(amiibo.getId()));
-        funkoRepository.search(new FunkoSearchCriteria(null, null, userId, null), all)
-                .forEach(funko -> funkoRepository.deleteById(funko.getId()));
+        bookRepository.deleteByOwnerId(userId);
+        gameRepository.deleteByOwnerId(userId);
+        boardGameRepository.deleteByOwnerId(userId);
+        magicCardRepository.deleteByOwnerId(userId);
+        deckRepository.deleteByOwnerId(userId);
+        movieShowRepository.deleteByOwnerId(userId);
+        amiiboRepository.deleteByOwnerId(userId);
+        funkoRepository.deleteByOwnerId(userId);
         preferencesRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);
     }

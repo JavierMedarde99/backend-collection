@@ -86,6 +86,11 @@ public class FunkoPersistenceAdapter implements FunkoRepository {
     }
 
     @Override
+    public void deleteByOwnerId(String ownerId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), FunkoEntity.class);
+    }
+
+    @Override
     public void updateOwnerName(String ownerId, String ownerName) {
         mongoTemplate.updateMulti(
                 new Query(Criteria.where("ownerId").is(ownerId)),

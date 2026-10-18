@@ -99,6 +99,11 @@ public class GamePersistenceAdapter implements GameRepository {
     }
 
     @Override
+    public void deleteByOwnerId(String ownerId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), GameEntity.class);
+    }
+
+    @Override
     public void updateOwnerName(String ownerId, String ownerName) {
         mongoTemplate.updateMulti(
                 new Query(Criteria.where("ownerId").is(ownerId)),

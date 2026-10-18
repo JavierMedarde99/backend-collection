@@ -183,4 +183,13 @@ class BookPersistenceAdapterTest {
         assertThat(qs).contains("type");
         assertThat(qs).contains("state");
     }
+
+    @Test
+    void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerId("u1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(BookEntity.class));
+        assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
+    }
 }

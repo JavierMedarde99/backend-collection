@@ -21,6 +21,8 @@ public interface MovieShowRepository {
 
     void deleteById(String id);
 
+    void deleteByOwnerId(String ownerId);
+
     Optional<MovieShow> findByExternalId(String externalId);
 
     long count();
