@@ -7,7 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.wikicollection.application.exception.ForbiddenException;
+import com.wikicollection.domain.model.ImageOwnership;
 import com.wikicollection.domain.port.out.ImageHostingClient;
+import com.wikicollection.domain.port.out.ImageOwnershipRepository;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,14 +26,23 @@ public class ImageStorageService {
             "image/gif", ".gif");
 
     private final ImageHostingClient imageHostingClient;
+    private final ImageOwnershipRepository imageOwnershipRepository;
+    private final OwnershipValidator ownershipValidator;
+    private final OwnerResolver ownerResolver;
     private final long maxSize;
     private final Set<String> allowedTypes;
 
     public ImageStorageService(
             ImageHostingClient imageHostingClient,
+            ImageOwnershipRepository imageOwnershipRepository,
+            OwnershipValidator ownershipValidator,
+            OwnerResolver ownerResolver,
             @Value("${app.image.max-size:5242880}") long maxSize,
             @Value("${app.image.allowed-types:image/jpeg,image/png,image/webp,image/gif}") String allowedTypes) {
         this.imageHostingClient = imageHostingClient;
+        this.imageOwnershipRepository = imageOwnershipRepository;
+        this.ownershipValidator = ownershipValidator;
+        this.ownerResolver = ownerResolver;
         this.maxSize = maxSize;
         this.allowedTypes = Arrays.stream(allowedTypes.split(","))
                 .map(String::trim)
@@ -38,25 +50,49 @@ public class ImageStorageService {
                 .collect(Collectors.toSet());
     }
 
-    public String store(MultipartFile file) {
+    public String store(MultipartFile file, String userId) {
         validate(file);
         try {
             byte[] content = file.getInputStream().readAllBytes();
             String filename = file.getOriginalFilename() != null && !file.getOriginalFilename().isBlank()
                     ? file.getOriginalFilename()
                     : "upload" + EXTENSION_BY_MIME.get(file.getContentType());
-            return imageHostingClient.upload(content, filename, file.getContentType());
+            String url = imageHostingClient.upload(content, filename, file.getContentType());
+            registerOwner(url, userId);
+            return url;
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo leer la imagen", e);
         }
     }
 
-    public void delete(String filename) {
+    public void delete(String filename, String userId) {
+        validateFilename(filename);
+        var ownership = imageOwnershipRepository.findByFilename(filename);
+        if (ownership.isPresent()) {
+            ownershipValidator.validateOwner(ownership.get().ownerId(), userId);
+        } else if (!ownershipValidator.isAdmin(userId)) {
+            // Imagen anterior al registro de propiedad (#481): sin metadatos no hay
+            // forma de saber de quién es, así que solo la puede borrar un admin.
+            throw new ForbiddenException("No tienes permiso sobre esta imagen");
+        }
+        imageHostingClient.delete(filename);
+        imageOwnershipRepository.deleteByFilename(filename);
+    }
+
+    private void registerOwner(String url, String userId) {
+        if (userId == null || userId.isBlank()) {
+            return;
+        }
+        String filename = url.substring(url.lastIndexOf('/') + 1);
+        imageOwnershipRepository.save(
+                new ImageOwnership(filename, userId, ownerResolver.resolveOwner(userId).getOwnerName()));
+    }
+
+    private void validateFilename(String filename) {
         if (filename == null || filename.isBlank()
                 || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
             throw new IllegalArgumentException("Nombre de archivo inválido: " + filename);
         }
-        imageHostingClient.delete(filename);
     }
 
     public void validate(MultipartFile file) {

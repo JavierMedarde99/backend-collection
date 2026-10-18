@@ -1,6 +1,7 @@
 package com.wikicollection.infrastructure.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.wikicollection.application.exception.CatboxUploadException;
+import com.wikicollection.application.exception.ForbiddenException;
 import com.wikicollection.application.service.ImageStorageService;
 
 import org.hamcrest.Matchers;
@@ -41,7 +43,7 @@ class ImageStorageControllerTest {
 
     @Test
     void upload_returns201_withCatboxUrl() throws Exception {
-        when(imageStorageService.store(any())).thenReturn("https://files.catbox.moe/abc123.png");
+        when(imageStorageService.store(any(), any())).thenReturn("https://files.catbox.moe/abc123.png");
 
         mockMvc.perform(multipart("/api/v1/images/upload").with(user("u1")).file(pngFile()))
                 .andExpect(status().isCreated())
@@ -51,8 +53,18 @@ class ImageStorageControllerTest {
     }
 
     @Test
+    void upload_passesTheAuthenticatedUser_soTheImageIsRegisteredAsHis() throws Exception {
+        when(imageStorageService.store(any(), any())).thenReturn("https://files.catbox.moe/abc123.png");
+
+        mockMvc.perform(multipart("/api/v1/images/upload").with(user("u1")).file(pngFile()))
+                .andExpect(status().isCreated());
+
+        verify(imageStorageService).store(any(), eq("u1"));
+    }
+
+    @Test
     void upload_returns400_whenInvalid() throws Exception {
-        when(imageStorageService.store(any())).thenThrow(new IllegalArgumentException("Tipo no permitido"));
+        when(imageStorageService.store(any(), any())).thenThrow(new IllegalArgumentException("Tipo no permitido"));
 
         mockMvc.perform(multipart("/api/v1/images/upload").with(user("u1")).file(pngFile()))
                 .andExpect(status().isBadRequest());
@@ -60,7 +72,7 @@ class ImageStorageControllerTest {
 
     @Test
     void upload_returns502_whenCatboxFails() throws Exception {
-        when(imageStorageService.store(any())).thenThrow(new CatboxUploadException("caído"));
+        when(imageStorageService.store(any(), any())).thenThrow(new CatboxUploadException("caído"));
 
         mockMvc.perform(multipart("/api/v1/images/upload").with(user("u1")).file(pngFile()))
                 .andExpect(status().isBadGateway());
@@ -77,20 +89,30 @@ class ImageStorageControllerTest {
         mockMvc.perform(delete("/api/v1/images/abc123.png").with(user("u1")))
                 .andExpect(status().isNoContent());
 
-        verify(imageStorageService).delete("abc123.png");
+        verify(imageStorageService).delete("abc123.png", "u1");
     }
 
     @Test
     void delete_returns400_whenInvalidName() throws Exception {
-        doThrow(new IllegalArgumentException("Sin userhash")).when(imageStorageService).delete("nope.png");
+        doThrow(new IllegalArgumentException("Nombre de archivo inválido"))
+                .when(imageStorageService).delete("nope.png", "u1");
 
         mockMvc.perform(delete("/api/v1/images/nope.png").with(user("u1")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
+    void delete_returns403_whenTheServiceRejectsIt() throws Exception {
+        doThrow(new ForbiddenException("No tienes permiso sobre esta imagen"))
+                .when(imageStorageService).delete("abc123.png", "u1");
+
+        mockMvc.perform(delete("/api/v1/images/abc123.png").with(user("u1")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void cors_allowsFrontendOrigin() throws Exception {
-        when(imageStorageService.store(any())).thenReturn("https://files.catbox.moe/abc123.png");
+        when(imageStorageService.store(any(), any())).thenReturn("https://files.catbox.moe/abc123.png");
 
         mockMvc.perform(multipart("/api/v1/images/upload").with(user("u1"))
                         .file(pngFile())
