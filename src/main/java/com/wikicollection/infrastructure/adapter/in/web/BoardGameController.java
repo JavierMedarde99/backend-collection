@@ -168,10 +168,10 @@ public class BoardGameController {
     }
 
     @PostMapping("/{id}/expansions")
-    @Operation(summary = "Añade expansiones a un juego base de tu colección", description = "Da de alta las expansiones enlazándolas al base. Idempotente: lo que ya está en la colección se devuelve en 'skipped'.")
+    @Operation(summary = "Añade expansiones a un juego base de tu colección", description = "Da de alta las expansiones enlazándolas al base, cada una en el estado pedido ('expansions': OWNED con precio y fecha; WISHLIST sin datos). También acepta la forma legada 'bggIds' (todas en OWNED, sin precio y con la fecha de hoy). Idempotente: lo que ya está en la colección se devuelve en 'skipped'.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Expansiones creadas"),
-            @ApiResponse(responseCode = "400", description = "bggIds vacío, con más de 20 ids o en blanco"),
+            @ApiResponse(responseCode = "400", description = "Body inválido: sin fuente o con las dos, más de 20 expansiones, bggId en blanco o datos de adquisición incompletos"),
             @ApiResponse(responseCode = "403", description = "El juego base es de otro usuario"),
             @ApiResponse(responseCode = "404", description = "Juego de mesa no encontrado"),
             @ApiResponse(responseCode = "422", description = "El base no está en OWNED o el bggId no es una expansión de ese base"),
@@ -181,7 +181,7 @@ public class BoardGameController {
             @Parameter(description = "Identificador del juego base") @PathVariable String id,
             @Valid @RequestBody AddExpansionsRequest request,
             @CurrentUser String currentUserId) {
-        var result = boardGameExpansionUseCase.addExpansions(id, request.bggIds(), currentUserId);
+        var result = boardGameExpansionUseCase.addExpansions(id, request.toSeeds(), currentUserId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(AddExpansionsResponse.from(result, mapper::toResponse));
     }

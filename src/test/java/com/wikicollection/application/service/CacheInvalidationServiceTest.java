@@ -335,7 +335,10 @@ class CacheInvalidationServiceTest {
         cacheManager.getCache("boardgameList").put("some-list", "stale");
         cacheManager.getCache("boardgameDetail").put("bg1", "stale");
 
-        boardGameExpansionService.addExpansions("bg1", List.of("926"), OWNER);
+        boardGameExpansionService.addExpansions("bg1",
+                List.of(new com.wikicollection.domain.model.BoardGameExpansionSeed(
+                        "926", BoardGameStatus.OWNED, null, null)),
+                OWNER);
 
         assertThat(cacheManager.getCache("stats").get("global")).isNull();
         assertThat(cacheManager.getCache("boardgameList").get("some-list")).isNull();

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.wikicollection.domain.model.BoardGameExpansionAddResult;
 import com.wikicollection.domain.model.BoardGameExpansionCatalog;
+import com.wikicollection.domain.model.BoardGameExpansionSeed;
 
 public interface BoardGameExpansionUseCase {
 
@@ -16,11 +17,13 @@ public interface BoardGameExpansionUseCase {
     BoardGameExpansionCatalog expansionsOf(String baseId, String viewerId);
 
     /**
-     * Da de alta expansiones enlazándolas a su base. Idempotente: lo que ya está
-     * en la colección se salta y se informa en el resultado.
+     * Da de alta expansiones enlazándolas a su base, cada una en el estado de su
+     * semilla (OWNED con su precio y fecha; WISHLIST sin datos de adquisición).
+     * Idempotente: lo que ya está en la colección se salta y se informa en el
+     * resultado.
      *
      * <p>404 si el base no existe, 403 si es de otro usuario, 422 si la regla de
      * negocio no se cumple, 502 si BGG falla.
      */
-    BoardGameExpansionAddResult addExpansions(String baseId, List<String> bggIds, String userId);
+    BoardGameExpansionAddResult addExpansions(String baseId, List<BoardGameExpansionSeed> seeds, String userId);
 }
