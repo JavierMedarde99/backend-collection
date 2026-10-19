@@ -452,7 +452,91 @@ class BoardGameControllerTest {
                 .andExpect(jsonPath("$.created[0].parentId").value("bg1"))
                 .andExpect(jsonPath("$.created[0].parentTitle").value("Arkham Horror: The Card Game"))
                 .andExpect(jsonPath("$.created[0].status").value("OWNED"))
+                // Legado: nace en posesión, con la fecha de hoy y sin precio.
+                .andExpect(jsonPath("$.created[0].dateAdded").value(java.time.LocalDate.now().toString()))
+                .andExpect(jsonPath("$.created[0].acquisitionPrice").doesNotExist())
                 .andExpect(jsonPath("$.skipped").isEmpty());
+    }
+
+    @Test
+    void addExpansions_returns201_creatingEachExpansionWithItsStatusAndData() throws Exception {
+        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(baseGame(BoardGameStatus.OWNED)));
+        when(boardGameRepository.findByOwnerIdAndBggIdIn("u1", List.of("926", "325"))).thenReturn(List.of());
+        when(bggXmlClient.findByBggIds(List.of("926", "325")))
+                .thenReturn(List.of(expansionInfo("926", "205637"), expansionInfo("325", "205637")));
+        when(boardGameRepository.save(any(BoardGame.class))).thenAnswer(invocation -> {
+            BoardGame saved = invocation.getArgument(0);
+            saved.setId("bg-" + saved.getBggId());
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"expansions":[
+                                  {"bggId":"926","status":"OWNED","acquisitionPrice":24.95,"dateAdded":"2026-10-01"},
+                                  {"bggId":"325","status":"WISHLIST"}
+                                ]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created.length()").value(2))
+                .andExpect(jsonPath("$.created[0].bggId").value("926"))
+                .andExpect(jsonPath("$.created[0].status").value("OWNED"))
+                .andExpect(jsonPath("$.created[0].acquisitionPrice").value(24.95))
+                .andExpect(jsonPath("$.created[0].dateAdded").value("2026-10-01"))
+                .andExpect(jsonPath("$.created[1].bggId").value("325"))
+                .andExpect(jsonPath("$.created[1].status").value("WISHLIST"))
+                .andExpect(jsonPath("$.created[1].acquisitionPrice").doesNotExist())
+                .andExpect(jsonPath("$.created[1].dateAdded").doesNotExist())
+                .andExpect(jsonPath("$.skipped").isEmpty());
+    }
+
+    @Test
+    void addExpansions_returns400_whenOwnedItemHasNoPrice() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"expansions":[{"bggId":"926","status":"OWNED","dateAdded":"2026-10-01"}]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", Matchers.containsString("precio")));
+
+        verify(boardGameRepository, never()).save(any(BoardGame.class));
+    }
+
+    @Test
+    void addExpansions_returns400_whenOwnedItemHasNoDate() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"expansions":[{"bggId":"926","status":"OWNED","acquisitionPrice":24.95}]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", Matchers.containsString("fecha")));
+
+        verify(boardGameRepository, never()).save(any(BoardGame.class));
+    }
+
+    @Test
+    void addExpansions_returns400_whenBothSourcesAreSent() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bggIds":["926"],"expansions":[{"bggId":"325","status":"WISHLIST"}]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", Matchers.containsString("'bggIds' o 'expansions'")));
+
+        verify(boardGameRepository, never()).save(any(BoardGame.class));
+    }
+
+    @Test
+    void addExpansions_returns400_whenNoSourceIsSent() throws Exception {
+        mockMvc.perform(post("/api/v1/boardgames/bg1/expansions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", Matchers.containsString("'bggIds' o 'expansions'")));
     }
 
     @Test

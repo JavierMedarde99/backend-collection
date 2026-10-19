@@ -23,6 +23,7 @@ import com.wikicollection.domain.model.BoardGameExpansion;
 import com.wikicollection.domain.model.BoardGameExpansionAddResult;
 import com.wikicollection.domain.model.BoardGameExpansionCatalog;
 import com.wikicollection.domain.model.BoardGameExpansionInfo;
+import com.wikicollection.domain.model.BoardGameExpansionSeed;
 import com.wikicollection.domain.model.BoardGameExpansionSkip;
 import com.wikicollection.domain.model.BoardGameStatus;
 import com.wikicollection.domain.model.BoardGameType;
@@ -90,6 +91,15 @@ class BoardGameExpansionServiceTest {
 
     private void givenBase(BoardGame base) {
         when(boardGameRepository.findById(base.getId())).thenReturn(Optional.of(base));
+    }
+
+    /** Equivalente al alta legada: en posesión, sin precio y con la fecha de hoy (la pone el servicio). */
+    private BoardGameExpansionSeed seed(String bggId) {
+        return new BoardGameExpansionSeed(bggId, BoardGameStatus.OWNED, null, null);
+    }
+
+    private List<BoardGameExpansionSeed> seeds(String... bggIds) {
+        return java.util.stream.Stream.of(bggIds).map(this::seed).toList();
     }
 
     // --------------------------------------------------------------- catálogo (lectura)
@@ -161,7 +171,7 @@ class BoardGameExpansionServiceTest {
     void addExpansions_throws404_whenBaseDoesNotExist() {
         when(boardGameRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.addExpansions("missing", List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions("missing", seeds("926"), VIEWER))
                 .isInstanceOf(BoardGameNotFoundException.class);
     }
 
@@ -171,7 +181,7 @@ class BoardGameExpansionServiceTest {
         other.setOwnerId("u2");
         givenBase(other);
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("926"), VIEWER))
                 .isInstanceOf(ForbiddenException.class);
         verify(bggXmlClient, never()).findByBggIds(anyList());
     }
@@ -180,7 +190,7 @@ class BoardGameExpansionServiceTest {
     void addExpansions_throws422_whenBaseIsNotOwned() {
         givenBase(base(BoardGameStatus.WISHLIST));
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("926"), VIEWER))
                 .isInstanceOf(BoardGameExpansionException.class)
                 .hasMessageContaining("OWNED");
         verify(bggXmlClient, never()).findByBggIds(anyList());
@@ -191,15 +201,14 @@ class BoardGameExpansionServiceTest {
         givenBase(BoardGame.builder().id(BASE_ID).ownerId(VIEWER).title("Sin bggId")
                 .status(BoardGameStatus.OWNED).build());
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("926"), VIEWER))
                 .isInstanceOf(BoardGameExpansionException.class)
                 .hasMessageContaining("bggId");
     }
 
     @Test
     void addExpansions_throws400_whenBggIdsIsEmpty() {
-        givenBase(base(BoardGameStatus.OWNED));
-
+        // La validación de entrada va antes de buscar el base: sin stub de base.
         assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of(), VIEWER))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -212,7 +221,7 @@ class BoardGameExpansionServiceTest {
         when(bggXmlClient.findByBggIds(List.of("325")))
                 .thenReturn(List.of(expansionInfo("325", BASE_BGG_ID)));
 
-        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID, List.of("926", "325"), VIEWER);
+        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID, seeds("926", "325"), VIEWER);
 
         assertThat(result.created()).hasSize(1);
         assertThat(result.created().get(0).getBggId()).isEqualTo("325");
@@ -228,7 +237,7 @@ class BoardGameExpansionServiceTest {
         when(bggXmlClient.findByBggIds(List.of("926")))
                 .thenReturn(List.of(expansionInfo("926", BASE_BGG_ID)));
 
-        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID, List.of("926"), VIEWER);
+        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID, seeds("926"), VIEWER);
 
         ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
         verify(boardGameRepository).save(captor.capture());
@@ -260,11 +269,51 @@ class BoardGameExpansionServiceTest {
     }
 
     @Test
+    void addExpansions_createsOwnedExpansionWithPriceAndDate() {
+        givenBase(base(BoardGameStatus.OWNED));
+        when(bggXmlClient.findByBggIds(List.of("926")))
+                .thenReturn(List.of(expansionInfo("926", BASE_BGG_ID)));
+
+        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID,
+                List.of(new BoardGameExpansionSeed("926", BoardGameStatus.OWNED,
+                        new BigDecimal("24.95"), LocalDate.of(2026, 10, 1))),
+                VIEWER);
+
+        ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
+        verify(boardGameRepository).save(captor.capture());
+        BoardGame created = captor.getValue();
+        assertThat(result.created()).containsExactly(created);
+        assertThat(created.getStatus()).isEqualTo(BoardGameStatus.OWNED);
+        assertThat(created.getAcquisitionPrice()).isEqualByComparingTo(new BigDecimal("24.95"));
+        assertThat(created.getDateAdded()).isEqualTo(LocalDate.of(2026, 10, 1));
+    }
+
+    @Test
+    void addExpansions_createsWishlistExpansionStrippingPriceAndDate() {
+        givenBase(base(BoardGameStatus.OWNED));
+        when(bggXmlClient.findByBggIds(List.of("325")))
+                .thenReturn(List.of(expansionInfo("325", BASE_BGG_ID)));
+
+        BoardGameExpansionAddResult result = service.addExpansions(BASE_ID,
+                List.of(new BoardGameExpansionSeed("325", BoardGameStatus.WISHLIST,
+                        new BigDecimal("12.00"), LocalDate.of(2026, 10, 1))),
+                VIEWER);
+
+        ArgumentCaptor<BoardGame> captor = ArgumentCaptor.forClass(BoardGame.class);
+        verify(boardGameRepository).save(captor.capture());
+        BoardGame created = captor.getValue();
+        assertThat(result.created()).containsExactly(created);
+        assertThat(created.getStatus()).isEqualTo(BoardGameStatus.WISHLIST);
+        assertThat(created.getAcquisitionPrice()).isNull();
+        assertThat(created.getDateAdded()).isNull();
+    }
+
+    @Test
     void addExpansions_throws422_whenBggDoesNotKnowTheId() {
         givenBase(base(BoardGameStatus.OWNED));
         when(bggXmlClient.findByBggIds(List.of("999999"))).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("999999"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("999999"), VIEWER))
                 .isInstanceOf(BoardGameExpansionException.class)
                 .hasMessageContaining("999999");
     }
@@ -277,7 +326,7 @@ class BoardGameExpansionServiceTest {
                 null, null, null, BoardGameType.BOARDGAME, List.of());
         when(bggXmlClient.findByBggIds(List.of("31260"))).thenReturn(List.of(notAnExpansion));
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("31260"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("31260"), VIEWER))
                 .isInstanceOf(BoardGameExpansionException.class)
                 .hasMessageContaining("expansión");
     }
@@ -288,7 +337,7 @@ class BoardGameExpansionServiceTest {
         when(bggXmlClient.findByBggIds(List.of("926")))
                 .thenReturn(List.of(expansionInfo("926", "13")));
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("926"), VIEWER))
                 .isInstanceOf(BoardGameExpansionException.class)
                 .hasMessageContaining(BASE_BGG_ID);
         verify(boardGameRepository, never()).save(any(BoardGame.class));
@@ -300,7 +349,7 @@ class BoardGameExpansionServiceTest {
         when(bggXmlClient.findByBggIds(List.of("926")))
                 .thenThrow(new ExternalCatalogException("BGG no responde"));
 
-        assertThatThrownBy(() -> service.addExpansions(BASE_ID, List.of("926"), VIEWER))
+        assertThatThrownBy(() -> service.addExpansions(BASE_ID, seeds("926"), VIEWER))
                 .isInstanceOf(ExternalCatalogException.class);
         verify(boardGameRepository, never()).save(any(BoardGame.class));
     }
