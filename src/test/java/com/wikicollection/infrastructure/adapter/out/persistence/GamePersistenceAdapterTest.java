@@ -88,13 +88,47 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria(null, "PC", GameStatus.PLAYING, null, null, null, null), pageable);
+        adapter.search(new GameSearchCriteria(null, List.of("PC"), GameStatus.PLAYING, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
         String qs = queryCaptor.getValue().toString();
         assertThat(qs).contains("platform");
         assertThat(qs).contains("status");
+    }
+
+    @Test
+    void search_withSeveralPlatforms_filtersByAnyOfThem() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, List.of("PC", "PlayStation 5"), null, null, null, null, null),
+                pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("platform").contains("$in");
+        assertThat(qs).contains("PC").contains("PlayStation 5");
+    }
+
+    @Test
+    void search_withoutPlatforms_doesNotAddCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, List.of(), null, null, null, null, null), pageable);
+        ArgumentCaptor<Query> emptyCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(emptyCaptor.capture(), eq(GameEntity.class));
+        assertThat(emptyCaptor.getValue().toString()).doesNotContain("platform");
+
+        adapter.search(new GameSearchCriteria(null, java.util.Arrays.asList("  ", null), null, null, null, null, null),
+                pageable);
+        ArgumentCaptor<Query> blankCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate, org.mockito.Mockito.times(2)).find(blankCaptor.capture(), eq(GameEntity.class));
+        assertThat(blankCaptor.getAllValues().get(1).toString()).doesNotContain("platform");
     }
 
     @Test
