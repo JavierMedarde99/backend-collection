@@ -29,6 +29,8 @@ public class GameEntityMapper {
                 .steamAppId(game.getSteamAppId())
                 .acquisitionDate(game.getAcquisitionDate())
                 .acquisitionPrice(game.getAcquisitionPrice())
+                .parentId(game.getParentId())
+                .parentTitle(game.getParentTitle())
                 .build();
     }
 
@@ -54,6 +56,8 @@ public class GameEntityMapper {
                 .steamAppId(entity.getSteamAppId())
                 .acquisitionDate(entity.getAcquisitionDate())
                 .acquisitionPrice(entity.getAcquisitionPrice())
+                .parentId(entity.getParentId())
+                .parentTitle(entity.getParentTitle())
                 .build();
     }
 }

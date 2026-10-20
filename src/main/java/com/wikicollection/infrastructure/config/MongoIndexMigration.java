@@ -65,12 +65,22 @@ public class MongoIndexMigration implements ApplicationRunner {
                 mongoTemplate.indexOps(collection).ensureIndex(partialUniqueExternalIdIndex());
             }
             // «mis expansiones de este base»: consulta frecuente desde la ficha.
-            mongoTemplate.indexOps("board_games")
-                    .ensureIndex(new Index().on("ownerId", Sort.Direction.ASC)
-                            .on("parentId", Sort.Direction.ASC));
+            ensureParentIndex("board_games");
+            // «mis DLCs de este base» y el borrado en cascada del base.
+            ensureParentIndex("games");
         } catch (RuntimeException e) {
             log.warn("Creación de índices omitida (Mongo no disponible): {}", e.getMessage());
         }
+    }
+
+    /**
+     * Índice {@code {ownerId, parentId}} para «los que cuelgan de un base»: la consulta del
+     * bloque de la ficha y el borrado en cascada.
+     */
+    private void ensureParentIndex(String collection) {
+        mongoTemplate.indexOps(collection)
+                .ensureIndex(new Index().on("ownerId", Sort.Direction.ASC)
+                        .on("parentId", Sort.Direction.ASC));
     }
 
     /**

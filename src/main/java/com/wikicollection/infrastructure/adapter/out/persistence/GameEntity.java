@@ -59,4 +59,8 @@ public class GameEntity {
     private LocalDate acquisitionDate;
 
     private BigDecimal acquisitionPrice;
+
+    private String parentId;
+
+    private String parentTitle;
 }

@@ -73,7 +73,7 @@ public class GameService implements GameUseCase {
     @Cacheable(cacheNames = "gameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
-        return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+        return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), criteria.type()), pageable);
     }
 
     @Override
@@ -111,6 +111,10 @@ public class GameService implements GameUseCase {
     public void delete(String id, String userId) {
         Game existing = findById(id);
         ownershipValidator.validateOwner(existing.getOwnerId(), userId);
+        if (existing.getParentId() == null) {
+            // Un base no puede dejar sus DLC huérfanos: se borran primero.
+            gameRepository.deleteByOwnerIdAndParentId(existing.getOwnerId(), id);
+        }
         gameRepository.deleteById(id);
     }
 

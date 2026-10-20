@@ -172,7 +172,7 @@ class CacheInvalidationServiceTest {
 
     @Test
     void gameList_isEvicted_afterSave() {
-        GameSearchCriteria criteria = new GameSearchCriteria(null, null, null, null, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria(null, null, null, null, null, null, null);
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 

@@ -24,4 +24,14 @@ public interface GameRepository {
     void updateOwnerName(String ownerId, String ownerName);
 
     List<String> distinctGenres(List<String> excludeOwnerIds);
+
+    /**
+     * Los juegos que este usuario tiene con esos externalId (para el flag «ya lo
+     * tienes») del catálogo externo. Acotado por dueño a propósito: {@code
+     * findByExternalId} no filtra por dueño y serviría datos de otra colección.
+     */
+    List<Game> findByOwnerIdAndExternalIdIn(String ownerId, List<String> externalIds);
+
+    /** Borra en cascada las adiciones (DLC) de un juego base. */
+    void deleteByOwnerIdAndParentId(String ownerId, String parentId);
 }

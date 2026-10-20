@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -18,11 +19,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.Optional;
 
+import com.wikicollection.application.exception.ExternalCatalogException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameAdditionsPage;
 import com.wikicollection.domain.model.GameSearchCriteria;
+import com.wikicollection.domain.model.GameTypeFilter;
 import com.wikicollection.domain.model.PlatformInfo;
 import com.wikicollection.domain.port.in.PlatformCatalogUseCase;
 import com.wikicollection.domain.model.GameSearchResult;
@@ -60,6 +64,10 @@ class GameControllerTest {
 
     @MockitoBean
     private GameRepository gameRepository;
+
+    /** Sin este mock la comprobación de administrador de OwnershipValidator consulta Mongo. */
+    @MockitoBean
+    private com.wikicollection.domain.port.out.UserRepository userRepository;
 
     @MockitoBean
     private RAWGClient rawgClient;
@@ -514,6 +522,213 @@ class GameControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.achievements[0].name").value("El nacimiento"))
                 .andExpect(jsonPath("$.totalAchieved").value(1));
+    }
+
+    // ------------------------------------------------------------------- contenido adicional
+
+    @Test
+    void getAdditions_returnsCatalogWithInCollectionAndAlreadyLinked() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("355880"), addition("378648")), 12));
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("355880", "378648")))
+                .thenReturn(List.of(Game.builder().id("d1").ownerId("u1").externalId("355880")
+                        .parentId("g1").build()));
+
+        mockMvc.perform(get("/api/v1/games/g1/additions").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.baseGameId").value("g1"))
+                .andExpect(jsonPath("$.baseExternalId").value("292030"))
+                .andExpect(jsonPath("$.additions.length()").value(2))
+                .andExpect(jsonPath("$.additions[0].externalId").value("355880"))
+                .andExpect(jsonPath("$.additions[0].title").value("Adición 355880"))
+                .andExpect(jsonPath("$.additions[0].inCollection").value(true))
+                .andExpect(jsonPath("$.additions[0].alreadyLinked").value(true))
+                .andExpect(jsonPath("$.additions[1].inCollection").value(false))
+                .andExpect(jsonPath("$.additions[1].alreadyLinked").value(false))
+                .andExpect(jsonPath("$.totalAvailable").value(12));
+    }
+
+    @Test
+    void getAdditions_returns404_whenBaseMissing() throws Exception {
+        when(gameRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/games/nope/additions"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAdditions_returns422_whenBaseDoesNotComeFromRawg() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(Game.builder()
+                .id("g1").ownerId("u1").title("FreeToGame").externalId("1")
+                .externalSource("FreeToGame").status(GameStatus.PLAYING).build()));
+
+        mockMvc.perform(get("/api/v1/games/g1/additions"))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void getAdditions_returns502_whenRawgFails() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030"))
+                .thenThrow(new ExternalCatalogException("RAWG devolvió error 500"));
+
+        mockMvc.perform(get("/api/v1/games/g1/additions"))
+                .andExpect(status().isBadGateway());
+    }
+
+    @Test
+    void addAdditions_returns201_withCreatedLinkedAndSkipped() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("100"), addition("200"), addition("300")), 3));
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("100", "200", "300")))
+                .thenReturn(List.of(
+                        Game.builder().id("loose").ownerId("u1").externalId("200").build(),
+                        Game.builder().id("linked").ownerId("u1").externalId("300").parentId("g1").build()));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> {
+            Game saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId("dlc-" + saved.getExternalId());
+            }
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["100","200","300"],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created.length()").value(1))
+                .andExpect(jsonPath("$.created[0].id").value("dlc-100"))
+                .andExpect(jsonPath("$.created[0].parentId").value("g1"))
+                .andExpect(jsonPath("$.created[0].parentTitle").value("The Witcher 3"))
+                .andExpect(jsonPath("$.created[0].externalSource").value("RAWG"))
+                .andExpect(jsonPath("$.linked.length()").value(1))
+                .andExpect(jsonPath("$.linked[0].externalId").value("200"))
+                .andExpect(jsonPath("$.linked[0].parentId").value("g1"))
+                .andExpect(jsonPath("$.skipped.length()").value(1))
+                .andExpect(jsonPath("$.skipped[0].externalId").value("300"))
+                .andExpect(jsonPath("$.skipped[0].reason").value("ALREADY_LINKED"));
+    }
+
+    @Test
+    void addAdditions_returns400_whenExternalIdsIsEmpty() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":[],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns400_whenAnExternalIdIsBlank() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["355880","  "],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns400_whenStatusIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["355880"]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns404_whenBaseMissing() throws Exception {
+        when(gameRepository.findById("nope")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/games/nope/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["355880"],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addAdditions_returns403_whenBaseBelongsToAnotherUser() throws Exception {
+        Game other = rawgBaseGame(GameStatus.PLAYING);
+        other.setOwnerId("u2");
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(other));
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["355880"],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void addAdditions_returns422_whenBaseIsWishlist() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.WISHLIST)));
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["355880"],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns422_whenTheIdIsNotAnAdditionOfTheBase() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("355880")), 1));
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["777"],"status":"PLAYING"}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void list_filtersByTypeDlc() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("type", "dlc"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().type()).isEqualTo(GameTypeFilter.DLC);
+    }
+
+    private Game rawgBaseGame(GameStatus status) {
+        return Game.builder()
+                .id("g1").ownerId("u1").title("The Witcher 3")
+                .externalId("292030").externalSource("RAWG").platform("PC").status(status)
+                .build();
+    }
+
+    private GameSearchResult addition(String externalId) {
+        return new GameSearchResult(externalId, "Adición " + externalId, "desc", "RPG", "PC",
+                "CD Projekt Red", "CD Projekt Red", java.time.LocalDate.of(2016, 5, 31),
+                "http://thumb/" + externalId, "RAWG");
     }
 
     @Test

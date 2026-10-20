@@ -7,6 +7,7 @@ import com.wikicollection.application.exception.AmiiboNotFoundException;
 import com.wikicollection.application.exception.BookConflictException;
 import com.wikicollection.application.exception.BookNotFoundException;
 import com.wikicollection.application.exception.BoardGameExpansionException;
+import com.wikicollection.application.exception.GameAdditionsException;
 import com.wikicollection.application.exception.BoardGameNotFoundException;
 import com.wikicollection.application.exception.CatboxUploadException;
 import com.wikicollection.application.exception.DeckImportNotFoundException;
@@ -150,6 +151,16 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BoardGameExpansionException.class)
     public ResponseEntity<ErrorResponse> handleBoardGameExpansion(BoardGameExpansionException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    /**
+     * La regla de negocio del contenido adicional de videojuegos no se cumple (el
+     * base está en WISHLIST, no viene de RAWG o el id no es una adición suya): se
+     * puede corregir y reenviar, así que es un 422.
+     */
+    @ExceptionHandler(GameAdditionsException.class)
+    public ResponseEntity<ErrorResponse> handleGameAdditions(GameAdditionsException ex, HttpServletRequest request) {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 

@@ -8,7 +8,13 @@ public record GameSearchCriteria(
         GameStatus status,
         java.util.List<String> genres,
         String ownerId,
-        List<String> excludeOwnerIds) {
+        List<String> excludeOwnerIds,
+        GameTypeFilter type) {
+
+    public GameSearchCriteria {
+        // «sin filtro» es ALL: el resto de la capa no tiene que tratar null.
+        type = type == null ? GameTypeFilter.ALL : type;
+    }
 
     public boolean hasName() {
         return name != null && !name.isBlank();
@@ -31,5 +37,13 @@ public record GameSearchCriteria(
 
     public boolean hasExcludeOwnerIds() {
         return excludeOwnerIds != null && !excludeOwnerIds.isEmpty();
+    }
+
+    public boolean isBaseOnly() {
+        return type == GameTypeFilter.BASE;
+    }
+
+    public boolean isDlcOnly() {
+        return type == GameTypeFilter.DLC;
     }
 }

@@ -64,7 +64,7 @@ public class StatsService implements StatsUseCase {
         counts.put(CollectionType.BOOKS.getKey(), bookRepository
                 .search(new BookSearchCriteria(null, null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.GAMES.getKey(), gameRepository
-                .search(new GameSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
+                .search(new GameSearchCriteria(null, null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.BOARDGAMES.getKey(), boardGameRepository
                 .search(new BoardGameSearchCriteria(null, null, null, null, null, null), single).getTotalElements());
         counts.put(CollectionType.MAGIC.getKey(), magicCardRepository
