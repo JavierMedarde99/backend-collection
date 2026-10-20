@@ -112,6 +112,29 @@ Al escribir fixtures, `total_cards` tiene que ser coherente con los elementos de
 `total_cards: 10` con 2 elementos no es una respuesta de Scryfall y hace fallar los tests por
 el recorte, no por un fallo del mapper.
 
+### Cartas de doble cara: las imágenes viven en `card_faces` (#510)
+
+En los layouts de doble cara Scryfall manda **`image_uris: null` en la raíz** y las imágenes por
+cara en `card_faces[]`. `MagicCardMapper.effectiveImageUris()` cubre el anverso (primera cara con
+arte) y `backImageUris()` el reverso (`card_faces[1]`, que va a `imageUrlBack`/`imageLargeUrlBack`
+y es `null` en las cartas de una sola cara). Los tres puntos que usaban `card.imageUris()` a secas
+—`map()`, `toPrinting()` y `toSearchResult()`— pasan por ellos: saltarse uno deja sin arte la
+colección, las impresiones o la búsqueda.
+
+Solo entran en la migración los cuatro layouts que mandan las caras: `transform`, `modal_dfc`,
+`double_faced_token` y `art_series`. `split`, `flip`, `adventure` y demás **sí** traen
+`image_uris` en la raíz, así que meterlos en la lista haría re-consultar cartas que nunca
+estuvieron rotas.
+
+Efecto colateral conocido: el respaldo usa `card_faces[0].image_uris.normal`, que en Scryfall
+apunta a la imagen completa de la cara (no recortada). `imageUrl`, `imageLargeUrl` y
+`artCropUrl` quedan iguales, no como antes (los tres nulos).
+
+`MagicCardDfcImageBackfillMigration` rellena las DFC ya guardadas (el mapper solo arregla lo que
+se guarde de ahora en adelante): documentos de `magic_cards` con `imageUrl` nulo y layout DFC,
+re-consultados por `scryfallId` con el cliente (que ya va espaciado) y actualizados **solo** en
+los campos de imagen.
+
 ## Amiibo: catálogo externo (AmiiboAPI)
 
 La colección Amiibo (Mongo `amiibos`) sigue el patrón de board-games: dos estados

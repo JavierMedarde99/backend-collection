@@ -89,6 +89,10 @@ public class MagicCardEntity {
 
     private String artCropUrl;
 
+    private String imageUrlBack;
+
+    private String imageLargeUrlBack;
+
     private MagicCardCondition condition;
 
     private Boolean isFoil;

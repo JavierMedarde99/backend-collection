@@ -104,6 +104,31 @@ class MagicCardMapperPrintingsTest {
     }
 
     @Test
+    void unaImpresionDeDobleCaraTomaElArteDeSuPrimeraCara() throws Exception {
+        // En las DFC (transform, modal_dfc...) Scryfall manda image_uris: null en la raiz.
+        String dfc = """
+                { "object": "card", "id": "id-dfc", "oracle_id": "oracle-dfc",
+                  "name": "Avabruck Caretaker // Hollowhenge Huntmaster",
+                  "lang": "en", "released_at": "2021-11-19", "rarity": "mythic",
+                  "set": "vow", "set_name": "Innistrad: Crimson Vow", "collector_number": "162",
+                  "image_uris": null,
+                  "card_faces": [
+                    { "object": "card_face", "name": "Avabruck Caretaker",
+                      "image_uris": { "normal": "https://cards.scryfall.io/normal/front/dfc-front.jpg",
+                                      "art_crop": "https://cards.scryfall.io/art_crop/front/dfc-front.jpg" } },
+                    { "object": "card_face", "name": "Hollowhenge Huntmaster",
+                      "image_uris": { "normal": "https://cards.scryfall.io/normal/back/dfc-back.jpg",
+                                      "art_crop": "https://cards.scryfall.io/art_crop/back/dfc-back.jpg" } }
+                  ] }
+                """;
+
+        MagicCardPrinting printing = mapper.toPrinting(parseCard(dfc));
+
+        assertThat(printing.imageUrl()).isEqualTo("https://cards.scryfall.io/normal/front/dfc-front.jpg");
+        assertThat(printing.artCropUrl()).isEqualTo("https://cards.scryfall.io/art_crop/front/dfc-front.jpg");
+    }
+
+    @Test
     void unaCartaAntiguaSinLosDescriptoresDeArteNoRevienta() throws Exception {
         // Scryfall omite full_art, finishes, promo_types y frame_effects en las cartas antiguas.
         String antigua = """
