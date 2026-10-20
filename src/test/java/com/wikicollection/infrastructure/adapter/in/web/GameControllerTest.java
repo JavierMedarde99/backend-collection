@@ -150,7 +150,22 @@ class GameControllerTest {
 
         ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
         verify(gameRepository).search(captor.capture(), any(Pageable.class));
-        assertThat(captor.getValue().platform()).isEqualTo("Xbox Series X");
+        // Compatibilidad: una sola plataforma sigue comportandose como antes.
+        assertThat(captor.getValue().platforms()).containsExactly("Xbox Series X");
+    }
+
+    @Test
+    void listGames_filtersBySeveralPlatforms() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class))).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1"))
+                        .param("platform", "PC")
+                        .param("platform", "PlayStation 5"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().platforms()).containsExactly("PC", "PlayStation 5");
     }
 
     @Test
@@ -184,7 +199,7 @@ class GameControllerTest {
         verify(gameRepository).search(captor.capture(), any(Pageable.class));
         GameSearchCriteria criteria = captor.getValue();
         org.assertj.core.api.Assertions.assertThat(criteria.name()).isEqualTo("witc");
-        org.assertj.core.api.Assertions.assertThat(criteria.platform()).isEqualTo("PC");
+        org.assertj.core.api.Assertions.assertThat(criteria.platforms()).containsExactly("PC");
         org.assertj.core.api.Assertions.assertThat(criteria.status()).isEqualTo(GameStatus.PLAYING);
     }
 

@@ -4,7 +4,7 @@ import java.util.List;
 
 public record GameSearchCriteria(
         String name,
-        String platform,
+        List<String> platforms,
         GameStatus status,
         java.util.List<String> genres,
         String ownerId,
@@ -18,6 +18,18 @@ public record GameSearchCriteria(
 
     public boolean hasName() {
         return name != null && !name.isBlank();
+    }
+
+    public boolean hasPlatforms() {
+        return platforms != null && platforms.stream().anyMatch(p -> p != null && !p.isBlank());
+    }
+
+    /** Plataformas sin nulos ni blancos: el filtro es un «cualquiera de». */
+    public List<String> effectivePlatforms() {
+        if (platforms == null) {
+            return List.of();
+        }
+        return platforms.stream().filter(p -> p != null && !p.isBlank()).toList();
     }
 
     public boolean hasGenres() {

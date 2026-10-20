@@ -80,7 +80,7 @@ class GameServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        GameSearchCriteria criteria = new GameSearchCriteria("witc", "PC", GameStatus.PLAYING, null, null, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria("witc", java.util.List.of("PC"), GameStatus.PLAYING, null, null, null, null);
         when(gameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<Game> result = gameService.search(criteria, pageable);

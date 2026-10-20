@@ -96,7 +96,7 @@ public class GameController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
             @Parameter(description = "Filtro por título (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) @Size(max = 100, message = "La búsqueda no puede superar los 100 caracteres") String name,
-            @Parameter(description = "Filtro por plataforma") @RequestParam(required = false)  String platform,
+            @Parameter(description = "Filtro por plataforma (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> platform,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por tipo: base|dlc|all") @RequestParam(defaultValue = "all") GameTypeFilter type,

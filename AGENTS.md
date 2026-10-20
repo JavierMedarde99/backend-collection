@@ -121,19 +121,17 @@ y es `null` en las cartas de una sola cara). Los tres puntos que usaban `card.im
 —`map()`, `toPrinting()` y `toSearchResult()`— pasan por ellos: saltarse uno deja sin arte la
 colección, las impresiones o la búsqueda.
 
-Solo entran en la migración los cuatro layouts que mandan las caras: `transform`, `modal_dfc`,
-`double_faced_token` y `art_series`. `split`, `flip`, `adventure` y demás **sí** traen
-`image_uris` en la raíz, así que meterlos en la lista haría re-consultar cartas que nunca
-estuvieron rotas.
+Los layouts afectados son `transform`, `modal_dfc`, `double_faced_token` y `art_series`. `split`,
+`flip`, `adventure` y demás **sí** traen `image_uris` en la raíz: no necesitan respaldo.
 
 Efecto colateral conocido: el respaldo usa `card_faces[0].image_uris.normal`, que en Scryfall
 apunta a la imagen completa de la cara (no recortada). `imageUrl`, `imageLargeUrl` y
 `artCropUrl` quedan iguales, no como antes (los tres nulos).
 
-`MagicCardDfcImageBackfillMigration` rellena las DFC ya guardadas (el mapper solo arregla lo que
-se guarde de ahora en adelante): documentos de `magic_cards` con `imageUrl` nulo y layout DFC,
-re-consultados por `scryfallId` con el cliente (que ya va espaciado) y actualizados **solo** en
-los campos de imagen.
+El backfill de las DFC ya guardadas se retiró junto con `UserOwnedBackfillMigration`: quedan solo
+`MongoIndexMigration` (índices), `AuthDataMigration` (usuario admin) y `UserPreferencesMigration`,
+que son idempotentes y de arranque. Las DFC que ya estén en Mongo sin imagen hay que re-importarlas
+o rellenarlas a mano; no hay proceso que lo haga al arrancar.
 
 ## Amiibo: catálogo externo (AmiiboAPI)
 
