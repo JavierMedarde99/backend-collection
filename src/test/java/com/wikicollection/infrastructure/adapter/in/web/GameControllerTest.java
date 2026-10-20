@@ -706,6 +706,145 @@ class GameControllerTest {
     }
 
     @Test
+    void addAdditions_acceptsDetailedItems_andReturnsTheirData() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("100")), 1));
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("100"))).thenReturn(List.of());
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> {
+            Game saved = invocation.getArgument(0);
+            saved.setId("dlc-" + saved.getExternalId());
+            return saved;
+        });
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"COMPLETED",
+                                "acquisitionDate":"2026-01-05","acquisitionPrice":19.99,
+                                "dateAdded":"2026-01-10","dateCompleted":"2026-02-20"}]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created[0].id").value("dlc-100"))
+                .andExpect(jsonPath("$.created[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.created[0].acquisitionDate").value("2026-01-05"))
+                .andExpect(jsonPath("$.created[0].acquisitionPrice").value(19.99))
+                .andExpect(jsonPath("$.created[0].dateAdded").value("2026-01-10"))
+                .andExpect(jsonPath("$.created[0].dateCompleted").value("2026-02-20"));
+    }
+
+    @Test
+    void addAdditions_returns400_whenDetailedOwnedHasNoPrice() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"OWNED",
+                                "acquisitionDate":"2026-01-05"}]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns400_whenDetailedPlayingHasNoStartDate() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"PLAYING",
+                                "acquisitionDate":"2026-01-05","acquisitionPrice":10}]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns400_whenDetailedCompletedHasNoEndDate() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"COMPLETED",
+                                "acquisitionDate":"2026-01-05","acquisitionPrice":10,
+                                "dateAdded":"2026-01-10"}]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_returns400_whenBothRequestFormsAreSent() throws Exception {
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"externalIds":["100"],"status":"OWNED",
+                                "additions":[{"externalId":"100","status":"OWNED"}]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_acceptsDetailedWishlist_withoutAcquisition() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("100")), 1));
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("100"))).thenReturn(List.of());
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"WISHLIST"}]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created[0].status").value("WISHLIST"))
+                .andExpect(jsonPath("$.created[0].acquisitionDate").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.created[0].acquisitionPrice").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void addAdditions_linksDetailedLinkItems_withoutAcquisitionData() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("100")), 1));
+        Game owned = Game.builder().id("owned-100").ownerId("u1").externalId("100")
+                .title("Blood and Wine").status(GameStatus.PLAYING).build();
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("100")))
+                .thenReturn(List.of(owned));
+        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"OWNED","link":true}]}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.created.length()").value(0))
+                .andExpect(jsonPath("$.linked[0].id").value("owned-100"))
+                .andExpect(jsonPath("$.linked[0].status").value("PLAYING"));
+    }
+
+    @Test
+    void addAdditions_returns422_whenDetailedLinkItemIsNoLongerOwned() throws Exception {
+        when(gameRepository.findById("g1")).thenReturn(Optional.of(rawgBaseGame(GameStatus.PLAYING)));
+        when(rawgClient.getAdditions("292030")).thenReturn(new GameAdditionsPage(
+                List.of(addition("100")), 1));
+        when(gameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("100"))).thenReturn(List.of());
+
+        mockMvc.perform(post("/api/v1/games/g1/additions").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"additions":[{"externalId":"100","status":"OWNED","link":true}]}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
     void list_filtersByTypeDlc() throws Exception {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());

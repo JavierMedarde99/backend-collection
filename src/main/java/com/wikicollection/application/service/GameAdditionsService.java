@@ -13,6 +13,7 @@ import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameAddition;
 import com.wikicollection.domain.model.GameAdditionSkip;
+import com.wikicollection.domain.model.GameAdditionSeed;
 import com.wikicollection.domain.model.GameAdditionsAddResult;
 import com.wikicollection.domain.model.GameAdditionsCatalog;
 import com.wikicollection.domain.model.GameAdditionsPage;
@@ -90,13 +91,11 @@ public class GameAdditionsService implements GameAdditionsUseCase {
 
     @Override
     @CacheEvict(cacheNames = {"gameList", "gameDetail", "stats"}, allEntries = true)
-    public GameAdditionsAddResult addAdditions(String baseId, List<String> externalIds, GameStatus status,
+    public GameAdditionsAddResult addAdditions(String baseId, List<GameAdditionSeed> additions,
                                                String userId) {
-        // La entrada se valida antes de mirar el base: unos ids inválidos son 400, no 404.
-        List<String> requested = validIds(externalIds);
-        if (status == null) {
-            throw new IllegalArgumentException("Debes indicar el estado de las adiciones");
-        }
+        // La entrada se valida antes de mirar el base: unas semillas inválidas son 400, no 404.
+        List<GameAdditionSeed> requested = validSeeds(additions);
+        List<String> requestedIds = requested.stream().map(GameAdditionSeed::externalId).toList();
 
         Game base = requireBase(baseId);
         ownershipValidator.validateOwner(base.getOwnerId(), userId);
@@ -109,7 +108,7 @@ public class GameAdditionsService implements GameAdditionsUseCase {
         Map<String, GameSearchResult> additionsById = additionsById(
                 additionsCatalogClient.getAdditions(baseExternalId).additions());
         // Nada se guarda si algún id no es una adición real del base.
-        for (String externalId : requested) {
+        for (String externalId : requestedIds) {
             if (!additionsById.containsKey(externalId)) {
                 throw new GameAdditionsException(
                         "RAWG no lista " + externalId + " como adición del juego " + baseExternalId);
@@ -117,17 +116,23 @@ public class GameAdditionsService implements GameAdditionsUseCase {
         }
 
         Map<String, Game> ownedByExternalId = gameRepository
-                .findByOwnerIdAndExternalIdIn(userId, requested).stream()
+                .findByOwnerIdAndExternalIdIn(userId, requestedIds).stream()
                 .filter(game -> game.getExternalId() != null)
                 .collect(Collectors.toMap(Game::getExternalId, game -> game, (first, ignored) -> first));
 
         List<Game> created = new ArrayList<>();
         List<Game> linked = new ArrayList<>();
         List<GameAdditionSkip> skipped = new ArrayList<>();
-        for (String externalId : requested) {
+        for (GameAdditionSeed seed : requested) {
+            String externalId = seed.externalId();
             Game owned = ownedByExternalId.get(externalId);
             if (owned == null) {
-                created.add(gameRepository.save(toDlc(base, additionsById.get(externalId), status, userId)));
+                if (seed.link()) {
+                    throw new GameAdditionsException(
+                            "Ya no tienes " + externalId + " en tu colección: recarga el catálogo");
+                }
+                created.add(gameRepository.save(
+                        toDlc(base, additionsById.get(externalId), seed, userId)));
             } else if (owned.getParentId() != null) {
                 skipped.add(new GameAdditionSkip(externalId, GameAdditionSkip.REASON_ALREADY_LINKED));
             } else {
@@ -140,7 +145,14 @@ public class GameAdditionsService implements GameAdditionsUseCase {
         return new GameAdditionsAddResult(created, linked, skipped);
     }
 
-    private Game toDlc(Game base, GameSearchResult addition, GameStatus status, String userId) {
+    private Game toDlc(Game base, GameSearchResult addition, GameAdditionSeed seed, String userId) {
+        GameStatus status = seed.status();
+        boolean wishlist = status == GameStatus.WISHLIST;
+        LocalDate dateAdded = null;
+        if (status == GameStatus.PLAYING || status == GameStatus.COMPLETED) {
+            // La forma legada no manda fecha de inicio: se conserva la de hoy.
+            dateAdded = seed.dateAdded() != null ? seed.dateAdded() : LocalDate.now();
+        }
         return Game.builder()
                 .ownerId(userId)
                 .userOwned(ownerResolver.resolveOwner(userId))
@@ -152,7 +164,10 @@ public class GameAdditionsService implements GameAdditionsUseCase {
                         : base.getPlatform())
                 .thumbnailUrl(addition.thumbnailUrl())
                 .status(status)
-                .dateAdded(LocalDate.now())
+                .dateAdded(dateAdded)
+                .dateCompleted(status == GameStatus.COMPLETED ? seed.dateCompleted() : null)
+                .acquisitionDate(wishlist ? null : seed.acquisitionDate())
+                .acquisitionPrice(wishlist ? null : seed.acquisitionPrice())
                 .externalSource(RAWG_SOURCE)
                 .parentId(base.getId())
                 .parentTitle(base.getTitle())
@@ -192,20 +207,31 @@ public class GameAdditionsService implements GameAdditionsUseCase {
                 : List.of(addition.genre());
     }
 
-    /** Ids no vacíos, sin blancos ni duplicados; menos de {@value #MAX_ADDITIONS}+1. */
-    private List<String> validIds(List<String> externalIds) {
-        if (externalIds == null || externalIds.isEmpty()) {
+    /** Semillas válidas: id no vacío, estado presente, sin duplicados y hasta {@value #MAX_ADDITIONS}. */
+    private List<GameAdditionSeed> validSeeds(List<GameAdditionSeed> additions) {
+        if (additions == null || additions.isEmpty()) {
             throw new IllegalArgumentException("Debes indicar al menos una adición");
         }
-        if (externalIds.stream().anyMatch(id -> id == null || id.isBlank())) {
+        if (additions.stream().anyMatch(seed -> seed == null || seed.externalId() == null
+                || seed.externalId().isBlank())) {
             throw new IllegalArgumentException("Los externalId de las adiciones no pueden estar en blanco");
         }
-        List<String> distinct = externalIds.stream().map(String::strip).distinct().toList();
+        if (additions.stream().anyMatch(seed -> seed.status() == null)) {
+            throw new IllegalArgumentException("Debes indicar el estado de las adiciones");
+        }
+        Map<String, GameAdditionSeed> distinct = new LinkedHashMap<>();
+        for (GameAdditionSeed seed : additions) {
+            String externalId = seed.externalId().strip();
+            distinct.putIfAbsent(externalId, externalId.equals(seed.externalId())
+                    ? seed
+                    : new GameAdditionSeed(externalId, seed.status(), seed.acquisitionDate(),
+                            seed.acquisitionPrice(), seed.dateAdded(), seed.dateCompleted(), seed.link()));
+        }
         if (distinct.size() > MAX_ADDITIONS) {
             throw new IllegalArgumentException(
                     "No se pueden añadir más de " + MAX_ADDITIONS + " adiciones a la vez");
         }
-        return distinct;
+        return List.copyOf(distinct.values());
     }
 
     private String requireRawgExternalId(Game base) {

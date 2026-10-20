@@ -209,7 +209,7 @@ public class GameController {
             @Valid @RequestBody AddGameAdditionsRequest request,
             @CurrentUser String currentUserId) {
         var result = gameAdditionsUseCase.addAdditions(
-                id, request.externalIds(), request.status(), currentUserId);
+                id, request.toSeeds(), currentUserId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GameAdditionsAddResponse.from(result, mapper::toResponse));
     }
