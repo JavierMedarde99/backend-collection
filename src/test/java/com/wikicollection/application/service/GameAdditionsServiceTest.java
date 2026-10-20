@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,7 @@ import com.wikicollection.application.exception.GameAdditionsException;
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameAdditionSkip;
+import com.wikicollection.domain.model.GameAdditionSeed;
 import com.wikicollection.domain.model.GameAdditionsAddResult;
 import com.wikicollection.domain.model.GameAdditionsCatalog;
 import com.wikicollection.domain.model.GameAdditionsPage;
@@ -89,6 +91,16 @@ class GameAdditionsServiceTest {
     private void givenCatalog(GameSearchResult... additions) {
         when(additionsCatalogClient.getAdditions(BASE_EXTERNAL_ID))
                 .thenReturn(new GameAdditionsPage(List.of(additions), 12));
+    }
+
+    /** Atajo para la forma legada: ids sueltos con el mismo estado y sin datos. */
+    private GameAdditionsAddResult add(String baseId, List<String> externalIds, GameStatus status) {
+        List<GameAdditionSeed> seeds = externalIds == null
+                ? null
+                : externalIds.stream()
+                        .map(id -> new GameAdditionSeed(id, status, null, null, null, null, false))
+                        .toList();
+        return service.addAdditions(baseId, seeds, VIEWER);
     }
 
     // ------------------------------------------------------------------ catálogo (lectura)
@@ -177,16 +189,16 @@ class GameAdditionsServiceTest {
 
     @Test
     void addAdditions_throws400_whenNoIdsAreGiven() {
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of(), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of(), GameStatus.PLAYING))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, null, GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, null, GameStatus.PLAYING))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(gameRepository, never()).findById(any());
     }
 
     @Test
     void addAdditions_throws400_whenAnIdIsBlank() {
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("355880", "  "), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880", "  "), GameStatus.PLAYING))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(gameRepository, never()).findById(any());
     }
@@ -195,7 +207,7 @@ class GameAdditionsServiceTest {
     void addAdditions_throws400_whenMoreThanFortyIdsAreGiven() {
         List<String> tooMany = IntStream.rangeClosed(1, 41).mapToObj(i -> "id-" + i).toList();
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, tooMany, GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, tooMany, GameStatus.PLAYING))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(gameRepository, never()).findById(any());
     }
@@ -204,7 +216,7 @@ class GameAdditionsServiceTest {
     void addAdditions_throws404_whenBaseDoesNotExist() {
         when(gameRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.addAdditions("missing", List.of("355880"), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add("missing", List.of("355880"), GameStatus.PLAYING))
                 .isInstanceOf(GameNotFoundException.class);
     }
 
@@ -214,7 +226,7 @@ class GameAdditionsServiceTest {
         other.setOwnerId("u2");
         givenBase(other);
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("355880"), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.PLAYING))
                 .isInstanceOf(ForbiddenException.class);
         verify(additionsCatalogClient, never()).getAdditions(any());
     }
@@ -223,7 +235,7 @@ class GameAdditionsServiceTest {
     void addAdditions_throws422_whenBaseIsWishlist() {
         givenBase(base(GameStatus.WISHLIST));
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("355880"), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.PLAYING))
                 .isInstanceOf(GameAdditionsException.class)
                 .hasMessageContaining("WISHLIST");
         verify(additionsCatalogClient, never()).getAdditions(any());
@@ -234,7 +246,7 @@ class GameAdditionsServiceTest {
         givenBase(Game.builder().id(BASE_ID).ownerId(VIEWER).title("Sin RAWG")
                 .externalSource("FreeToGame").status(GameStatus.OWNED).build());
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("355880"), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.PLAYING))
                 .isInstanceOf(GameAdditionsException.class);
         verify(additionsCatalogClient, never()).getAdditions(any());
     }
@@ -244,7 +256,7 @@ class GameAdditionsServiceTest {
         givenBase(base(GameStatus.OWNED));
         givenCatalog(addition("355880", "PC"));
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("777"), GameStatus.PLAYING, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("777"), GameStatus.PLAYING))
                 .isInstanceOf(GameAdditionsException.class)
                 .hasMessageContaining("777");
         verify(gameRepository, never()).save(any(Game.class));
@@ -256,7 +268,7 @@ class GameAdditionsServiceTest {
         givenCatalog(addition("355880", "PC"));
         when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("355880"), GameStatus.PLAYING, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("355880"), GameStatus.PLAYING);
 
         ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
         verify(gameRepository).save(captor.capture());
@@ -285,7 +297,7 @@ class GameAdditionsServiceTest {
         givenCatalog(addition("355880", "PC"));
         when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("355880"), GameStatus.WISHLIST, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("355880"), GameStatus.WISHLIST);
 
         assertThat(result.created()).singleElement()
                 .extracting(Game::getStatus).isEqualTo(GameStatus.WISHLIST);
@@ -297,7 +309,7 @@ class GameAdditionsServiceTest {
         givenCatalog(addition("355880", null));
         when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("355880"), GameStatus.OWNED, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("355880"), GameStatus.OWNED);
 
         assertThat(result.created()).singleElement()
                 .extracting(Game::getPlatform).isEqualTo("PC");
@@ -314,7 +326,7 @@ class GameAdditionsServiceTest {
         when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880")))
                 .thenReturn(List.of(loose));
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("355880"), GameStatus.OWNED, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("355880"), GameStatus.OWNED);
 
         assertThat(result.created()).isEmpty();
         assertThat(result.linked()).containsExactly(loose);
@@ -335,7 +347,7 @@ class GameAdditionsServiceTest {
                 .thenReturn(List.of(Game.builder().id("d1").ownerId(VIEWER).externalId("355880")
                         .parentId(BASE_ID).build()));
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("355880"), GameStatus.OWNED, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("355880"), GameStatus.OWNED);
 
         assertThat(result.created()).isEmpty();
         assertThat(result.linked()).isEmpty();
@@ -353,8 +365,8 @@ class GameAdditionsServiceTest {
                         Game.builder().id("loose").ownerId(VIEWER).externalId("200").build(),
                         Game.builder().id("linked").ownerId(VIEWER).externalId("300").parentId(BASE_ID).build()));
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of("100", "200", "300"),
-                GameStatus.OWNED, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID, List.of("100", "200", "300"),
+                GameStatus.OWNED);
 
         assertThat(result.created()).singleElement()
                 .extracting(Game::getExternalId).isEqualTo("100");
@@ -370,8 +382,8 @@ class GameAdditionsServiceTest {
         givenCatalog(addition("355880", "PC"));
         when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
 
-        GameAdditionsAddResult result = service.addAdditions(BASE_ID,
-                List.of("355880", "355880"), GameStatus.OWNED, VIEWER);
+        GameAdditionsAddResult result = add(BASE_ID,
+                List.of("355880", "355880"), GameStatus.OWNED);
 
         assertThat(result.created()).hasSize(1);
         verify(gameRepository).save(any(Game.class));
@@ -383,8 +395,89 @@ class GameAdditionsServiceTest {
         when(additionsCatalogClient.getAdditions(BASE_EXTERNAL_ID))
                 .thenThrow(new ExternalCatalogException("RAWG no responde"));
 
-        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of("355880"), GameStatus.OWNED, VIEWER))
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.OWNED))
                 .isInstanceOf(ExternalCatalogException.class);
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_persistsPerItemData_andClearsWhatTheStatusDoesNotUse() {
+        givenBase(base(GameStatus.OWNED));
+        givenCatalog(addition("100", "PC"), addition("200", "PC"), addition("300", "PC"));
+        when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("100", "200", "300")))
+                .thenReturn(List.of());
+        LocalDate bought = LocalDate.of(2026, 1, 5);
+        LocalDate start = LocalDate.of(2026, 1, 10);
+        LocalDate end = LocalDate.of(2026, 2, 20);
+        BigDecimal price = new BigDecimal("19.99");
+
+        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of(
+                new GameAdditionSeed("100", GameStatus.COMPLETED, bought, price, start, end, false),
+                new GameAdditionSeed("200", GameStatus.OWNED, bought, price, start, end, false),
+                new GameAdditionSeed("300", GameStatus.WISHLIST, bought, price, start, end, false)), VIEWER);
+
+        assertThat(result.created()).hasSize(3);
+
+        Game completed = result.created().get(0);
+        assertThat(completed.getStatus()).isEqualTo(GameStatus.COMPLETED);
+        assertThat(completed.getAcquisitionDate()).isEqualTo(bought);
+        assertThat(completed.getAcquisitionPrice()).isEqualByComparingTo(price);
+        assertThat(completed.getDateAdded()).isEqualTo(start);
+        assertThat(completed.getDateCompleted()).isEqualTo(end);
+
+        Game owned = result.created().get(1);
+        assertThat(owned.getStatus()).isEqualTo(GameStatus.OWNED);
+        assertThat(owned.getAcquisitionDate()).isEqualTo(bought);
+        assertThat(owned.getAcquisitionPrice()).isEqualByComparingTo(price);
+        assertThat(owned.getDateAdded()).isNull();
+        assertThat(owned.getDateCompleted()).isNull();
+
+        Game wishlist = result.created().get(2);
+        assertThat(wishlist.getStatus()).isEqualTo(GameStatus.WISHLIST);
+        assertThat(wishlist.getAcquisitionDate()).isNull();
+        assertThat(wishlist.getAcquisitionPrice()).isNull();
+        assertThat(wishlist.getDateAdded()).isNull();
+        assertThat(wishlist.getDateCompleted()).isNull();
+    }
+
+    @Test
+    void addAdditions_deduplicatesDetailedSeedsByExternalId_keepingTheFirst() {
+        givenBase(base(GameStatus.OWNED));
+        givenCatalog(addition("355880", "PC"));
+        when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
+
+        GameAdditionsAddResult result = service.addAdditions(BASE_ID, List.of(
+                new GameAdditionSeed("355880", GameStatus.COMPLETED, LocalDate.of(2026, 1, 1),
+                        new BigDecimal("9.99"), LocalDate.of(2026, 1, 2), LocalDate.of(2026, 1, 3), false),
+                new GameAdditionSeed("355880", GameStatus.WISHLIST, null, null, null, null, false)), VIEWER);
+
+        assertThat(result.created()).singleElement()
+                .satisfies(game -> {
+                    assertThat(game.getStatus()).isEqualTo(GameStatus.COMPLETED);
+                    assertThat(game.getAcquisitionPrice()).isEqualByComparingTo("9.99");
+                });
+        verify(gameRepository).save(any(Game.class));
+    }
+
+    @Test
+    void addAdditions_throws400_whenASeedHasNoStatus() {
+        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of(
+                new GameAdditionSeed("355880", null, null, null, null, null, false)), VIEWER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("estado");
+        verify(gameRepository, never()).findById(any());
+    }
+
+    @Test
+    void addAdditions_throws422_whenALinkSeedIsNoLongerOwned() {
+        givenBase(base(GameStatus.OWNED));
+        givenCatalog(addition("355880", "PC"));
+        when(gameRepository.findByOwnerIdAndExternalIdIn(VIEWER, List.of("355880"))).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.addAdditions(BASE_ID, List.of(
+                new GameAdditionSeed("355880", GameStatus.OWNED, null, null, null, null, true)), VIEWER))
+                .isInstanceOf(GameAdditionsException.class)
+                .hasMessageContaining("Ya no tienes 355880");
         verify(gameRepository, never()).save(any(Game.class));
     }
 }
