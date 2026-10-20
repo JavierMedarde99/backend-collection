@@ -160,6 +160,45 @@ class MagicCardControllerTest {
     }
 
     @Test
+    void getCard_exponeElArteDeLasDosCarasDeUnaDfc() throws Exception {
+        // Contrato completo: JSON real de Scryfall (image_uris: null + card_faces) -> dominio ->
+        // persistencia -> respuesta HTTP. Es el caso del issue #510.
+        String json = """
+                { "object": "card", "id": "id-dfc", "oracle_id": "oracle-dfc",
+                  "name": "Avabruck Caretaker // Hollowhenge Huntmaster",
+                  "layout": "transform", "rarity": "mythic", "set": "vow",
+                  "set_name": "Innistrad: Crimson Vow", "image_uris": null,
+                  "card_faces": [
+                    { "object": "card_face", "name": "Avabruck Caretaker",
+                      "image_uris": { "normal": "https://cards.scryfall.io/normal/front/dfc-front.jpg",
+                                      "large": "https://cards.scryfall.io/large/front/dfc-front.jpg" } },
+                    { "object": "card_face", "name": "Hollowhenge Huntmaster",
+                      "image_uris": { "normal": "https://cards.scryfall.io/normal/back/dfc-back.jpg",
+                                      "large": "https://cards.scryfall.io/large/back/dfc-back.jpg" } }
+                  ] }
+                """;
+        com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper scryfallMapper =
+                new com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper();
+        MagicCard fromScryfall = scryfallMapper.map(new com.fasterxml.jackson.databind.ObjectMapper()
+                .readValue(json, com.wikicollection.infrastructure.adapter.out.scryfall.MagicCardMapper
+                        .ScryfallCardResponse.class));
+        fromScryfall.setId("mc-dfc");
+        fromScryfall.setQuantity(1);
+        fromScryfall.setIsFoil(false);
+
+        when(magicCardRepository.findById("mc-dfc")).thenReturn(Optional.of(fromScryfall));
+
+        mockMvc.perform(get("/api/v1/magic/mc-dfc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imageUrl")
+                        .value("https://cards.scryfall.io/normal/front/dfc-front.jpg"))
+                .andExpect(jsonPath("$.imageUrlBack")
+                        .value("https://cards.scryfall.io/normal/back/dfc-back.jpg"))
+                .andExpect(jsonPath("$.imageLargeUrlBack")
+                        .value("https://cards.scryfall.io/large/back/dfc-back.jpg"));
+    }
+
+    @Test
     void deleteCard_returns204_whenExists() throws Exception {
         when(magicCardRepository.findById("mc1")).thenReturn(Optional.of(sampleCard()));
 

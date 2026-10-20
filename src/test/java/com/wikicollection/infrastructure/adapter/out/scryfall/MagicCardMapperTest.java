@@ -47,6 +47,28 @@ class MagicCardMapperTest {
                               "art_crop": "http://crop" } }
             """;
 
+    /**
+     * Carta de transformar: en Scryfall las cartas de doble cara mandan {@code image_uris: null}
+     * en la raíz y viven en {@code card_faces}. Fixture con la forma real del API.
+     */
+    private static final String DFC_TRANSFORM = """
+            { "object": "card", "id": "id-dfc", "oracle_id": "oracle-dfc",
+              "name": "Avabruck Caretaker // Hollowhenge Huntmaster",
+              "layout": "transform", "cmc": 4.0, "rarity": "mythic",
+              "set": "vow", "set_name": "Innistrad: Crimson Vow", "artist": "Matt Stewart",
+              "image_uris": null,
+              "card_faces": [
+                { "object": "card_face", "name": "Avabruck Caretaker",
+                  "image_uris": { "normal": "https://cards.scryfall.io/normal/front/dfc-front.jpg",
+                                  "large": "https://cards.scryfall.io/large/front/dfc-front.jpg",
+                                  "art_crop": "https://cards.scryfall.io/art_crop/front/dfc-front.jpg" } },
+                { "object": "card_face", "name": "Hollowhenge Huntmaster",
+                  "image_uris": { "normal": "https://cards.scryfall.io/normal/back/dfc-back.jpg",
+                                  "large": "https://cards.scryfall.io/large/back/dfc-back.jpg",
+                                  "art_crop": "https://cards.scryfall.io/art_crop/back/dfc-back.jpg" } }
+              ] }
+            """;
+
     private static String boltWithoutOptionals() {
         return """
                 { "id": "id-1", "name": "Lightning Bolt" }
@@ -149,5 +171,61 @@ class MagicCardMapperTest {
 
         assertThat(mapper.map(card(conLegalities)).getLegalities())
                 .isEqualTo(Map.of("standard", "legal", "commander", "banned"));
+    }
+
+    @Test
+    void map_tomaLasImagenesDeLaPrimeraCaraCuandoScryfallNoMandaImageUris() throws Exception {
+        MagicCard cardDomain = mapper.map(card(DFC_TRANSFORM));
+
+        assertThat(cardDomain.getImageUrl())
+                .isEqualTo("https://cards.scryfall.io/normal/front/dfc-front.jpg");
+        assertThat(cardDomain.getImageLargeUrl())
+                .isEqualTo("https://cards.scryfall.io/large/front/dfc-front.jpg");
+        assertThat(cardDomain.getArtCropUrl())
+                .isEqualTo("https://cards.scryfall.io/art_crop/front/dfc-front.jpg");
+    }
+
+    @Test
+    void mapResponse_tomaLaImagenDeLaPrimeraCaraEnUnaCartaDeDobleCara() throws Exception {
+        List<MagicCardSearchResult> results = mapper.mapResponse(list(DFC_TRANSFORM));
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).imageUrl())
+                .isEqualTo("https://cards.scryfall.io/normal/front/dfc-front.jpg");
+    }
+
+    @Test
+    void map_exponeElReversoDeUnaCartaDeDobleCara() throws Exception {
+        MagicCard cardDomain = mapper.map(card(DFC_TRANSFORM));
+
+        assertThat(cardDomain.getImageUrlBack())
+                .isEqualTo("https://cards.scryfall.io/normal/back/dfc-back.jpg");
+        assertThat(cardDomain.getImageLargeUrlBack())
+                .isEqualTo("https://cards.scryfall.io/large/back/dfc-back.jpg");
+    }
+
+    @Test
+    void map_dejaElReversoVacioEnUnaCartaDeUnaSolaCara() throws Exception {
+        MagicCard cardDomain = mapper.map(card(LIGHTNING_BOLT));
+
+        assertThat(cardDomain.getImageUrl()).isEqualTo("http://normal");
+        assertThat(cardDomain.getImageUrlBack()).isNull();
+        assertThat(cardDomain.getImageLargeUrlBack()).isNull();
+    }
+
+    @Test
+    void map_toleraUnaCartaDeDobleCaraConUnaSolaCaraEnElJson() throws Exception {
+        // Scryfall siempre manda dos caras en las DFC, pero un JSON incompleto no debe
+        // reventar con IndexOutOfBounds.
+        String unaSolaCara = """
+                { "id": "id-rara", "name": "Split", "layout": "split", "image_uris": null,
+                  "card_faces": [ { "object": "card_face", "name": "Mitad",
+                                    "image_uris": { "normal": "http://mitad" } } ] }
+                """;
+
+        MagicCard cardDomain = mapper.map(card(unaSolaCara));
+
+        assertThat(cardDomain.getImageUrl()).isEqualTo("http://mitad");
+        assertThat(cardDomain.getImageUrlBack()).isNull();
     }
 }

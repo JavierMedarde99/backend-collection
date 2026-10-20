@@ -50,6 +50,8 @@ public class MagicCard {
     private String imageUrl;
     private String imageLargeUrl;
     private String artCropUrl;
+    private String imageUrlBack;
+    private String imageLargeUrlBack;
     private MagicCardCondition condition;
     private Boolean isFoil;
     private Integer quantity;

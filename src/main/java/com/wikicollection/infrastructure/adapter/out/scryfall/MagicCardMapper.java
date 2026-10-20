@@ -54,10 +54,42 @@ public class MagicCardMapper {
                 .legalities(card.legalities())
                 .priceUsd(card.prices() != null ? card.prices().usd() : null)
                 .priceEur(card.prices() != null ? card.prices().eur() : null)
-                .imageUrl(card.imageUris() != null ? card.imageUris().normal() : null)
-                .imageLargeUrl(card.imageUris() != null ? card.imageUris().large() : null)
-                .artCropUrl(card.imageUris() != null ? card.imageUris().artCrop() : null)
+                .imageUrl(effectiveImageUris(card) != null ? effectiveImageUris(card).normal() : null)
+                .imageLargeUrl(effectiveImageUris(card) != null ? effectiveImageUris(card).large() : null)
+                .artCropUrl(effectiveImageUris(card) != null ? effectiveImageUris(card).artCrop() : null)
+                .imageUrlBack(backImageUris(card) != null ? backImageUris(card).normal() : null)
+                .imageLargeUrlBack(backImageUris(card) != null ? backImageUris(card).large() : null)
                 .build();
+    }
+
+    /**
+     * Scryfall manda {@code image_uris: null} en la raíz de las cartas de doble cara (transform,
+     * modal_dfc, double_faced_token, art_series...): las imágenes viven por cara. Sin este
+     * respaldo esas cartas se guardaban sin imagen (issue #510).
+     */
+    private ScryfallImageUris effectiveImageUris(ScryfallCardResponse card) {
+        if (card.imageUris() != null) {
+            return card.imageUris();
+        }
+        if (card.cardFaces() == null) {
+            return null;
+        }
+        return card.cardFaces().stream()
+                .map(ScryfallCardFace::imageUris)
+                .filter(uris -> uris != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Imágenes del reverso. Solo existe en cartas de doble cara: en las de una sola cara (o si
+     * el JSON trae una cara suelta) devuelve null, no un arte duplicado.
+     */
+    private ScryfallImageUris backImageUris(ScryfallCardResponse card) {
+        if (card.imageUris() != null || card.cardFaces() == null || card.cardFaces().size() < 2) {
+            return null;
+        }
+        return card.cardFaces().get(1).imageUris();
     }
 
     public MagicCardPrinting toPrinting(ScryfallCardResponse card) {
@@ -74,8 +106,8 @@ public class MagicCardMapper {
                 card.artist(),
                 card.releasedAt(),
                 card.lang(),
-                card.imageUris() != null ? card.imageUris().normal() : null,
-                card.imageUris() != null ? card.imageUris().artCrop() : null,
+                effectiveImageUris(card) != null ? effectiveImageUris(card).normal() : null,
+                effectiveImageUris(card) != null ? effectiveImageUris(card).artCrop() : null,
                 card.finishes(),
                 Boolean.TRUE.equals(card.fullArt()),
                 card.promoTypes(),
@@ -108,7 +140,7 @@ public class MagicCardMapper {
                 card.rarity(),
                 card.set(),
                 card.setName(),
-                card.imageUris() != null ? card.imageUris().normal() : null,
+                effectiveImageUris(card) != null ? effectiveImageUris(card).normal() : null,
                 card.prices() != null ? card.prices().usd() : null,
                 card.colors(),
                 card.colorIdentity(),
@@ -149,6 +181,7 @@ public class MagicCardMapper {
             @JsonProperty("legalities") java.util.Map<String, String> legalities,
             @JsonProperty("prices") ScryfallPrices prices,
             @JsonProperty("image_uris") ScryfallImageUris imageUris,
+            @JsonProperty("card_faces") List<ScryfallCardFace> cardFaces,
             @JsonProperty("collector_number") String collectorNumber,
             @JsonProperty("lang") String lang,
             @JsonProperty("finishes") List<String> finishes,
@@ -156,6 +189,17 @@ public class MagicCardMapper {
             @JsonProperty("promo_types") List<String> promoTypes,
             @JsonProperty("frame_effects") List<String> frameEffects,
             @JsonProperty("promo_prices") ScryfallPromoPrices promoPrices) {
+    }
+
+    /**
+     * Cara de una carta de doble cara. Solo se modela la imagen: es lo único que este mapper
+     * necesita (mana_cost, oracle_text, power y toughness por cara quedan fuera del alcance
+     * de #510).
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ScryfallCardFace(
+            @JsonProperty("name") String name,
+            @JsonProperty("image_uris") ScryfallImageUris imageUris) {
     }
 
     /** Acabados especiales (foil, etched). No se exponen: el DTO solo lleva el precio simple. */

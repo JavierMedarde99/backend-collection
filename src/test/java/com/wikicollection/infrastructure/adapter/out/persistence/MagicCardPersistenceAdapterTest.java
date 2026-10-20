@@ -171,6 +171,8 @@ class MagicCardPersistenceAdapterTest {
                 .imageUrl("http://img")
                 .imageLargeUrl("http://large")
                 .artCropUrl("http://artcrop")
+                .imageUrlBack("http://back")
+                .imageLargeUrlBack("http://back-large")
                 .condition(MagicCardCondition.NEAR_MINT)
                 .isFoil(true)
                 .quantity(3)

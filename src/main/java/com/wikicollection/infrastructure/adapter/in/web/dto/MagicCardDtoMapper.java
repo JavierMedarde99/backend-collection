@@ -42,6 +42,8 @@ public class MagicCardDtoMapper {
                 magicCard.getImageUrl(),
                 magicCard.getImageLargeUrl(),
                 magicCard.getArtCropUrl(),
+                magicCard.getImageUrlBack(),
+                magicCard.getImageLargeUrlBack(),
                 magicCard.getCondition(),
                 magicCard.getIsFoil(),
                 magicCard.getQuantity(),

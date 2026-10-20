@@ -48,6 +48,8 @@ class MagicCardDtoMapperTest {
                 .imageUrl("http://img")
                 .imageLargeUrl("http://large")
                 .artCropUrl("http://crop")
+                .imageUrlBack("http://back")
+                .imageLargeUrlBack("http://back-large")
                 .condition(MagicCardCondition.GOOD)
                 .isFoil(false)
                 .quantity(2)
@@ -86,6 +88,8 @@ class MagicCardDtoMapperTest {
         assertThat(response.imageUrl()).isEqualTo("http://img");
         assertThat(response.imageLargeUrl()).isEqualTo("http://large");
         assertThat(response.artCropUrl()).isEqualTo("http://crop");
+        assertThat(response.imageUrlBack()).isEqualTo("http://back");
+        assertThat(response.imageLargeUrlBack()).isEqualTo("http://back-large");
         assertThat(response.condition()).isEqualTo(MagicCardCondition.GOOD);
         assertThat(response.isFoil()).isFalse();
         assertThat(response.quantity()).isEqualTo(2);
@@ -96,5 +100,24 @@ class MagicCardDtoMapperTest {
     @Test
     void toResponse_returnsNull_whenCardIsNull() {
         assertThat(mapper.toResponse(null)).isNull();
+    }
+
+    @Test
+    void withoutPrivate_conservaElArteDelReversoYDescartaLasNotas() {
+        MagicCard card = MagicCard.builder()
+                .id("mc1")
+                .name("Avabruck Caretaker // Hollowhenge Huntmaster")
+                .imageUrl("http://front")
+                .imageUrlBack("http://back")
+                .imageLargeUrlBack("http://back-large")
+                .notes("Nota privada")
+                .build();
+
+        MagicCardResponse response = mapper.toResponse(card).withoutPrivate();
+
+        assertThat(response.notes()).isNull();
+        assertThat(response.imageUrl()).isEqualTo("http://front");
+        assertThat(response.imageUrlBack()).isEqualTo("http://back");
+        assertThat(response.imageLargeUrlBack()).isEqualTo("http://back-large");
     }
 }

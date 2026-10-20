@@ -37,6 +37,8 @@ public record MagicCardResponse(
         String imageUrl,
         String imageLargeUrl,
         String artCropUrl,
+        String imageUrlBack,
+        String imageLargeUrlBack,
         MagicCardCondition condition,
         Boolean isFoil,
         Integer quantity,
@@ -49,7 +51,8 @@ public record MagicCardResponse(
         return new MagicCardResponse(id, scryfallId, oracleId, name, language, releaseDate, manaCost,
                 convertedManaCost, type, text, power, toughness, loyalty, colors, colorIdentity,
                 keywords, rarity, setCode, setName, artist, frame, borderColor, layout, legalities,
-                priceUsd, priceEur, imageUrl, imageLargeUrl, artCropUrl, condition, isFoil, quantity,
+                priceUsd, priceEur, imageUrl, imageLargeUrl, artCropUrl, imageUrlBack,
+                imageLargeUrlBack, condition, isFoil, quantity,
                 null, dateAdded, userOwned);
     }
 }
