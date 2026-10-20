@@ -22,6 +22,8 @@ public record GameResponse(
         String steamAppId,
         LocalDate acquisitionDate,
         BigDecimal acquisitionPrice,
+        String parentId,
+        String parentTitle,
         UserOwnedResponse userOwned) {
 
 
@@ -33,6 +35,6 @@ public record GameResponse(
     public GameResponse withoutPrivate() {
         return new GameResponse(id, externalId, title, genres, platform, thumbnailUrl, status,
                 null, null, dateAdded, dateCompleted, externalSource, steamAppId,
-                acquisitionDate, acquisitionPrice, userOwned);
+                acquisitionDate, acquisitionPrice, parentId, parentTitle, userOwned);
     }
 }

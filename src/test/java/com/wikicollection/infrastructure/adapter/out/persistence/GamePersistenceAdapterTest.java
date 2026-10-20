@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
+import com.wikicollection.domain.model.GameTypeFilter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +61,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(1L);
         when(mapper.toDomain(entity)).thenReturn(expected);
 
-        Page<Game> result = adapter.search(new GameSearchCriteria(null, null, null, null, null, null), pageable);
+        Page<Game> result = adapter.search(new GameSearchCriteria(null, null, null, null, null, null, null), pageable);
 
         assertThat(result.getContent()).containsExactly(expected);
     }
@@ -70,7 +72,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria("witc", null, null, null, null, null), pageable);
+        adapter.search(new GameSearchCriteria("witc", null, null, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
@@ -86,7 +88,7 @@ class GamePersistenceAdapterTest {
         when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
         when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
 
-        adapter.search(new GameSearchCriteria(null, "PC", GameStatus.PLAYING, null, null, null), pageable);
+        adapter.search(new GameSearchCriteria(null, "PC", GameStatus.PLAYING, null, null, null, null), pageable);
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
@@ -158,11 +160,85 @@ class GamePersistenceAdapterTest {
     }
 
     @Test
+    void search_withTypeBase_addsNullParentIdCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, null, null, null, null, null, GameTypeFilter.BASE), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("parentId");
+        assertThat(qs).doesNotContain("$ne");
+    }
+
+    @Test
+    void search_withTypeDlc_addsNotNullParentIdCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, null, null, null, null, null, GameTypeFilter.DLC), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        String qs = queryCaptor.getValue().toString();
+        assertThat(qs).contains("parentId");
+        assertThat(qs).contains("$ne");
+    }
+
+    @Test
+    void search_withTypeAll_addsNoParentIdCriteria() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.find(any(Query.class), eq(GameEntity.class))).thenReturn(List.of());
+        when(mongoTemplate.count(any(Query.class), eq(GameEntity.class))).thenReturn(0L);
+
+        adapter.search(new GameSearchCriteria(null, null, null, null, null, null, GameTypeFilter.ALL), pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
+        assertThat(queryCaptor.getValue().toString()).doesNotContain("parentId");
+    }
+
+    @Test
     void deleteByOwnerId_removesInBulk_withoutLoadingDocuments() {
         adapter.deleteByOwnerId("u1");
 
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).remove(queryCaptor.capture(), eq(GameEntity.class));
         assertThat(queryCaptor.getValue().toString()).contains("ownerId").contains("u1");
+    }
+
+    @Test
+    void findByOwnerIdAndExternalIdIn_scopesToOwner_andMapsEntities() {
+        GameEntity entity = GameEntity.builder().id("g1").externalId("355880").build();
+        Game mapped = sampleGame();
+        when(springDataGameRepository.findByOwnerIdAndExternalIdIn("u1", List.of("355880")))
+                .thenReturn(List.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(mapped);
+
+        List<Game> games = adapter.findByOwnerIdAndExternalIdIn("u1", List.of("355880"));
+
+        assertThat(games).containsExactly(mapped);
+    }
+
+    @Test
+    void findByOwnerIdAndExternalIdIn_returnsEmpty_whenNoIdsAreGiven() {
+        assertThat(adapter.findByOwnerIdAndExternalIdIn("u1", List.of())).isEmpty();
+        assertThat(adapter.findByOwnerIdAndExternalIdIn("u1", null)).isEmpty();
+        verifyNoInteractions(springDataGameRepository);
+    }
+
+    @Test
+    void deleteByOwnerIdAndParentId_removesInBulk_withoutLoadingDocuments() {
+        adapter.deleteByOwnerIdAndParentId("u1", "base-1");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).remove(queryCaptor.capture(), eq(GameEntity.class));
+        assertThat(queryCaptor.getValue().toString())
+                .contains("ownerId").contains("u1")
+                .contains("parentId").contains("base-1");
     }
 }

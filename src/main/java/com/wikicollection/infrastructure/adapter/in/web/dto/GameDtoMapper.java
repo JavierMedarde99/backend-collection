@@ -49,6 +49,8 @@ public class GameDtoMapper {
                 game.getSteamAppId(),
                 game.getAcquisitionDate(),
                 game.getAcquisitionPrice(),
+                game.getParentId(),
+                game.getParentTitle(),
                 UserOwnedResponse.from(game.getUserOwned()));
     }
 }

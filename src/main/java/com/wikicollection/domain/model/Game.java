@@ -36,4 +36,8 @@ public class Game {
     private String steamAppId;
     private LocalDate acquisitionDate;
     private BigDecimal acquisitionPrice;
+    /** Id local del juego base; {@code null} = no es contenido adicional. Inmutable vía PUT. */
+    private String parentId;
+    /** Título del base denormalizado, para la etiqueta sin consultas extra. Inmutable vía PUT. */
+    private String parentTitle;
 }

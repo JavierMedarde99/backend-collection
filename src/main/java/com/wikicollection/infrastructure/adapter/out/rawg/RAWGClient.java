@@ -5,7 +5,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.wikicollection.application.exception.ExternalCatalogException;
+import com.wikicollection.domain.model.GameAdditionsPage;
 import com.wikicollection.domain.model.GameSearchResult;
+import com.wikicollection.domain.port.out.ExternalGameAdditionsCatalogClient;
 import com.wikicollection.domain.port.out.ExternalGameCatalogClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +24,10 @@ import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
 @Component("rawgClient")
-public class RAWGClient implements ExternalGameCatalogClient {
+public class RAWGClient implements ExternalGameCatalogClient, ExternalGameAdditionsCatalogClient {
 
     private static final String GAMES_PATH = "/games";
+    private static final int ADDITIONS_PAGE_SIZE = 40;
 
     private final RestClient rawgRestClient;
     private final String apiKey;
@@ -42,7 +46,8 @@ public class RAWGClient implements ExternalGameCatalogClient {
             RawgResponse response = rawgRestClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.path(GAMES_PATH)
-                                .queryParam("search", query);
+                                .queryParam("search", query)
+                                .queryParam("exclude_additions", "true");
                         if (apiKey != null && !apiKey.isBlank()) {
                             uriBuilder.queryParam("key", apiKey);
                         }
@@ -96,6 +101,48 @@ public class RAWGClient implements ExternalGameCatalogClient {
         } catch (ResourceAccessException e) {
             log.warn("RAWG no disponible: {}", e.getMessage());
             return List.of();
+        }
+    }
+
+    /**
+     * Trae la primera página de adiciones del juego base. A diferencia de
+     * {@link #search(String)}, un fallo del catálogo NO se traga en silencio: el
+     * cliente pidió explícitamente las adiciones, así que un 5xx se propaga como
+     * {@link ExternalCatalogException} y el controlador responde 502.
+     */
+    @Override
+    @Cacheable(cacheNames = CacheConfig.GAME_ADDITIONS, key = "'rawg-additions:' + #externalId")
+    public GameAdditionsPage getAdditions(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return GameAdditionsPage.empty();
+        }
+        try {
+            RawgResponse response = rawgRestClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(GAMES_PATH + "/{id}/additions")
+                                .queryParam("page_size", ADDITIONS_PAGE_SIZE);
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            uriBuilder.queryParam("key", apiKey);
+                        }
+                        return uriBuilder.build(externalId.strip());
+                    })
+                    .retrieve()
+                    .body(RawgResponse.class);
+
+            if (response == null || response.results() == null) {
+                return GameAdditionsPage.empty();
+            }
+            List<GameSearchResult> additions = response.results().stream()
+                    .map(this::toResult)
+                    .toList();
+            int totalAvailable = response.count() != null ? response.count() : additions.size();
+            return new GameAdditionsPage(additions, totalAvailable);
+        } catch (RestClientResponseException e) {
+            log.warn("RAWG adiciones devolvió error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new ExternalCatalogException("RAWG no pudo devolver las adiciones del juego " + externalId, e);
+        } catch (ResourceAccessException e) {
+            log.warn("RAWG no disponible: {}", e.getMessage());
+            throw new ExternalCatalogException("RAWG no está disponible", e);
         }
     }
 
@@ -166,7 +213,7 @@ public class RAWGClient implements ExternalGameCatalogClient {
         }
     }
 
-    record RawgResponse(List<RawgGame> results) {
+    record RawgResponse(Integer count, List<RawgGame> results) {
     }
 
     record RawgGame(Long id, String name, String released,

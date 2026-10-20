@@ -6,15 +6,20 @@ import java.util.List;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
+import com.wikicollection.domain.model.GameTypeFilter;
 import com.wikicollection.domain.model.PlatformInfo;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.in.GameAchievementsUseCase;
+import com.wikicollection.domain.port.in.GameAdditionsUseCase;
 import com.wikicollection.domain.port.in.GameSearchUseCase;
 import com.wikicollection.domain.port.in.PlatformCatalogUseCase;
 import com.wikicollection.domain.port.in.GameUseCase;
+import com.wikicollection.infrastructure.adapter.in.web.dto.AddGameAdditionsRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.AchievementsResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.GameAdditionsAddResponse;
+import com.wikicollection.infrastructure.adapter.in.web.dto.GameAdditionsListResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameDtoMapper;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameResponse;
@@ -24,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import com.wikicollection.infrastructure.config.CurrentUser;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -56,6 +62,7 @@ public class GameController {
     private final GameUseCase gameUseCase;
     private final GameSearchUseCase gameSearchUseCase;
     private final GameAchievementsUseCase gameAchievementsUseCase;
+    private final GameAdditionsUseCase gameAdditionsUseCase;
     private final PlatformCatalogUseCase platformCatalogUseCase;
     private final GameDtoMapper mapper;
     private final GameAchievementMapper achievementMapper;
@@ -64,12 +71,14 @@ public class GameController {
 
     public GameController(GameUseCase gameUseCase, GameSearchUseCase gameSearchUseCase,
             GameAchievementsUseCase gameAchievementsUseCase,
+            GameAdditionsUseCase gameAdditionsUseCase,
             PlatformCatalogUseCase platformCatalogUseCase, GameDtoMapper mapper,
             GameAchievementMapper achievementMapper,
                                ResponseVisibility visibility) {
         this.gameUseCase = gameUseCase;
         this.gameSearchUseCase = gameSearchUseCase;
         this.gameAchievementsUseCase = gameAchievementsUseCase;
+        this.gameAdditionsUseCase = gameAdditionsUseCase;
         this.platformCatalogUseCase = platformCatalogUseCase;
         this.mapper = mapper;
         this.visibility = visibility;
@@ -90,10 +99,11 @@ public class GameController {
             @Parameter(description = "Filtro por plataforma") @RequestParam(required = false)  String platform,
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
+            @Parameter(description = "Filtro por tipo: base|dlc|all") @RequestParam(defaultValue = "all") GameTypeFilter type,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null, type);
         return gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
             var response = mapper.toResponse(game);
             return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
@@ -168,6 +178,40 @@ public class GameController {
             @Parameter(description = "Identificador del juego") @PathVariable String id, @CurrentUser String currentUserId) {
         gameUseCase.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/additions")
+    @Operation(summary = "Catálogo de contenido adicional de un juego", description = "Las adiciones (DLC, expansiones, ediciones) que RAWG cuelga de un juego base, con los flags 'inCollection' y 'alreadyLinked' del espectador.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Catálogo de adiciones"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado"),
+            @ApiResponse(responseCode = "422", description = "El juego base no viene de RAWG o no tiene externalId"),
+            @ApiResponse(responseCode = "502", description = "RAWG no responde")
+    })
+    public GameAdditionsListResponse additions(
+            @Parameter(description = "Identificador del juego base") @PathVariable String id,
+            @CurrentUser String viewerId) {
+        return GameAdditionsListResponse.from(gameAdditionsUseCase.additionsOf(id, viewerId));
+    }
+
+    @PostMapping("/{id}/additions")
+    @Operation(summary = "Añade contenido adicional a un juego base de tu colección", description = "Da de alta las adiciones enlazándolas al base: las que no tenías se crean en el estado pedido, las que ya tenías sueltas se enlazan y las que ya colgaban de este base se devuelven en 'skipped'.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Adiciones creadas o enlazadas"),
+            @ApiResponse(responseCode = "400", description = "Body inválido: sin externalIds, con blancos, más de 40 o sin estado"),
+            @ApiResponse(responseCode = "403", description = "El juego base es de otro usuario"),
+            @ApiResponse(responseCode = "404", description = "Juego no encontrado"),
+            @ApiResponse(responseCode = "422", description = "El base está en WISHLIST, no viene de RAWG o el externalId no es una adición suya"),
+            @ApiResponse(responseCode = "502", description = "RAWG no responde")
+    })
+    public ResponseEntity<GameAdditionsAddResponse> addAdditions(
+            @Parameter(description = "Identificador del juego base") @PathVariable String id,
+            @Valid @RequestBody AddGameAdditionsRequest request,
+            @CurrentUser String currentUserId) {
+        var result = gameAdditionsUseCase.addAdditions(
+                id, request.externalIds(), request.status(), currentUserId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(GameAdditionsAddResponse.from(result, mapper::toResponse));
     }
 
     @GetMapping("/{id}/achievements")

@@ -75,6 +75,12 @@ public class GamePersistenceAdapter implements GameRepository {
         if (criteria.hasExcludeOwnerIds()) {
             query.addCriteria(Criteria.where("ownerId").nin(criteria.excludeOwnerIds()));
         }
+        if (criteria.isBaseOnly()) {
+            // Los registros antiguos no tienen parentId: son bases, no contenido adicional.
+            query.addCriteria(Criteria.where("parentId").is(null));
+        } else if (criteria.isDlcOnly()) {
+            query.addCriteria(Criteria.where("parentId").ne(null));
+        }
         return query;
     }
 
@@ -101,6 +107,23 @@ public class GamePersistenceAdapter implements GameRepository {
     @Override
     public void deleteByOwnerId(String ownerId) {
         mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), GameEntity.class);
+    }
+
+    @Override
+    public List<Game> findByOwnerIdAndExternalIdIn(String ownerId, List<String> externalIds) {
+        if (externalIds == null || externalIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataGameRepository.findByOwnerIdAndExternalIdIn(ownerId, externalIds).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void deleteByOwnerIdAndParentId(String ownerId, String parentId) {
+        mongoTemplate.remove(
+                new Query(Criteria.where("ownerId").is(ownerId).and("parentId").is(parentId)),
+                GameEntity.class);
     }
 
     @Override

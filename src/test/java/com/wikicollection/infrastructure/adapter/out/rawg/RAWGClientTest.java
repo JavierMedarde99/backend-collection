@@ -207,6 +207,102 @@ class RAWGClientTest {
                 """.formatted(platform);
     }
 
+    @Test
+    void search_sendsExcludeAdditionsSoTheCatalogStopsOfferingDlcs() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{\"results\":[]}"));
+
+        client.search("witcher");
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).contains("exclude_additions=true");
+    }
+
+    @Test
+    void getAdditions_mapsAdditionsAndExposesRawgTotalAvailable() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody(additionsFixture()));
+
+        var page = client.getAdditions("292030");
+
+        assertThat(page.totalAvailable()).isEqualTo(12);
+        assertThat(page.additions()).hasSize(1);
+        GameSearchResult addition = page.additions().get(0);
+        assertThat(addition.id()).isEqualTo("355880");
+        assertThat(addition.title()).isEqualTo("The Witcher 3: Blood and Wine");
+        assertThat(addition.genre()).isEqualTo("RPG");
+        assertThat(addition.platform()).isEqualTo("PC");
+        assertThat(addition.releaseDate().toString()).isEqualTo("2016-05-31");
+        assertThat(addition.thumbnailUrl()).isEqualTo("https://media.rawg.io/games/.../blood-and-wine.jpg");
+        assertThat(addition.externalSource()).isEqualTo("RAWG");
+    }
+
+    @Test
+    void getAdditions_requestsOnePageOfFortyAndSendsTheKey() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{\"count\":0,\"results\":[]}"));
+
+        client.getAdditions("292030");
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getPath()).startsWith("/games/292030/additions");
+        assertThat(request.getPath()).contains("page_size=40");
+        assertThat(request.getPath()).contains("key=my-secret-key");
+    }
+
+    @Test
+    void getAdditions_returnsEmpty_whenRawgHasNoAdditions() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{\"count\":0,\"results\":[]}"));
+
+        var page = client.getAdditions("12345");
+
+        assertThat(page.additions()).isEmpty();
+        assertThat(page.totalAvailable()).isZero();
+    }
+
+    @Test
+    void getAdditions_throwsExternalCatalogException_onServerError() {
+        server.enqueue(new MockResponse().setResponseCode(500));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> client.getAdditions("292030"))
+                .isInstanceOf(com.wikicollection.application.exception.ExternalCatalogException.class);
+    }
+
+    @Test
+    void getAdditions_returnsEmptyPage_forNullOrBlankExternalId() {
+        assertThat(client.getAdditions(null).additions()).isEmpty();
+        assertThat(client.getAdditions("  ").additions()).isEmpty();
+    }
+
+    private String additionsFixture() {
+        return """
+                {
+                  "count": 12,
+                  "next": null,
+                  "previous": null,
+                  "results": [
+                    {
+                      "id": 355880,
+                      "name": "The Witcher 3: Blood and Wine",
+                      "released": "2016-05-31",
+                      "background_image": "https://media.rawg.io/games/.../blood-and-wine.jpg",
+                      "genres": [{"id": 3, "name": "RPG"}],
+                      "platforms": [{"platform": {"id": 4, "name": "PC"}}]
+                    }
+                  ]
+                }
+                """;
+    }
+
     private String rawgFixtureWithTwoPlatforms() {
         return """
                 {
