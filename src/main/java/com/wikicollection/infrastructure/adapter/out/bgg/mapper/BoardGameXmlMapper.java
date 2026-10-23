@@ -163,10 +163,32 @@ public class BoardGameXmlMapper {
         }
     }
 
+    /**
+     * Título a partir de los {@code <name>} del XML. BGG manda el nombre primario
+     * seguido de una entrada por cada traducción, en el orden de su base de datos
+     * (ni alfabético ni por idioma del que pregunta). {@code /thing} de un juego muy
+     * traducido puede traer decenas: el 325 («Catan: Seafarers») llega con 52 y el
+     * último es {@code 카탄의 개척자: 항해사}, así que quedarse con el último titula la
+     * expansión en coreano. Se elige el {@code type="primary"}; si no viene marcado
+     * (o viene uno solo, como en {@code /search}, que devuelve el nombre que ha
+     * coincidido con la consulta) se usa el primero.
+     */
+    private String primaryNameOf(BggXmlItem item) {
+        if (item == null || item.names == null || item.names.isEmpty()) {
+            return null;
+        }
+        return item.names.stream()
+                .filter(name -> "primary".equalsIgnoreCase(name.type))
+                .map(name -> name.value)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElseGet(() -> item.names.get(0).value);
+    }
+
     private BoardGameSearchResult toResult(BggXmlItem item) {
         return new BoardGameSearchResult(
                 item.id,
-                item.name != null ? item.name.value : null,
+                primaryNameOf(item),
                 null,
                 item.yearPublished != null ? item.yearPublished.value : null,
                 null,
@@ -220,8 +242,9 @@ public class BoardGameXmlMapper {
         @JacksonXmlProperty(isAttribute = true)
         public String type;
 
+        @JacksonXmlElementWrapper(useWrapping = false)
         @JacksonXmlProperty(localName = "name")
-        public BggXmlName name;
+        public List<BggXmlName> names;
 
         @JacksonXmlProperty(localName = "yearpublished")
         public BggXmlValue yearPublished;
@@ -259,6 +282,9 @@ public class BoardGameXmlMapper {
     public static class BggXmlName {
         @JacksonXmlProperty(isAttribute = true)
         public String value;
+
+        @JacksonXmlProperty(isAttribute = true)
+        public String type;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

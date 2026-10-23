@@ -242,6 +242,50 @@ class BoardGameXmlMapperTest {
     }
 
     @Test
+    void map_keepsTheMatchedName_whenSearchSendsASingleAlias() {
+        // /search manda un único <name>: el que ha coincidido con la consulta. Buscar
+        // la traducción coreana devuelve ese mismo nombre; no se sustituye por el
+        // primario porque el primario no viaja en esa respuesta.
+        String xml = """
+                <items total="1">
+                  <item type="boardgameexpansion" id="325">
+                    <name type="alternate" sortindex="1" value="카탄의 개척자: 항해사"/>
+                  </item>
+                </items>
+                """;
+
+        List<BoardGameSearchResult> results = mapper.map(xml);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).title()).isEqualTo("카탄의 개척자: 항해사");
+    }
+
+    @Test
+    void toExpansionInfo_usesThePrimaryName_whenBggSendsTranslations() {
+        // /thing devuelve el nombre primario y después TODAS las traducciones, en el
+        // orden de la base de datos de BGG (que no es alfabético ni el del idioma del
+        // usuario). Para el bggId 325 son 53: "Catan: Seafarers" primero y el último
+        // "카탄의 개척자: 항해사". Quedarse con el último nombre titula la expansión en
+        // coreano y la hace imposible de encontrar en el buscador del frontend.
+        String xml = """
+                <items>
+                  <item type="boardgameexpansion" id="325">
+                    <name type="primary" sortindex="1" value="Catan: Seafarers"/>
+                    <name type="alternate" sortindex="1" value="Catan: Seefahrer"/>
+                    <name type="alternate" sortindex="1" value="カタン 航海者版"/>
+                    <name type="alternate" sortindex="1" value="카탄의 개척자: 항해사"/>
+                    <link type="boardgameexpansion" id="13" value="Catan" inbound="true"/>
+                  </item>
+                </items>
+                """;
+        BggXmlItem item = mapper.mapThing(xml).get("325");
+
+        BoardGameExpansionInfo info = mapper.toExpansionInfo(item);
+
+        assertThat(info.title()).isEqualTo("Catan: Seafarers");
+    }
+
+    @Test
     void toExpansionInfo_unknownBggType_mapsToNull() {
         String xml = """
                 <items>
