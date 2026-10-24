@@ -573,13 +573,17 @@ class GameControllerTest {
     }
 
     @Test
-    void getAdditions_returns422_whenBaseDoesNotComeFromRawg() throws Exception {
+    void getAdditions_returnsEmptyCatalog_whenBaseDoesNotComeFromRawg() throws Exception {
         when(gameRepository.findById("g1")).thenReturn(Optional.of(Game.builder()
                 .id("g1").ownerId("u1").title("FreeToGame").externalId("1")
                 .externalSource("FreeToGame").status(GameStatus.PLAYING).build()));
 
         mockMvc.perform(get("/api/v1/games/g1/additions"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.baseGameId").value("g1"))
+                .andExpect(jsonPath("$.baseExternalId").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.additions.length()").value(0))
+                .andExpect(jsonPath("$.totalAvailable").value(0));
     }
 
     @Test
