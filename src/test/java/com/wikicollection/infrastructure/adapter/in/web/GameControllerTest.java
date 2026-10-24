@@ -25,6 +25,7 @@ import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Game;
 import com.wikicollection.domain.model.GameAdditionsPage;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameTypeFilter;
 import com.wikicollection.domain.model.PlatformInfo;
@@ -46,6 +47,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -166,6 +169,52 @@ class GameControllerTest {
         ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
         verify(gameRepository).search(captor.capture(), any(Pageable.class));
         assertThat(captor.getValue().platforms()).containsExactly("PC", "PlayStation 5");
+    }
+
+    @Test
+    void listGames_withGroupBy_returnsGroupsAndPropagatesFilters() throws Exception {
+        Game pc = Game.builder().id("g1").ownerId("u1").title("Hollow Knight").platform("PC")
+                .status(GameStatus.COMPLETED).userRating(9).thumbnailUrl("http://thumb").build();
+        Game switchRow = Game.builder().id("g2").ownerId("u1").title("Hollow Knight").platform("Nintendo Switch")
+                .status(GameStatus.WISHLIST).build();
+        GameGroup group = new GameGroup("x:3498", "Hollow Knight", "http://thumb", List.of(pc, switchRow));
+        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(group), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1"))
+                        .param("groupBy", "game")
+                        .param("platform", "PC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].gameKey").value("x:3498"))
+                .andExpect(jsonPath("$.content[0].title").value("Hollow Knight"))
+                .andExpect(jsonPath("$.content[0].thumbnailUrl").value("http://thumb"))
+                .andExpect(jsonPath("$.content[0].games.length()").value(2))
+                .andExpect(jsonPath("$.content[0].games[0].id").value("g1"))
+                .andExpect(jsonPath("$.content[0].games[0].platform").value("PC"))
+                .andExpect(jsonPath("$.content[0].games[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.content[0].games[0].userRating").value(9))
+                .andExpect(jsonPath("$.content[0].games[1].platform").value("Nintendo Switch"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).searchGrouped(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().groupByGame()).isTrue();
+        assertThat(captor.getValue().platforms()).containsExactly("PC");
+        verify(gameRepository, never()).search(any(GameSearchCriteria.class), any(Pageable.class));
+    }
+
+    @Test
+    void listGames_withoutGroupBy_isStillTheFlatPage() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleGame()), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("g1"))
+                .andExpect(jsonPath("$.content[0].gameKey").doesNotExist());
+
+        verify(gameRepository, never()).searchGrouped(any(GameSearchCriteria.class), any(Pageable.class));
     }
 
     @Test

@@ -5,13 +5,21 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.out.GameRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.FacetOperation;
+import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -51,6 +59,147 @@ public class GamePersistenceAdapter implements GameRepository {
                 .toList();
         return new PageImpl<>(content, pageable, total);
     }
+
+    @Override
+    public Page<GameGroup> searchGrouped(GameSearchCriteria criteria, Pageable pageable) {
+        List<AggregationOperation> operations = new java.util.ArrayList<>();
+        Criteria matchCriteria = buildMatchCriteria(criteria);
+        if (matchCriteria != null) {
+            operations.add(Aggregation.match(matchCriteria));
+        }
+
+        String normalized = normalizedTitleExpression();
+        operations.add(Aggregation.addFields()
+                .addField("gameKey")
+                .withValueOfExpression(
+                        "{$cond: [{$and: [{$ne: [\"$externalId\", null]}, {$ne: [\"$externalId\", \"\"]]}, {$concat: [\"x:\", \"$externalId\"]}, {$concat: [\"t:\", " + normalized + "]}]}")
+                .build());
+
+        operations.add(Aggregation.sort(Sort.by(Sort.Direction.ASC, "platform").and(Sort.by(Sort.Direction.ASC, "_id"))));
+
+        GroupOperation group = Aggregation.group("gameKey")
+                .first("title").as("title")
+                .first("thumbnailUrl").as("thumbnailUrl")
+                .push("$$ROOT").as("games");
+        operations.add(group);
+
+        Sort groupSort = pageable.getSort().isSorted() ? pageable.getSort() : Sort.by(Sort.Direction.ASC, "title");
+        operations.add(Aggregation.sort(groupSort));
+
+        FacetOperation facet = Aggregation.facet(
+                Aggregation.skip(pageable.getOffset()),
+                Aggregation.limit(pageable.getPageSize())
+        ).as("content").and(
+                Aggregation.count().as("count")
+        ).as("total");
+        operations.add(facet);
+
+        Aggregation aggregation = Aggregation.newAggregation(operations);
+        AggregationResults<GameGroupFacetResult> results = mongoTemplate.aggregate(aggregation, "games",
+                GameGroupFacetResult.class);
+        List<GameGroupFacetResult> list = results.getMappedResults();
+        if (list == null || list.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+        GameGroupFacetResult facetResult = list.get(0);
+        List<GameGroup> content = (facetResult.getContent() == null ? java.util.List.<GameGroupAggregationResult>of() : facetResult.getContent())
+                .stream()
+                .map((GameGroupAggregationResult r) -> {
+                    java.util.List<GameEntity> entities = new java.util.ArrayList<GameEntity>();
+                    if (r.getGames() != null) {
+                        for (Object e : r.getGames()) {
+                            if (e instanceof GameEntity ge) {
+                                entities.add(ge);
+                            }
+                        }
+                    }
+                    List<Game> games = new java.util.ArrayList<Game>(entities.size());
+                    for (int j = 0; j < entities.size(); j++) {
+                        games.add(mapper.toDomain(entities.get(j)));
+                    }
+                    return new GameGroup(r.getGameKey(), r.getTitle(), r.getThumbnailUrl(), games);
+                })
+                .toList();
+        long total = 0;
+        if (facetResult.getTotal() != null && !facetResult.getTotal().isEmpty()
+                && facetResult.getTotal().get(0).getCount() != null) {
+            total = facetResult.getTotal().get(0).getCount();
+        }
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    private Criteria buildMatchCriteria(GameSearchCriteria criteria) {
+        List<Criteria> criterias = new java.util.ArrayList<>();
+        if (criteria.hasName()) {
+            criterias.add(Criteria.where("title").regex(ciPattern(criteria.name())));
+        }
+        if (criteria.hasPlatforms()) {
+            criterias.add(Criteria.where("platform").in(criteria.effectivePlatforms()));
+        }
+        if (criteria.hasGenres()) {
+            Criteria[] anyGenre = criteria.effectiveGenres().stream()
+                    .map(g -> Criteria.where("genres").regex(ciPattern(g)))
+                    .toArray(Criteria[]::new);
+            criterias.add(new Criteria().orOperator(anyGenre));
+        }
+        if (criteria.status() != null) {
+            criterias.add(Criteria.where("status").is(criteria.status()));
+        }
+        if (criteria.hasOwnerId()) {
+            criterias.add(Criteria.where("ownerId").is(criteria.ownerId()));
+        }
+        if (criteria.hasExcludeOwnerIds()) {
+            criterias.add(Criteria.where("ownerId").nin(criteria.excludeOwnerIds()));
+        }
+        if (criteria.isBaseOnly()) {
+            criterias.add(Criteria.where("parentId").is(null));
+        } else if (criteria.isDlcOnly()) {
+            criterias.add(Criteria.where("parentId").ne(null));
+        }
+        if (criterias.isEmpty()) {
+            return null;
+        }
+        return new Criteria().andOperator(criterias.toArray(new Criteria[0]));
+    }
+
+    private String normalizedTitleExpression() {
+        // Apply lowercasing and accent/punctuation removal similar to DeckNameNormalizer
+        String expr = "$toLower(\"$title\")";
+        // accents
+        String[] pairs = {
+                "[áàäâã]", "a", "[ÁÀÄÂÃ]", "a",
+                "[éèëê]", "e", "[ÉÈËÊ]", "e",
+                "[íìïî]", "i", "[ÍÌÏÎ]", "i",
+                "[óòöôõ]", "o", "[ÓÒÖÔÕ]", "o",
+                "[úùüû]", "u", "[ÚÙÜÛ]", "u",
+                "[ñ]", "n", "[Ñ]", "n",
+                "[ç]", "c", "[Ç]", "c"
+        };
+        for (int i = 0; i < pairs.length; i += 2) {
+            String regex = pairs[i].replace("[", "\\[").replace("]", "\\]");
+            expr = "{$replaceAll: {" + expr + ", \"regex\": \"" + regex + "\", \"replacement\": \"" + pairs[i + 1] + "\"}}";
+        }
+        // punctuation
+        expr = "{$replaceAll: {" + expr + ", \"regex\": \"[^a-z0-9\\\\s]\", \"replacement\": \"\"}}";
+        // collapse spaces
+        expr = "{$replaceAll: {" + expr + ", \"regex\": \"\\\\s+\", \"replacement\": \" \"}}";
+        expr = "{$trim: {" + expr + "}}";
+        return expr;
+    }
+
+    private GameGroup toGroup(GameGroupAggregationResult result) {
+        java.util.List<Game> games = new java.util.ArrayList<Game>();
+        if (result.getGames() != null) {
+            for (int j = 0; j < result.getGames().size(); j++) {
+                Object e = result.getGames().get(j);
+                if (e instanceof GameEntity ge) {
+                    games.add(mapper.toDomain(ge));
+                }
+            }
+        }
+        return new GameGroup(result.getGameKey(), result.getTitle(), result.getThumbnailUrl(), games);
+    }
+
 
     private Query buildQuery(GameSearchCriteria criteria) {
         Query query = new Query();

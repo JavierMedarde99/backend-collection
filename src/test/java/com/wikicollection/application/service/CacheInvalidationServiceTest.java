@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
@@ -184,6 +186,25 @@ class CacheInvalidationServiceTest {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(pageOf(List.of(created)));
         assertThat(gameService.search(criteria, PAGE, "mine", OWNER).getContent()).hasSize(1);
+    }
+
+    @Test
+    void groupedAndFlatGameSearches_doNotShareCacheEntry() {
+        GameSearchCriteria flat = new GameSearchCriteria(null, null, null, null, null, null, null, false);
+        GameSearchCriteria grouped = new GameSearchCriteria(null, null, null, null, null, null, null, true);
+        Game game = Game.builder().id("g1").ownerId(OWNER).title("Hollow Knight").platform("PC").build();
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(pageOf(List.of(game)));
+        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(pageOf(List.of(new GameGroup("x:3498", "Hollow Knight", "http://thumb", List.of(game)))));
+
+        assertThat(gameService.search(flat, PAGE, "mine", OWNER).getContent()).hasSize(1);
+        Page<GameGroup> groups = gameService.searchGrouped(grouped, PAGE, "mine", OWNER);
+
+        // Si compartieran clave, la segunda llamada devolvería la página plana cacheada.
+        assertThat(groups.getContent()).hasSize(1);
+        assertThat(groups.getContent().get(0).gameKey()).isEqualTo("x:3498");
+        verify(gameRepository).searchGrouped(any(GameSearchCriteria.class), any(Pageable.class));
     }
 
     // ---------------------------------------------------------------- mazos
