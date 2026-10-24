@@ -6,7 +6,9 @@ import java.util.List;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameTypeFilter;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.PlatformInfo;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.port.in.GameAchievementsUseCase;
@@ -91,7 +93,7 @@ public class GameController {
             @ApiResponse(responseCode = "200", description = "Página de juegos encontrada"),
             @ApiResponse(responseCode = "400", description = "Parámetros de paginación o filtros inválidos")
     })
-    public Page<GameResponse> list(
+    public org.springframework.http.ResponseEntity<?> list(
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
@@ -101,13 +103,27 @@ public class GameController {
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por tipo: base|dlc|all") @RequestParam(defaultValue = "all") GameTypeFilter type,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @Parameter(description = "Agrupar por juego: game") @RequestParam(required = false) String groupBy,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null, type);
-        return gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
+        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null, type,
+                "game".equalsIgnoreCase(groupBy));
+        if ("game".equalsIgnoreCase(groupBy)) {
+            Page<GameGroup> pageResult = gameUseCase.searchGrouped(criteria, pageable, owner, viewerId);
+            return org.springframework.http.ResponseEntity.ok(pageResult.map(group -> {
+                java.util.List<GameResponse> visible = group.games().stream()
+                        .map(mapper::toResponse)
+                        .map(g -> visibility.canSeePrivate(g.userOwned() != null ? g.userOwned().ownerId() : null,
+                                CollectionType.GAMES) ? g : g.withoutPrivate())
+                        .toList();
+                return new com.wikicollection.infrastructure.adapter.in.web.dto.GameGroupResponse(
+                        group.gameKey(), group.title(), group.thumbnailUrl(), visible);
+            }));
+        }
+        return org.springframework.http.ResponseEntity.ok(gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
             var response = mapper.toResponse(game);
             return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
-        });
+        }));
     }
 
     @GetMapping("/genres")

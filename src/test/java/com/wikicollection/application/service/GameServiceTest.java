@@ -90,6 +90,22 @@ class GameServiceTest {
     }
 
     @Test
+    void searchGrouped_delegatesWithGroupFlagAndOwnerScope() {
+        Pageable pageable = PageRequest.of(0, 20);
+        GameSearchCriteria criteria = new GameSearchCriteria(null, java.util.List.of("PC"), null, null, null, null,
+                null, true);
+        when(gameRepository.searchGrouped(any(), any())).thenReturn(Page.empty());
+
+        gameService.searchGrouped(criteria, pageable, "mine", "u1");
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).searchGrouped(captor.capture(), org.mockito.ArgumentMatchers.eq(pageable));
+        assertThat(captor.getValue().groupByGame()).isTrue();
+        assertThat(captor.getValue().platforms()).containsExactly("PC");
+        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
+    }
+
+    @Test
     void findById_returnsGame_whenExists() {
         Game game = sampleGame();
         game.setId("g1");

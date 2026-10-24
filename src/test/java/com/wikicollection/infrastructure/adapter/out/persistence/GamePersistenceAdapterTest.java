@@ -11,7 +11,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.bson.Document;
+
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameStatus;
 import com.wikicollection.domain.model.GameTypeFilter;
@@ -25,7 +28,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Query;
 
 @ExtendWith(MockitoExtension.class)
@@ -234,6 +240,84 @@ class GamePersistenceAdapterTest {
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GameEntity.class));
         assertThat(queryCaptor.getValue().toString()).doesNotContain("parentId");
+    }
+
+    @Test
+    void searchGrouped_mapsGroupsAndFacetTotal() {
+        Pageable pageable = PageRequest.of(1, 2);
+        GameEntity pc = GameEntity.builder().id("g1").externalId("3498").platform("PC").build();
+        GameEntity switchRow = GameEntity.builder().id("g2").externalId("3498").platform("Nintendo Switch").build();
+        GameGroupAggregationResult group = new GameGroupAggregationResult();
+        group.setGameKey("x:3498");
+        group.setTitle("Hollow Knight");
+        group.setThumbnailUrl("http://thumb");
+        group.setGames(List.of(pc, switchRow));
+        GameGroupFacetResult facet = new GameGroupFacetResult();
+        facet.setContent(List.of(group));
+        GameGroupCountResult count = new GameGroupCountResult();
+        count.setCount(27L);
+        facet.setTotal(List.of(count));
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("games"), eq(GameGroupFacetResult.class)))
+                .thenReturn(new AggregationResults<>(List.of(facet), Document.parse("{}")));
+        when(mapper.toDomain(pc)).thenReturn(Game.builder().id("g1").platform("PC").build());
+        when(mapper.toDomain(switchRow)).thenReturn(Game.builder().id("g2").platform("Nintendo Switch").build());
+
+        Page<GameGroup> result = adapter.searchGrouped(
+                new GameSearchCriteria(null, null, null, null, null, null, null, true), pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        GameGroup mapped = result.getContent().get(0);
+        assertThat(mapped.gameKey()).isEqualTo("x:3498");
+        assertThat(mapped.title()).isEqualTo("Hollow Knight");
+        assertThat(mapped.thumbnailUrl()).isEqualTo("http://thumb");
+        assertThat(mapped.games()).extracting(Game::getPlatform)
+                .containsExactly("PC", "Nintendo Switch");
+        // totalElements cuenta grupos (27), no registros.
+        assertThat(result.getTotalElements()).isEqualTo(27);
+        assertThat(result.getNumber()).isEqualTo(1);
+    }
+
+    @Test
+    void searchGrouped_buildsMatchKeySortGroupAndFacetPipeline() {
+        Pageable pageable = PageRequest.of(2, 5, Sort.by(Sort.Direction.DESC, "title"));
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("games"), eq(GameGroupFacetResult.class)))
+                .thenReturn(new AggregationResults<>(List.of(new GameGroupFacetResult()), Document.parse("{}")));
+
+        adapter.searchGrouped(new GameSearchCriteria(null, List.of("PlayStation 5"), null, null, "u1", null, null,
+                true), pageable);
+
+        ArgumentCaptor<Aggregation> captor = ArgumentCaptor.forClass(Aggregation.class);
+        verify(mongoTemplate).aggregate(captor.capture(), eq("games"), eq(GameGroupFacetResult.class));
+        assertThat(captor.getValue()).isNotNull();
+    }
+
+    @Test
+    void searchGrouped_returnsEmptyPage_whenFacetHasNoGroups() {
+        Pageable pageable = PageRequest.of(0, 20);
+        GameGroupFacetResult facet = new GameGroupFacetResult();
+        facet.setContent(List.of());
+        facet.setTotal(List.of());
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("games"), eq(GameGroupFacetResult.class)))
+                .thenReturn(new AggregationResults<>(List.of(facet), Document.parse("{}")));
+
+        Page<GameGroup> result = adapter.searchGrouped(
+                new GameSearchCriteria(null, null, null, null, null, null, null, true), pageable);
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    void searchGrouped_returnsEmptyPage_whenAggregationReturnsNoDocument() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("games"), eq(GameGroupFacetResult.class)))
+                .thenReturn(new AggregationResults<>(List.of(), Document.parse("{}")));
+
+        Page<GameGroup> result = adapter.searchGrouped(
+                new GameSearchCriteria(null, null, null, null, null, null, null, true), pageable);
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
     }
 
     @Test

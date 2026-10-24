@@ -9,11 +9,19 @@ public record GameSearchCriteria(
         java.util.List<String> genres,
         String ownerId,
         List<String> excludeOwnerIds,
-        GameTypeFilter type) {
+        GameTypeFilter type,
+        boolean groupByGame) {
 
     public GameSearchCriteria {
         // «sin filtro» es ALL: el resto de la capa no tiene que tratar null.
         type = type == null ? GameTypeFilter.ALL : type;
+    }
+
+    /** Listado plano: el caso de siempre. */
+    public GameSearchCriteria(String name, List<String> platforms, GameStatus status,
+                              java.util.List<String> genres, String ownerId,
+                              List<String> excludeOwnerIds, GameTypeFilter type) {
+        this(name, platforms, status, genres, ownerId, excludeOwnerIds, type, false);
     }
 
     public boolean hasName() {

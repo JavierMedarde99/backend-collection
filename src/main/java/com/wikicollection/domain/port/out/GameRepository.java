@@ -13,6 +13,13 @@ public interface GameRepository {
 
     Page<Game> search(GameSearchCriteria criteria, Pageable pageable);
 
+    /**
+     * Listado agrupado por juego: una entrada por {@code gameKey} con todas sus filas por
+     * plataforma. La paginación y el total cuentan grupos, no registros; los filtros se aplican
+     * antes de agrupar.
+     */
+    Page<com.wikicollection.domain.model.GameGroup> searchGrouped(GameSearchCriteria criteria, Pageable pageable);
+
     Optional<Game> findById(String id);
 
     Game save(Game game);

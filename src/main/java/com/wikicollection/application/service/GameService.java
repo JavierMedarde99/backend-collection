@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
@@ -74,6 +75,17 @@ public class GameService implements GameUseCase {
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
         return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platforms(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), criteria.type()), pageable);
+    }
+
+    @Override
+    @Cacheable(cacheNames = "gameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
+    public Page<GameGroup> searchGrouped(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
+        // El flag viaja en el criteria: forma parte de la clave de caché y distingue esta
+        // entrada de la del listado plano con los mismos filtros.
+        return gameRepository.searchGrouped(new GameSearchCriteria(criteria.name(), criteria.platforms(),
+                criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), criteria.type(),
+                true), pageable);
     }
 
     @Override
