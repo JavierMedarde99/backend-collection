@@ -29,9 +29,13 @@ import org.springframework.stereotype.Service;
 /**
  * Gemelo de {@code BoardGameExpansionService} para el contenido adicional de
  * videojuegos, con las divergencias del diseño: al vincular un juego suelto no se
- * pierde nada y se informa como {@code linked} (no {@code skipped}), el estado del
- * DLC se elige en el alta y un base que no venga de RAWG es 422, no una lista
- * vacía.
+ * pierde nada y se informa como {@code linked} (no {@code skipped}) y el estado del
+ * DLC se elige en el alta.
+ *
+ * <p>La <strong>lectura</strong> del catálogo devuelve una lista vacía cuando el base
+ * no viene de RAWG o no tiene {@code externalId} (igual que las expansiones sin
+ * {@code bggId}); el <strong>alta</strong> sí lo exige, porque sin id no hay catálogo
+ * contra el que validar las adiciones pedidas.
  *
  * <p>Este servicio NO cachea {@code inCollection}/{@code alreadyLinked}: solo el
  * catálogo puro de RAWG está cacheado (en {@code RAWGClient}), porque los flags
@@ -63,7 +67,11 @@ public class GameAdditionsService implements GameAdditionsUseCase {
     @Override
     public GameAdditionsCatalog additionsOf(String baseId, String viewerId) {
         Game base = requireBase(baseId);
-        String baseExternalId = requireRawgExternalId(base);
+        if (!hasRawgExternalId(base)) {
+            // Gemelo de las expansiones: sin id del catálogo externo no hay adiciones que consultar.
+            return new GameAdditionsCatalog(base.getId(), null, List.of(), 0);
+        }
+        String baseExternalId = base.getExternalId();
         GameAdditionsPage page = additionsCatalogClient.getAdditions(baseExternalId);
 
         // Una sola consulta por petición; los flags se calculan aquí, fuera de la caché del catálogo.
@@ -232,6 +240,12 @@ public class GameAdditionsService implements GameAdditionsUseCase {
                     "No se pueden añadir más de " + MAX_ADDITIONS + " adiciones a la vez");
         }
         return List.copyOf(distinct.values());
+    }
+
+    private boolean hasRawgExternalId(Game base) {
+        return base.getExternalId() != null
+                && !base.getExternalId().isBlank()
+                && RAWG_SOURCE.equalsIgnoreCase(base.getExternalSource());
     }
 
     private String requireRawgExternalId(Game base) {

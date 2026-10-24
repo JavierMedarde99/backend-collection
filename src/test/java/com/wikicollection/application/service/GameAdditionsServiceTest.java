@@ -114,23 +114,31 @@ class GameAdditionsServiceTest {
     }
 
     @Test
-    void additionsOf_throws422_whenBaseDoesNotComeFromRawg() {
+    void additionsOf_returnsEmptyCatalog_whenBaseDoesNotComeFromRawg() {
         givenBase(Game.builder().id(BASE_ID).ownerId(VIEWER).title("Sin RAWG")
                 .externalId("999").externalSource("FreeToGame").status(GameStatus.OWNED).build());
 
-        assertThatThrownBy(() -> service.additionsOf(BASE_ID, VIEWER))
-                .isInstanceOf(GameAdditionsException.class)
-                .hasMessageContaining("RAWG");
+        // Gemelo de las expansiones: sin id del catálogo externo no hay adiciones que consultar.
+        GameAdditionsCatalog catalog = service.additionsOf(BASE_ID, VIEWER);
+
+        assertThat(catalog.baseGameId()).isEqualTo(BASE_ID);
+        assertThat(catalog.baseExternalId()).isNull();
+        assertThat(catalog.additions()).isEmpty();
+        assertThat(catalog.totalAvailable()).isZero();
         verify(additionsCatalogClient, never()).getAdditions(any());
     }
 
     @Test
-    void additionsOf_throws422_whenBaseHasNoExternalId() {
+    void additionsOf_returnsEmptyCatalog_whenBaseHasNoExternalId() {
         givenBase(Game.builder().id(BASE_ID).ownerId(VIEWER).title("Sin externalId")
                 .externalSource("RAWG").status(GameStatus.OWNED).build());
 
-        assertThatThrownBy(() -> service.additionsOf(BASE_ID, VIEWER))
-                .isInstanceOf(GameAdditionsException.class);
+        GameAdditionsCatalog catalog = service.additionsOf(BASE_ID, VIEWER);
+
+        assertThat(catalog.baseGameId()).isEqualTo(BASE_ID);
+        assertThat(catalog.baseExternalId()).isNull();
+        assertThat(catalog.additions()).isEmpty();
+        assertThat(catalog.totalAvailable()).isZero();
         verify(additionsCatalogClient, never()).getAdditions(any());
     }
 
@@ -248,6 +256,17 @@ class GameAdditionsServiceTest {
 
         assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.PLAYING))
                 .isInstanceOf(GameAdditionsException.class);
+        verify(additionsCatalogClient, never()).getAdditions(any());
+    }
+
+    @Test
+    void addAdditions_throws422_whenBaseHasNoExternalId_evenIfItComesFromRawg() {
+        givenBase(Game.builder().id(BASE_ID).ownerId(VIEWER).title("Sin externalId")
+                .externalSource("RAWG").status(GameStatus.OWNED).build());
+
+        assertThatThrownBy(() -> add(BASE_ID, List.of("355880"), GameStatus.PLAYING))
+                .isInstanceOf(GameAdditionsException.class)
+                .hasMessageContaining("externalId");
         verify(additionsCatalogClient, never()).getAdditions(any());
     }
 
