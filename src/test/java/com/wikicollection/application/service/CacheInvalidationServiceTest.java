@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -24,7 +23,6 @@ import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.Game;
-import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
@@ -83,8 +81,6 @@ class CacheInvalidationServiceTest {
     private MagicCardService magicCardService;
     @Autowired
     private BoardGameService boardGameService;
-    @Autowired
-    private BoardGameExpansionService boardGameExpansionService;
 
     @Autowired
     private CacheManager cacheManager;
@@ -103,8 +99,6 @@ class CacheInvalidationServiceTest {
     private BoardGameRepository boardGameRepository;
     @MockitoBean
     private ExternalMagicCardCatalogClient magicCardCatalogClient;
-    @MockitoBean
-    private com.wikicollection.domain.port.out.ExternalBoardGameCatalogClient bggXmlClient;
     @MockitoBean
     private OwnerResolver ownerResolver;
 
@@ -174,7 +168,7 @@ class CacheInvalidationServiceTest {
 
     @Test
     void gameList_isEvicted_afterSave() {
-        GameSearchCriteria criteria = new GameSearchCriteria(null, null, null, null, null, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria(null, null, null, null, null, null);
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
@@ -186,25 +180,6 @@ class CacheInvalidationServiceTest {
         when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(pageOf(List.of(created)));
         assertThat(gameService.search(criteria, PAGE, "mine", OWNER).getContent()).hasSize(1);
-    }
-
-    @Test
-    void groupedAndFlatGameSearches_doNotShareCacheEntry() {
-        GameSearchCriteria flat = new GameSearchCriteria(null, null, null, null, null, null, null, false);
-        GameSearchCriteria grouped = new GameSearchCriteria(null, null, null, null, null, null, null, true);
-        Game game = Game.builder().id("g1").ownerId(OWNER).title("Hollow Knight").platform("PC").build();
-        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(pageOf(List.of(game)));
-        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any(Pageable.class)))
-                .thenReturn(pageOf(List.of(new GameGroup("x:3498", "Hollow Knight", "http://thumb", List.of(game)))));
-
-        assertThat(gameService.search(flat, PAGE, "mine", OWNER).getContent()).hasSize(1);
-        Page<GameGroup> groups = gameService.searchGrouped(grouped, PAGE, "mine", OWNER);
-
-        // Si compartieran clave, la segunda llamada devolvería la página plana cacheada.
-        assertThat(groups.getContent()).hasSize(1);
-        assertThat(groups.getContent().get(0).gameKey()).isEqualTo("x:3498");
-        verify(gameRepository).searchGrouped(any(GameSearchCriteria.class), any(Pageable.class));
     }
 
     // ---------------------------------------------------------------- mazos
@@ -333,49 +308,8 @@ class CacheInvalidationServiceTest {
     }
 
     @Test
-    void stats_isEvicted_afterDelete() {
-        BoardGame game = BoardGame.builder().id("bg1").ownerId(OWNER).title("Catan")
-                .status(BoardGameStatus.OWNED).build();
-        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(game));
-        cacheManager.getCache("stats").put("global", "stale");
-
-        boardGameService.delete("bg1", OWNER);
-
-        assertThat(cacheManager.getCache("stats").get("global")).isNull();
-    }
-
-    @Test
-    void boardGameAndStatsCaches_areEvicted_afterAddExpansions() {
-        BoardGame base = BoardGame.builder().id("bg1").ownerId(OWNER).title("Arkham Horror: The Card Game")
-                .bggId("205637").status(BoardGameStatus.OWNED).build();
-        when(boardGameRepository.findById("bg1")).thenReturn(Optional.of(base));
-        when(boardGameRepository.findByOwnerIdAndBggIdIn(OWNER, List.of("926"))).thenReturn(List.of());
-        when(bggXmlClient.findByBggIds(List.of("926"))).thenReturn(List.of(expansionInfo("926")));
-
-        cacheManager.getCache("stats").put("global", "stale");
-        cacheManager.getCache("boardgameList").put("some-list", "stale");
-        cacheManager.getCache("boardgameDetail").put("bg1", "stale");
-
-        boardGameExpansionService.addExpansions("bg1",
-                List.of(new com.wikicollection.domain.model.BoardGameExpansionSeed(
-                        "926", BoardGameStatus.OWNED, null, null)),
-                OWNER);
-
-        assertThat(cacheManager.getCache("stats").get("global")).isNull();
-        assertThat(cacheManager.getCache("boardgameList").get("some-list")).isNull();
-        assertThat(cacheManager.getCache("boardgameDetail").get("bg1")).isNull();
-    }
-
-    private com.wikicollection.domain.model.BoardGameExpansionInfo expansionInfo(String bggId) {
-        return new com.wikicollection.domain.model.BoardGameExpansionInfo(
-                bggId, "Expansión " + bggId, null, 2017, 2, 4, 30, 60,
-                null, List.of(), List.of(), List.of(), null, null, null,
-                com.wikicollection.domain.model.BoardGameType.BOARDGAME_EXPANSION, List.of("205637"));
-    }
-
-    @Test
     void boardGameList_isEvicted_afterSave() {
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null, null);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null);
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 

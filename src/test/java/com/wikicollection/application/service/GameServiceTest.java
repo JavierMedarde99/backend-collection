@@ -80,29 +80,13 @@ class GameServiceTest {
     @Test
     void search_delegatesToRepository() {
         Pageable pageable = PageRequest.of(0, 20);
-        GameSearchCriteria criteria = new GameSearchCriteria("witc", java.util.List.of("PC"), GameStatus.PLAYING, null, null, null, null);
+        GameSearchCriteria criteria = new GameSearchCriteria("witc", "PC", GameStatus.PLAYING, null, null, null);
         when(gameRepository.search(criteria, pageable)).thenReturn(Page.empty());
 
         Page<Game> result = gameService.search(criteria, pageable);
 
         assertThat(result).isEmpty();
         verify(gameRepository).search(criteria, pageable);
-    }
-
-    @Test
-    void searchGrouped_delegatesWithGroupFlagAndOwnerScope() {
-        Pageable pageable = PageRequest.of(0, 20);
-        GameSearchCriteria criteria = new GameSearchCriteria(null, java.util.List.of("PC"), null, null, null, null,
-                null, true);
-        when(gameRepository.searchGrouped(any(), any())).thenReturn(Page.empty());
-
-        gameService.searchGrouped(criteria, pageable, "mine", "u1");
-
-        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
-        verify(gameRepository).searchGrouped(captor.capture(), org.mockito.ArgumentMatchers.eq(pageable));
-        assertThat(captor.getValue().groupByGame()).isTrue();
-        assertThat(captor.getValue().platforms()).containsExactly("PC");
-        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
     }
 
     @Test
@@ -408,57 +392,6 @@ class GameServiceTest {
         gameService.delete("g1", "u1");
 
         verify(gameRepository).deleteById("g1");
-    }
-
-    @Test
-    void delete_cascadesToItsAdditions_whenGameIsABase() {
-        Game base = sampleGame();
-        base.setId("g1");
-        base.setOwnerId("u1");
-        when(gameRepository.findById("g1")).thenReturn(Optional.of(base));
-
-        gameService.delete("g1", "u1");
-
-        verify(gameRepository).deleteByOwnerIdAndParentId("u1", "g1");
-        verify(gameRepository).deleteById("g1");
-    }
-
-    @Test
-    void delete_doesNotTouchAnyOtherGame_whenGameIsAnAddition() {
-        Game dlc = sampleGame();
-        dlc.setId("d1");
-        dlc.setOwnerId("u1");
-        dlc.setParentId("base-1");
-        when(gameRepository.findById("d1")).thenReturn(Optional.of(dlc));
-
-        gameService.delete("d1", "u1");
-
-        verify(gameRepository, never()).deleteByOwnerIdAndParentId(any(), any());
-        verify(gameRepository).deleteById("d1");
-    }
-
-    @Test
-    void update_keepsParentIdAndParentTitle_fromTheExistingGame() {
-        Game existing = sampleGame();
-        existing.setId("g1");
-        existing.setOwnerId("u1");
-        existing.setParentId("base-1");
-        existing.setParentTitle("Juego base");
-
-        // El PUT del frontend reenvía todos los campos: el enlace no debe viajar en el body.
-        Game updates = sampleGame();
-        updates.setTitle("Nuevo título");
-        updates.setParentId("otro-base");
-        updates.setParentTitle("Otro base");
-
-        when(gameRepository.findById("g1")).thenReturn(Optional.of(existing));
-        when(gameRepository.save(any(Game.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Game result = gameService.update("g1", updates, false, "u1");
-
-        assertThat(result.getParentId()).isEqualTo("base-1");
-        assertThat(result.getParentTitle()).isEqualTo("Juego base");
-        assertThat(result.getTitle()).isEqualTo("Nuevo título");
     }
 
     @Test
