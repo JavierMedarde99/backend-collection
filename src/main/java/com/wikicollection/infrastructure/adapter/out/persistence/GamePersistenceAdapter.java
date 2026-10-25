@@ -77,7 +77,7 @@ public class GamePersistenceAdapter implements GameRepository {
 
         operations.add(Aggregation.sort(Sort.by(Sort.Direction.ASC, "platform").and(Sort.by(Sort.Direction.ASC, "_id"))));
 
-        GroupOperation group = Aggregation.group("gameKey")
+        GroupOperation group = Aggregation.group("externalId")
                 .first("title").as("title")
                 .first("thumbnailUrl").as("thumbnailUrl")
                 .push("$$ROOT").as("games");
@@ -117,7 +117,9 @@ public class GamePersistenceAdapter implements GameRepository {
                     for (int j = 0; j < entities.size(); j++) {
                         games.add(mapper.toDomain(entities.get(j)));
                     }
-                    return new GameGroup(r.getGameKey(), r.getTitle(), r.getThumbnailUrl(), games);
+                    String key = (r.getGameKey() != null && !r.getGameKey().isBlank()) ? r.getGameKey()
+                            : (entities.isEmpty() ? "t:unknown" : inferKey(entities.get(0)));
+                    return new GameGroup(key, r.getTitle(), r.getThumbnailUrl(), games);
                 })
                 .toList();
         long total = 0;
@@ -126,6 +128,13 @@ public class GamePersistenceAdapter implements GameRepository {
             total = facetResult.getTotal().get(0).getCount();
         }
         return new PageImpl<>(content, pageable, total);
+    }
+
+
+    private String inferKey(GameEntity e) {
+        if (e.getExternalId() != null && !e.getExternalId().isBlank()) return "x:" + e.getExternalId();
+        String t = (e.getTitle() == null) ? "" : e.getTitle().toLowerCase();
+        return "t:" + t.replaceAll("[^a-z0-9\s]", "").replaceAll("\s+", " ").trim();
     }
 
     private Criteria buildMatchCriteria(GameSearchCriteria criteria) {
