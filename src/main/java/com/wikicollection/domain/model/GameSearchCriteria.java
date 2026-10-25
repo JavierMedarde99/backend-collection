@@ -4,40 +4,14 @@ import java.util.List;
 
 public record GameSearchCriteria(
         String name,
-        List<String> platforms,
+        String platform,
         GameStatus status,
         java.util.List<String> genres,
         String ownerId,
-        List<String> excludeOwnerIds,
-        GameTypeFilter type,
-        boolean groupByGame) {
-
-    public GameSearchCriteria {
-        // «sin filtro» es ALL: el resto de la capa no tiene que tratar null.
-        type = type == null ? GameTypeFilter.ALL : type;
-    }
-
-    /** Listado plano: el caso de siempre. */
-    public GameSearchCriteria(String name, List<String> platforms, GameStatus status,
-                              java.util.List<String> genres, String ownerId,
-                              List<String> excludeOwnerIds, GameTypeFilter type) {
-        this(name, platforms, status, genres, ownerId, excludeOwnerIds, type, false);
-    }
+        List<String> excludeOwnerIds) {
 
     public boolean hasName() {
         return name != null && !name.isBlank();
-    }
-
-    public boolean hasPlatforms() {
-        return platforms != null && platforms.stream().anyMatch(p -> p != null && !p.isBlank());
-    }
-
-    /** Plataformas sin nulos ni blancos: el filtro es un «cualquiera de». */
-    public List<String> effectivePlatforms() {
-        if (platforms == null) {
-            return List.of();
-        }
-        return platforms.stream().filter(p -> p != null && !p.isBlank()).toList();
     }
 
     public boolean hasGenres() {
@@ -57,13 +31,5 @@ public record GameSearchCriteria(
 
     public boolean hasExcludeOwnerIds() {
         return excludeOwnerIds != null && !excludeOwnerIds.isEmpty();
-    }
-
-    public boolean isBaseOnly() {
-        return type == GameTypeFilter.BASE;
-    }
-
-    public boolean isDlcOnly() {
-        return type == GameTypeFilter.DLC;
     }
 }
