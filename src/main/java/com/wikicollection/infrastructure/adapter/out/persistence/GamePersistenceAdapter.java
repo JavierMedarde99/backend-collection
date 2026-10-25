@@ -163,43 +163,8 @@ public class GamePersistenceAdapter implements GameRepository {
     }
 
     private String normalizedTitleExpression() {
-        // Apply lowercasing and accent/punctuation removal similar to DeckNameNormalizer
-        String expr = "$toLower(\"$title\")";
-        // accents
-        String[] pairs = {
-                "[áàäâã]", "a", "[ÁÀÄÂÃ]", "a",
-                "[éèëê]", "e", "[ÉÈËÊ]", "e",
-                "[íìïî]", "i", "[ÍÌÏÎ]", "i",
-                "[óòöôõ]", "o", "[ÓÒÖÔÕ]", "o",
-                "[úùüû]", "u", "[ÚÙÜÛ]", "u",
-                "[ñ]", "n", "[Ñ]", "n",
-                "[ç]", "c", "[Ç]", "c"
-        };
-        for (int i = 0; i < pairs.length; i += 2) {
-            String regex = pairs[i].replace("[", "\\[").replace("]", "\\]");
-            expr = "{$replaceAll: {" + expr + ", \"regex\": \"" + regex + "\", \"replacement\": \"" + pairs[i + 1] + "\"}}";
-        }
-        // punctuation
-        expr = "{$replaceAll: {" + expr + ", \"regex\": \"[^a-z0-9\\\\s]\", \"replacement\": \"\"}}";
-        // collapse spaces
-        expr = "{$replaceAll: {" + expr + ", \"regex\": \"\\\\s+\", \"replacement\": \" \"}}";
-        expr = "{$trim: {" + expr + "}}";
-        return expr;
+        return "{$toLower: \"$title\"}";
     }
-
-    private GameGroup toGroup(GameGroupAggregationResult result) {
-        java.util.List<Game> games = new java.util.ArrayList<Game>();
-        if (result.getGames() != null) {
-            for (int j = 0; j < result.getGames().size(); j++) {
-                Object e = result.getGames().get(j);
-                if (e instanceof GameEntity ge) {
-                    games.add(mapper.toDomain(ge));
-                }
-            }
-        }
-        return new GameGroup(result.getGameKey(), result.getTitle(), result.getThumbnailUrl(), games);
-    }
-
 
     private Query buildQuery(GameSearchCriteria criteria) {
         Query query = new Query();
