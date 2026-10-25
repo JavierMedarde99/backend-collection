@@ -105,4 +105,22 @@ public class GamePersistenceAdapter implements GameRepository {
                 new Update().set("userOwned.ownerName", ownerName),
                 GameEntity.class);
     }
+
+    @Override
+    public List<Game> findByOwnerIdAndExternalIdIn(String ownerId, List<String> externalIds) {
+        if (externalIds == null || externalIds.isEmpty()) return List.of();
+        return springDataGameRepository.findByOwnerIdAndExternalIdIn(ownerId, externalIds).stream()
+                .map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteByOwnerIdAndParentId(String ownerId, String parentId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId).and("parentId").is(parentId)), GameEntity.class);
+    }
+
+    @Override
+    public void deleteByOwnerId(String ownerId) {
+        mongoTemplate.remove(new Query(Criteria.where("ownerId").is(ownerId)), GameEntity.class);
+    }
+
 }
