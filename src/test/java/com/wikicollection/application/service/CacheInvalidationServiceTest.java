@@ -309,7 +309,7 @@ class CacheInvalidationServiceTest {
 
     @Test
     void boardGameList_isEvicted_afterSave() {
-        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null);
+        BoardGameSearchCriteria criteria = new BoardGameSearchCriteria(null, null, null, null, null, null);
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 

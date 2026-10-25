@@ -98,7 +98,7 @@ public class UserProfileService implements UserProfileUseCase {
             return Page.empty(pageable);
         }
         return gameRepository.search(
-                new GameSearchCriteria(null, null, null, null, user.getId(), null, null), pageable);
+                new GameSearchCriteria(null, null, null, null, user.getId(), null), pageable);
     }
 
     @Override

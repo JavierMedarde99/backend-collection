@@ -22,4 +22,10 @@ public interface GameRepository {
     void updateOwnerName(String ownerId, String ownerName);
 
     List<String> distinctGenres(List<String> excludeOwnerIds);
+
+    List<Game> findByOwnerIdAndExternalIdIn(String ownerId, List<String> externalIds);
+
+    void deleteByOwnerIdAndParentId(String ownerId, String parentId);
+
+    void deleteByOwnerId(String ownerId);
 }
