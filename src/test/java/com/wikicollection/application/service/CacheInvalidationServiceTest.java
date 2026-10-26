@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import com.wikicollection.domain.model.BookState;
 import com.wikicollection.domain.model.BookType;
 import com.wikicollection.domain.model.Deck;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.MagicCard;
 import com.wikicollection.domain.model.MagicCardSearchCriteria;
@@ -322,5 +325,25 @@ class CacheInvalidationServiceTest {
         when(boardGameRepository.search(any(BoardGameSearchCriteria.class), any(Pageable.class)))
                 .thenReturn(pageOf(List.of(created)));
         assertThat(boardGameService.search(criteria, PAGE, "mine", OWNER).getContent()).hasSize(1);
+    }
+
+    @Test
+    void groupedAndFlatGameSearches_doNotShareCacheEntry() {
+        GameSearchCriteria flat = new GameSearchCriteria(null, null, null, null, null, null, false);
+        GameSearchCriteria grouped = new GameSearchCriteria(null, null, null, null, null, null, true);
+        Game game = Game.builder().id("g1").ownerId(OWNER).title("Hollow Knight").platform("PC").build();
+        GameGroup group = new GameGroup("x:3498", "Hollow Knight", null, List.of(game));
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(pageOf(List.of(game)));
+        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(pageOf(List.of(group)));
+
+        assertThat(gameService.search(flat, PAGE, "mine", OWNER).getContent()).hasSize(1);
+        assertThat(gameService.searchGrouped(grouped, PAGE, "mine", OWNER).getContent()).hasSize(1);
+        assertThat(gameService.search(flat, PAGE, "mine", OWNER).getContent()).hasSize(1);
+        assertThat(gameService.searchGrouped(grouped, PAGE, "mine", OWNER).getContent()).hasSize(1);
+
+        verify(gameRepository, times(1)).search(any(GameSearchCriteria.class), any(Pageable.class));
+        verify(gameRepository, times(1)).searchGrouped(any(GameSearchCriteria.class), any(Pageable.class));
     }
 }

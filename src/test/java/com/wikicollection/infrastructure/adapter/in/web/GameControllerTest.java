@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -22,6 +23,7 @@ import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.AchievementsSummary;
 import com.wikicollection.domain.model.CollectionType;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.PlatformInfo;
 import com.wikicollection.domain.port.in.PlatformCatalogUseCase;
@@ -42,6 +44,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -523,5 +527,49 @@ class GameControllerTest {
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void listGames_groupsByGame_whenGroupByGameRequested() throws Exception {
+        Game pc = Game.builder().id("g1").ownerId("u1").title("Hollow Knight").platform("PC (Windows)").build();
+        Game nintendo = Game.builder().id("g2").ownerId("u1").title("Hollow Knight").platform("Nintendo Switch").build();
+        GameGroup group = new GameGroup("x:3498", "Hollow Knight", "http://img", List.of(pc, nintendo));
+        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(group), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("groupBy", "game"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].gameKey").value("x:3498"))
+                .andExpect(jsonPath("$.content[0].title").value("Hollow Knight"))
+                .andExpect(jsonPath("$.content[0].thumbnailUrl").value("http://img"))
+                .andExpect(jsonPath("$.content[0].games[0].platform").value("PC (Windows)"))
+                .andExpect(jsonPath("$.content[0].games[1].platform").value("Nintendo Switch"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).searchGrouped(captor.capture(), any(Pageable.class));
+        assertThat(captor.getValue().groupByGame()).isTrue();
+        verify(gameRepository, never()).search(any(GameSearchCriteria.class), any(Pageable.class));
+    }
+
+    @Test
+    void listGames_keepsFlatPayload_whenGroupByIsMissing() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleGame()), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/api/v1/games").with(user("u1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("g1"))
+                .andExpect(jsonPath("$.content[0].gameKey").doesNotExist())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(gameRepository, never()).searchGrouped(any(GameSearchCriteria.class), any(Pageable.class));
+    }
+
+    @Test
+    void listGames_returns400_whenGroupByValueIsUnknown() throws Exception {
+        mockMvc.perform(get("/api/v1/games").with(user("u1")).param("groupBy", "platform"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 }
