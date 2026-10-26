@@ -8,7 +8,18 @@ public record GameSearchCriteria(
         GameStatus status,
         java.util.List<String> genres,
         String ownerId,
-        List<String> excludeOwnerIds) {
+        List<String> excludeOwnerIds,
+        boolean groupByGame) {
+
+    /**
+     * Búsqueda plana (la de siempre). {@code groupByGame} forma parte de la criteria —y por
+     * tanto de la clave de caché— para que una llamada agrupada y otra plana no compartan
+     * entrada en {@code gameList}.
+     */
+    public GameSearchCriteria(String name, String platform, GameStatus status, java.util.List<String> genres,
+                              String ownerId, List<String> excludeOwnerIds) {
+        this(name, platform, status, genres, ownerId, excludeOwnerIds, false);
+    }
 
     public boolean hasName() {
         return name != null && !name.isBlank();

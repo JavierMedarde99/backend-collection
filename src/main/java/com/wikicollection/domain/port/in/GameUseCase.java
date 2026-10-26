@@ -1,6 +1,7 @@
 package com.wikicollection.domain.port.in;
 
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 
 import org.springframework.data.domain.Page;
@@ -13,6 +14,8 @@ public interface GameUseCase {
     java.util.List<String> distinctGenres();
 
     Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
+
+    Page<GameGroup> searchGrouped(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId);
 
     Game findById(String id);
 

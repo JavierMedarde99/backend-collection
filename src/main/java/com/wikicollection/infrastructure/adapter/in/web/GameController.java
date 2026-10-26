@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.List;
 
 import com.wikicollection.domain.model.CollectionType;
+import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.model.GameSearchResult;
 import com.wikicollection.domain.model.PlatformInfo;
@@ -16,6 +18,7 @@ import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementMappe
 import com.wikicollection.infrastructure.adapter.in.web.dto.AchievementsResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameAchievementResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameDtoMapper;
+import com.wikicollection.infrastructure.adapter.in.web.dto.GameGroupResponse;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameRequest;
 import com.wikicollection.infrastructure.adapter.in.web.dto.GameResponse;
 
@@ -77,12 +80,12 @@ public class GameController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista juegos", description = "Devuelve una página de juegos con filtros opcionales por nombre, plataforma y estado.")
+    @Operation(summary = "Lista juegos", description = "Devuelve una página de juegos con filtros opcionales por nombre, plataforma y estado. Con groupBy=game devuelve una página de grupos (el mismo juego en varias plataformas).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de juegos encontrada"),
             @ApiResponse(responseCode = "400", description = "Parámetros de paginación o filtros inválidos")
     })
-    public Page<GameResponse> list(
+    public ResponseEntity<Page<?>> list(
             @Parameter(description = "Número de página (base 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Ordenación como campo,asc|desc") @RequestParam(defaultValue = "title,asc") String sort,
@@ -91,13 +94,37 @@ public class GameController {
             @Parameter(description = "Filtro por estado") @RequestParam(required = false) GameStatus status,
             @Parameter(description = "Filtro por género (coincide con cualquiera de la lista)") @RequestParam(required = false) java.util.List<String> genre,
             @Parameter(description = "Filtro por propiedad: mine|other|all") @RequestParam(defaultValue = "mine") String owner,
+            @Parameter(description = "Agrupación: game (mismo juego en varias plataformas)") @RequestParam(required = false) String groupBy,
             @CurrentUser String viewerId) {
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
-        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null);
-        return gameUseCase.search(criteria, pageable, owner, viewerId).map(game -> {
-            var response = mapper.toResponse(game);
-            return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
-        });
+        boolean grouped = parseGroupBy(groupBy);
+        GameSearchCriteria criteria = new GameSearchCriteria(name, platform, status, genre, null, null, grouped);
+        if (grouped) {
+            return ResponseEntity.ok(gameUseCase.searchGrouped(criteria, pageable, owner, viewerId)
+                    .map(this::toGroupResponse));
+        }
+        return ResponseEntity.ok(gameUseCase.search(criteria, pageable, owner, viewerId)
+                .map(this::toResponse));
+    }
+
+    private boolean parseGroupBy(String groupBy) {
+        if (groupBy == null || groupBy.isBlank()) {
+            return false;
+        }
+        if ("game".equalsIgnoreCase(groupBy)) {
+            return true;
+        }
+        throw new IllegalArgumentException("Parámetro groupBy inválido: " + groupBy + " (game)");
+    }
+
+    private GameResponse toResponse(Game game) {
+        var response = mapper.toResponse(game);
+        return visibility.canSeePrivate(game.getOwnerId(), CollectionType.GAMES) ? response : response.withoutPrivate();
+    }
+
+    private GameGroupResponse toGroupResponse(GameGroup group) {
+        return new GameGroupResponse(group.gameKey(), group.title(), group.thumbnailUrl(),
+                group.games().stream().map(this::toResponse).toList());
     }
 
     @GetMapping("/genres")

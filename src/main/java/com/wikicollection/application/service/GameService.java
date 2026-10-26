@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.wikicollection.application.exception.GameNotFoundException;
 import com.wikicollection.domain.model.Game;
+import com.wikicollection.domain.model.GameGroup;
 import com.wikicollection.domain.model.GameSearchCriteria;
 import com.wikicollection.domain.port.in.GameUseCase;
 import com.wikicollection.domain.port.out.GameRepository;
@@ -74,6 +75,14 @@ public class GameService implements GameUseCase {
     public Page<Game> search(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
         OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
         return gameRepository.search(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(), criteria.genres(), scope.ownerId(), scope.excludeOwnerIds()), pageable);
+    }
+
+    @Override
+    @Cacheable(cacheNames = "gameList", key = "T(java.util.Objects).hash(#criteria, #pageable, #owner, #viewerId)")
+    public Page<GameGroup> searchGrouped(GameSearchCriteria criteria, Pageable pageable, String owner, String viewerId) {
+        OwnerScopeResolver.Scope scope = ownerScopeResolver.resolve(CollectionType.GAMES, owner, viewerId);
+        return gameRepository.searchGrouped(new GameSearchCriteria(criteria.name(), criteria.platform(), criteria.status(),
+                criteria.genres(), scope.ownerId(), scope.excludeOwnerIds(), true), pageable);
     }
 
     @Override

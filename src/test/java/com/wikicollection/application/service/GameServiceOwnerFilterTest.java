@@ -77,4 +77,17 @@ class GameServiceOwnerFilterTest {
         assertThatThrownBy(() -> service().search(new GameSearchCriteria(null, null, null, null, null, null), PageRequest.of(0, 20), "bogus", "u1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void searchGrouped_appliesOwnerScope_andKeepsGroupingFlag() {
+        when(gameRepository.searchGrouped(any(GameSearchCriteria.class), any())).thenReturn(Page.empty());
+        var pageable = PageRequest.of(0, 20);
+
+        service().searchGrouped(new GameSearchCriteria(null, null, null, null, null, null, true), pageable, "mine", "u1");
+
+        ArgumentCaptor<GameSearchCriteria> captor = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).searchGrouped(captor.capture(), any());
+        assertThat(captor.getValue().ownerId()).isEqualTo("u1");
+        assertThat(captor.getValue().groupByGame()).isTrue();
+    }
 }
