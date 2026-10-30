@@ -491,6 +491,30 @@ class BookControllerTest {
     }
 
     @Test
+    void updateBook_acceptsPublicationYearZero() throws Exception {
+        when(bookRepository.findById("b1")).thenReturn(Optional.of(sampleBook()));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"20th Century Boys 05","author":"Autor desconocido","state":"COMPLETED","type":"MANGA","publicationYear":0}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publicationYear").value(0));
+    }
+
+    @Test
+    void updateBook_returns400_whenPublicationYearIsNegative() throws Exception {
+        mockMvc.perform(put("/api/v1/books/b1").with(user("u1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"20th Century Boys 05","author":"Autor desconocido","state":"COMPLETED","type":"MANGA","publicationYear":-1}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getBook_returnsPagesRead() throws Exception {
         Book book = sampleBook();
         book.setPagesRead(100);

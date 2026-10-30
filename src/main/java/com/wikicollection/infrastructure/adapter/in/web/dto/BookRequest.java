@@ -31,7 +31,7 @@ public record BookRequest(
         LocalDate endDate,
         String frontpage,
         String publisher,
-        @Min(value = 1, message = "El año de publicación no puede ser anterior a 1")
+        @Min(value = 0, message = "El año de publicación no puede ser negativo")
         @Max(value = 9999, message = "El año de publicación no puede ser posterior a 9999") Integer publicationYear,
         LocalDate acquisitionDate,
         @Min(value = 0, message = "El precio de adquisición no puede ser negativo")
